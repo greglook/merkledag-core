@@ -9,6 +9,7 @@
 
   :dependencies
   [[org.clojure/clojure "1.7.0"]
-   [mvxcvi/multihash "0.2.0-SNAPSHOT"]
+   [mvxcvi/blobble "0.1.0-SNAPSHOT"]
+   [mvxcvi/multihash "RELEASE"]
    [org.clojure/tools.logging "0.3.1"]
-   [protobuf "0.6.2"]])
+   [org.flatland/protobuf "0.8.1"]])
