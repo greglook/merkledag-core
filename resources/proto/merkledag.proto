@@ -3,16 +3,16 @@ package merkledag.proto;
 
 // An IPFS MerkleDAG Link
 message MerkleLink {
-    required bytes Hash = 1;   // multihash of the target object
-    required string Name = 2;  // utf string name
-    optional uint64 Tsize = 3; // cumulative size of target object
+    optional bytes hash = 1;   // multihash of the target object
+    optional string name = 2;  // utf string name
+    optional uint64 tsize = 3; // cumulative size of target object
     // user extensions start at 50
 }
 
 
 // An IPFS MerkleDAG Node
 message MerkleNode {
-    repeated MerkleLink Links = 2; // refs to other objects
-    optional bytes Data = 1; // opaque user data
+    repeated MerkleLink links = 2; // refs to other objects
+    optional bytes data = 1; // opaque user data
     // user extensions start at 50
 }
