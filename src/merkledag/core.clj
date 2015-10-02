@@ -14,11 +14,7 @@
       Multihash)))
 
 
-(def LinkEncoding (pb/protodef Merkledag$MerkleLink))
-(def NodeEncoding (pb/protodef Merkledag$MerkleNode))
 
-
-; Build a datastructure from links:
 #_
 (merkledag/node
   {:extra-links [(merkledag/link "@context" (multihash/decode "10a8b72e1ff20e..."))]}
@@ -43,27 +39,27 @@
 
 
 
-;; ## Merkle Link Type
+;; ## Merkle Graph Link
 
-;; Links have three first-class properties. Note that **only** link-name and
-;; target are used for equality and comparison checks!
+;; Links have three main properties. Note that **only** link-name and target
+;; are used for equality and comparison checks!
 ;;
 ;; - `:name` is a string giving the link's name from an object link table.
 ;; - `:target` is the merklehash to which the link points.
-;; - `:size` is the total number of bytes reachable from the linked blob.
-;;   This should equal the sum of the target's links' total sizes, plus the size
+;; - `:tsize` is the total number of bytes reachable from the linked blob.
+;;   This should equal the sum of the target's links' tsizes, plus the size
 ;;   of the object itself.
 ;;
 ;; If created in the context of a repo, links may be dereferenced to look up
 ;; their contents from the store.
 (deftype MerkleLink
-  [_name _target _size _repo _meta]
+  [_name _target _tsize _repo _meta]
 
   Object
 
   (toString
     [this]
-    (format "link:%s:%s:%d" _name (multihash/hex _target) _size))
+    (format "link:%s:%s:%d" _name (multihash/hex _target) _tsize))
 
   (equals
     [this that]
@@ -98,7 +94,7 @@
 
   (withMeta
     [_ meta-map]
-    (MerkleLink. _name _target _size _repo meta-map))
+    (MerkleLink. _name _target _tsize _repo meta-map))
 
 
   ILookup
@@ -108,7 +104,7 @@
     (case k
       :name _name
       :target _target
-      :size _size
+      :tsize _tsize
       :repo _repo
       not-found))
 
@@ -138,6 +134,22 @@
   not a multihash value, this is considered a _pending_ link."
   ([name target]
    (link name target nil))
-  ([name target size]
+  ([name target tsize]
    ; TODO: use a dynamic var to track "Current repo"
-   (MerkleLink. name target size nil nil)))
+   (MerkleLink. name target tsize nil nil)))
+
+
+
+;; ## Merkle Graph Node
+
+;; Nodes contain a link table with named multihashes referring to other nodes,
+;; and a data segment with either an opaque byte sequence or a parsed data
+;; structure value. A node is essentially a Blob which has been successfully
+;; decoded into (or encoded from) the protobuf encoding.
+;;
+;; - `:id`      multihash reference to the blob the node serializes to
+;; - `:content` the canonical representation of this node
+;; - `:links`   vector of MerkleLink values
+;; - `:data`    the contained data value, structure, or raw bytes
+(defrecord MerkleNode
+  [id content links data])
