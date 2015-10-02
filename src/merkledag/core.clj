@@ -1,10 +1,10 @@
 (ns merkledag.core
   "MerkleDAG types and serialization functions."
-  (require
+  (:require
     [blobble.core :as blob]
     [flatland.protobuf.core :as pb]
     [multihash.core :as multihash])
-  (import
+  (:import
     (com.google.protobuf
       ByteString)
     (merkledag.proto
