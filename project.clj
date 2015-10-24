@@ -1,4 +1,4 @@
-(defproject mvxcvi/clj-mdag-repo "0.1.0-SNAPSHOT"
+(defproject mvxcvi/merkledag-repo "0.1.0-SNAPSHOT"
   :description "Merkle-DAG object repository"
   :url "http://github.com/greglook/clj-mdag-repo"
   :license {:name "Public Domain"
@@ -8,10 +8,9 @@
   [[lein-protobuf "0.4.3"]]
 
   :dependencies
-  [[org.clojure/clojure "1.7.0"]
-   [org.clojure/data.fressian "0.2.1"]
+  [[clj-time "0.11.0"]
    [mvxcvi/blobble "0.1.0-SNAPSHOT"]
-   [mvxcvi/arrangement "1.0.0"]
-   [mvxcvi/multihash "RELEASE"]
+   [mvxcvi/multihash "0.3.0-SNAPSHOT"]
+   [org.clojure/clojure "1.7.0"]
    [org.clojure/tools.logging "0.3.1"]
    [org.flatland/protobuf "0.8.1"]])
