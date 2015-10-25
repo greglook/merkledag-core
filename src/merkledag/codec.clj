@@ -1,8 +1,8 @@
 (ns merkledag.codec
   "MerkleDAG types and serialization functions."
   (:require
-    [clojure.data.fressian :as fress]
     [flatland.protobuf.core :as pb]
+    [merkledag.data.edn :as edn]
     [multihash.core :as multihash])
   (:import
     (com.google.protobuf
@@ -16,7 +16,6 @@
       ByteBuffer)))
 
 
-
 ;; ## Protobuffer Encoding
 
 (def LinkEncoding (pb/protodef Merkledag$MerkleLink))
@@ -26,10 +25,10 @@
 (defn- serialize-data
   "Encodes a data segment from some input. If the input is a byte array or a
   `ByteBuffer`, it is used directly as the segment. If it is `nil`, no data
-  segment is returned. Otherwise, the value is serialized using Fressian via
-  the provided handlers."
+  segment is returned. Otherwise, the value is serialized using the provided
+  handlers."
   ^ByteString
-  [data & {:keys [handlers]}]
+  [data & {:keys [types]}]
   (cond
     (nil? data)
       nil
@@ -38,8 +37,7 @@
     (instance? ByteBuffer data)
       (ByteString/copyFrom ^ByteBuffer data)
     :else
-      ; TODO: implement custom set and map handlers to ensure fields are sorted
-      (ByteString/copyFrom (fress/write data :handlers handlers))))
+      (ByteString/copyFrom (edn/print-data types data))))
 
 
 (defn- encode-proto-link
