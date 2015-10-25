@@ -7,18 +7,21 @@
     (clj-time
       [coerce :as coerce]
       [core :as time]
-      [format :as format :refer [formatters]])))
+      [format :as format :refer [formatters]]))
+  (:import
+    java.util.Date
+    org.joda.time.DateTime))
 
 
 (defn render
   "Render a `DateTime` value as an inst string."
-  [^org.joda.DateTime dt]
+  [^DateTime dt]
   (format/unparse (formatters :date-time) dt))
 
 
 (defn parse
   "Parse a string into a `DateTime`."
-  ^org.joda.DateTime
+  ^DateTime
   [literal]
   (format/parse (formatters :date-time) literal))
 
@@ -27,5 +30,5 @@
   {:tag 'inst
    :description "Instants in time"
    :reader parse
-   :writers {java.util.Date (comp render coerce/from-date)
-             org.joda.time.DateTime render}})
+   :writers {Date (comp render coerce/from-date)
+             DateTime render}})

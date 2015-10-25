@@ -34,7 +34,7 @@
 
 (def ^:const ^:private data-header
   "Header string which must appear as the first characters in a data node."
-  "#data/node ")
+  "#data/edn ")
 
 
 
