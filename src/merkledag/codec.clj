@@ -58,15 +58,14 @@
         data-bs (serialize-data data)]
     (cond-> (pb/protobuf NodeEncoding)
       (seq links)
-        (assoc :links (map encode-proto-link links))
+        (assoc :links (map encode-proto-link (sort-by :name links)))
       data-bs
         (assoc :data data-bs))))
 
 
 (defn node->blob
-  [node]
-  (-> node
-      (encode-proto-node)
+  [links data]
+  (-> (encode-proto-node links data)
       (pb/protobuf-dump)
       (blob/read!)))
 

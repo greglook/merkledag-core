@@ -14,23 +14,20 @@
       Multihash)))
 
 
+(def ^:dynamic *blob-store* nil)
+(def ^:dynamic *link-table* nil)
+
 
 #_
 (merkledag/node
-  {:extra-links [(merkledag/link "@context" (multihash/decode "10a8b72e1ff20e..."))]}
+  [(merkledag/link "@context" (multihash/decode "10a8b72e1ff20e..."))]
   {:type :finance/transaction
    :title "SCHZ - Reinvest Dividend"
    :description "Automatic dividend reinvestment."
    :time/at #inst "2013-10-08T00:00:00Z"
    :finance.transaction/entries
-   [(merkledag/link "posting-1"
-                    (merkledag/node
-                      {:type :finance/posting
-                       :title ... }))
-    (merkledag/link "posting-2"
-                    (merkledag/node
-                      {:type :finance/posting
-                       :title ... }))]
+   [(merkledag/link "posting-1" posting-node-1)
+    (merkledag/link "posting-2" posting-node-2)]
    :finance.transaction/state :finance.transaction.state/cleared})
 
 ; Serializing this involves walking the structure to translate anything wrapped
@@ -50,16 +47,16 @@
 ;;   This should equal the sum of the target's links' tsizes, plus the size
 ;;   of the object itself.
 ;;
-;; If created in the context of a repo, links may be dereferenced to look up
-;; their contents from the store.
+;; In the context of a repo, links can be dereferenced to look up their
+;; contents from the store.
 (deftype MerkleLink
-  [_name _target _tsize _repo _meta]
+  [_name _target _tsize _meta]
 
   Object
 
   (toString
     [this]
-    (format "link:%s:%s:%d" _name (multihash/hex _target) _tsize))
+    (format "link:%s:%s:%s" _name (multihash/hex _target) (or _tsize "-")))
 
   (equals
     [this that]
@@ -94,7 +91,7 @@
 
   (withMeta
     [_ meta-map]
-    (MerkleLink. _name _target _tsize _repo meta-map))
+    (MerkleLink. _name _target _tsize meta-map))
 
 
   ILookup
@@ -105,7 +102,6 @@
       :name _name
       :target _target
       :tsize _tsize
-      :repo _repo
       not-found))
 
   (valAt
@@ -117,26 +113,15 @@
 
   (deref
     [this]
-    (when-not _repo
+    (when-not *blob-store*
       (throw (IllegalStateException.
                (str "Cannot look up node for " this
                     " with no associated repo"))))
-    ; TODO: fetch blob from store
-    (throw (RuntimeException. "Not Yet Implemented"))))
+    (blob/get *blob-store* _target)))
 
 
 ;; Remove automatic constructor function.
 (ns-unmap *ns* '->MerkleLink)
-
-
-(defn link
-  "Constructs a new merkle link. The name should be a string. If the target is
-  not a multihash value, this is considered a _pending_ link."
-  ([name target]
-   (link name target nil))
-  ([name target tsize]
-   ; TODO: use a dynamic var to track "Current repo"
-   (MerkleLink. name target tsize nil nil)))
 
 
 
@@ -147,9 +132,57 @@
 ;; structure value. A node is essentially a Blob which has been successfully
 ;; decoded into (or encoded from) the protobuf encoding.
 ;;
-;; - `:id`      multihash reference to the blob the node serializes to
-;; - `:content` the canonical representation of this node
-;; - `:links`   vector of MerkleLink values
-;; - `:data`    the contained data value, structure, or raw bytes
-(defrecord MerkleNode
-  [id content links data])
+;; - `:id`           multihash reference to the blob the node serializes to
+;; - `:content`      the canonical representation of this node
+;; - `:merkle/links` vector of MerkleLink values
+;; - `:merkle/data`  the contained data value, structure, or raw bytes
+
+(defmacro node
+  "Constructs a new merkle node."
+  ([data]
+   (node nil data))
+  ([links data]
+   `(binding [*link-table* (vec links)]
+      (let [data# ~data
+            links# (concat ~links *link-table*)
+            blob# (codec/node->blob links# data#)]
+        (assoc blob#
+               :merkle/links links#
+               :merkle/data data#)))))
+
+
+(defn- resolve-target
+  [target]
+  (cond
+    (instance? Multihash target)
+      target
+    (instance? Blob target)
+      (do (when (and *blob-store* (nil? (blob/stat *blob-store* (:id target))))
+            (blob/put! *blob-store* target))
+          (:id target))
+    :else
+      (throw (IllegalArgumentException.
+               (str "Cannot resolve type " (class target)
+                    " as a merkle link target.")))))
+
+
+(defn link
+  "Constructs a new merkle link. The name should be a string. If the target is
+  not a multihash value, this is considered a _pending_ link."
+  ([name target]
+   (link name target nil))
+  ([name target tsize]
+   (when-not (string? name)
+     (throw (IllegalArgumentException.
+              (str "Link name must be a string, got: " (pr-str name)))))
+   (let [target' (resolve-target target)
+         extant (some #(when (= name (:name %)) %) *link-table*)
+         tsize' (or tsize (:tsize extant))]
+     (when (and extant (not= target' (:target extant)))
+       (throw (IllegalStateException.
+                (str "Can't link " name " to " target'
+                     ", already points to " (:target extant)))))
+     (let [link' (MerkleLink. name target' tsize')]
+       (when *link-table*
+         (set! #'*link-table* (conj *link-table* link')))
+       link'))))
