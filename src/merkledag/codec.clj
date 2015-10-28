@@ -22,13 +22,13 @@
 (def NodeEncoding (pb/protodef Merkledag$MerkleNode))
 
 
-(defn- serialize-data
+(defn- serialize-data-segment
   "Encodes a data segment from some input. If the input is a byte array or a
   `ByteBuffer`, it is used directly as the segment. If it is `nil`, no data
   segment is returned. Otherwise, the value is serialized using the provided
   handlers."
   ^ByteString
-  [data & {:keys [types]}]
+  [types data]
   (cond
     (nil? data)
       nil
@@ -53,9 +53,9 @@
 
 (defn- encode-proto-node
   "Encodes a list of links and a data value into a protobuffer representation."
-  [links data]
+  [types links data]
   (let [node (pb/protobuf NodeEncoding)
-        data-bs (serialize-data data)]
+        data-bs (serialize-data-segment types data)]
     (cond-> (pb/protobuf NodeEncoding)
       (seq links)
         (assoc :links (map encode-proto-link (sort-by :name links)))
@@ -76,4 +76,4 @@
   ;   try to parse data in link table context
   ;     else return raw data
   ;   else return "raw" node
-  nil)
+  (throw (RuntimeException. "Not Yet Implemented")))
