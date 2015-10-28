@@ -132,10 +132,14 @@
 ;; structure value. A node is essentially a Blob which has been successfully
 ;; decoded into (or encoded from) the protobuf encoding.
 ;;
-;; - `:id`           multihash reference to the blob the node serializes to
-;; - `:content`      the canonical representation of this node
-;; - `:merkle/links` vector of MerkleLink values
-;; - `:merkle/data`  the contained data value, structure, or raw bytes
+;; - `:id`      multihash reference to the blob the node serializes to
+;; - `:content` the canonical representation of this node
+;; - `:links`   vector of MerkleLink values
+;; - `:data`    the contained data value, structure, or raw bytes
+;;
+(defrecord MerkleNode
+  [id content links data])
+
 
 (defmacro node
   "Constructs a new merkle node."
@@ -144,16 +148,28 @@
   ([links data]
    `(binding [*link-table* (vec links)]
       (let [data# ~data
-            links# (concat ~links *link-table*)
-            blob# (codec/node->blob links# data#)]
-        (assoc blob#
-               :merkle/links links#
-               :merkle/data data#)))))
+            links# (concat ~links *link-table*)]
+        (-> (codec/node->blob links# data#)
+            (map->MerkleNode)
+            (assoc :links links#
+                   :data data#))))))
+
+
+(defn- resolve-link
+  "Resolves a link against the current `*link-table*`, if any."
+  [name]
+  (when-not (string? name)
+    (throw (IllegalArgumentException.
+             (str "Link name must be a string, got: " (pr-str name)))))
+  (some #(when (= name (:name %)) %)
+        *link-table*))
 
 
 (defn- resolve-target
   [target]
   (cond
+    (nil? target)
+      nil
     (instance? Multihash target)
       target
     (instance? Blob target)
@@ -167,22 +183,27 @@
 
 
 (defn link
-  "Constructs a new merkle link. The name should be a string. If the target is
-  not a multihash value, this is considered a _pending_ link."
+  "Constructs a new merkle link. The name should be a string. If no target is
+  given, the name is looked up in the `*link-table*`. If it doesn't resolve to
+  anything, the target will be `nil` and the link will be _broken_. If the
+  target is a multihash, it is used directly. If it is a `MerkleNode`, the id
+  is used."
+  ([name]
+   (or (resolve-link name)
+       (MerkleLink. name nil nil nil)))
   ([name target]
    (link name target nil))
   ([name target tsize]
-   (when-not (string? name)
-     (throw (IllegalArgumentException.
-              (str "Link name must be a string, got: " (pr-str name)))))
-   (let [target' (resolve-target target)
-         extant (some #(when (= name (:name %)) %) *link-table*)
+   (let [extant (resolve-link name)
+         target' (resolve-target target)
          tsize' (or tsize (:tsize extant))]
-     (when (and extant (not= target' (:target extant)))
-       (throw (IllegalStateException.
-                (str "Can't link " name " to " target'
-                     ", already points to " (:target extant)))))
-     (let [link' (MerkleLink. name target' tsize')]
-       (when *link-table*
-         (set! #'*link-table* (conj *link-table* link')))
-       link'))))
+     (if extant
+       (if (= target' (:target extant))
+         extant
+         (throw (IllegalStateException.
+                  (str "Can't link " name " to " target'
+                       ", already points to " (:target extant)))))
+       (let [link' (MerkleLink. name target' tsize' nil)]
+         (when *link-table*
+           (set! #'*link-table* (conj *link-table* link')))
+         link')))))
