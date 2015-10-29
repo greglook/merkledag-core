@@ -1,34 +1,54 @@
 (ns merkledag.core
   "MerkleDAG types and serialization functions."
   (:require
-    [blobble.core :as blob]
-    [flatland.protobuf.core :as pb]
+    [merkledag.data.codec :as codec]
     [multihash.core :as multihash])
   (:import
-    (com.google.protobuf
-      ByteString)
-    (merkledag.proto
-      Merkledag$MerkleLink
-      Merkledag$MerkleNode)
-    (multihash.core
-      Multihash)))
+    multihash.core.Multihash))
 
 
-(def ^:dynamic *blob-store* nil)
 (def ^:dynamic *link-table* nil)
+(def ^:dynamic *graph-repo* nil)
 
 
-#_
-(merkledag/node
-  [(merkledag/link "@context" (multihash/decode "10a8b72e1ff20e..."))]
-  {:type :finance/transaction
-   :title "SCHZ - Reinvest Dividend"
-   :description "Automatic dividend reinvestment."
-   :time/at #inst "2013-10-08T00:00:00Z"
-   :finance.transaction/entries
-   [(merkledag/link "posting-1" posting-node-1)
-    (merkledag/link "posting-2" posting-node-2)]
-   :finance.transaction/state :finance.transaction.state/cleared})
+(defmacro with-repo
+  "Execute the body with `*graph-repo*` bound to the given value."
+  [repo & body]
+  `(binding [*graph-repo* ~repo]
+     ~body))
+
+
+
+;; ## Repo Protocol
+
+(defprotocol GraphRepository
+  "Protocol defining the API for a repository of merkle graph data."
+
+  ; add
+  ; cat
+  ; ls
+  ; block.get
+  ; block.put
+  ; object.get
+  ; object.put
+  ; object.data
+  ; object.stat
+  ; object.links
+
+  (get-block
+    [repo id])
+
+  (put-block!
+    [repo block])
+
+  (list-links
+    [repo id])
+
+  (get-node
+    [repo id])
+
+  (put-node!
+    [repo node]))
 
 
 
@@ -109,46 +129,33 @@
 
   (deref
     [this]
-    (when-not *blob-store*
+    (when-not *graph-repo*
       (throw (IllegalStateException.
                (str "Cannot look up node for " this
-                    " with no associated repo"))))
-    (blob/get *blob-store* _target)))
+                    " with no bound repo"))))
+    (get-node *graph-repo* _target)))
 
 
 ;; Remove automatic constructor function.
 (ns-unmap *ns* '->MerkleLink)
 
 
-
-;; ## Merkle Graph Node
-
-;; Nodes contain a link table with named multihashes referring to other nodes,
-;; and a data segment with either an opaque byte sequence or a parsed data
-;; structure value. A node is essentially a Blob which has been successfully
-;; decoded into (or encoded from) the protobuf encoding.
-;;
-;; - `:id`      multihash reference to the blob the node serializes to
-;; - `:content` the canonical representation of this node
-;; - `:links`   vector of MerkleLink values
-;; - `:data`    the contained data value, structure, or raw bytes
-;;
-(defrecord MerkleNode
-  [id content links data])
-
-
-(defmacro node
-  "Constructs a new merkle node."
-  ([data]
-   (node nil data))
-  ([links data]
-   `(binding [*link-table* (vec links)]
-      (let [data# ~data
-            links# (concat ~links *link-table*)]
-        (-> (codec/node->blob links# data#)
-            (map->MerkleNode)
-            (assoc :links links#
-                   :data data#))))))
+(defn ->link
+  "Directly constructs a new MerkleLink value."
+  [name target tsize]
+  (when-not (string? name)
+    (throw (IllegalArgumentException.
+             (str "Link name must be a string, got: "
+                  (pr-str name)))))
+  (when-not (instance? Multihash target)
+    (throw (IllegalArgumentException.
+             (str "Link target must be a multihash, got: "
+                  (pr-str target)))))
+  (when-not (integer? tsize)
+    (throw (IllegalArgumentException.
+             (str "Link size must be an integer, got: "
+                  (pr-str tsize)))))
+  (MerkleLink. name target tsize nil))
 
 
 (defn- resolve-link
@@ -201,3 +208,36 @@
          (when *link-table*
            (set! *link-table* (conj *link-table* link')))
          link')))))
+
+
+;; ## Merkle Graph Node
+
+;; Nodes contain a link table with named multihashes referring to other nodes,
+;; and a data segment with either an opaque byte sequence or a parsed data
+;; structure value. A node is essentially a Blob which has been successfully
+;; decoded into (or encoded from) the protobuf encoding.
+;;
+;; - `:id`      multihash reference to the blob the node serializes to
+;; - `:content` the canonical representation of this node
+;; - `:links`   vector of MerkleLink values
+;; - `:data`    the contained data value, structure, or raw bytes
+;;
+(defrecord MerkleNode
+  [id content links data])
+
+
+(defn ->node
+  [types links data]
+  (map->MerkleNode (codec/encode types links data)))
+
+
+(defmacro node
+  "Constructs a new merkle node."
+  ([data]
+   `(node nil ~data))
+  ([links data]
+   `(binding [*link-table* (vec ~links)]
+      (let [data# ~data]
+        (->node (:types *graph-repo* *link-table* data#)))))
+
+

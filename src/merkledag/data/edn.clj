@@ -61,7 +61,7 @@
         content-bytes (ByteArrayOutputStream.)]
     (with-open [content (OutputStreamWriter. content-bytes data-charset)]
       (.write content data-header)
-      (.write content (puget/render-str printer value))
+      (.write content ^String (puget/render-str printer value))
       (.flush content))
     (.toByteArray content-bytes)))
 

@@ -1,4 +1,4 @@
-(ns merkledag.codec
+(ns merkledag.data.codec
   "MerkleDAG types and serialization functions."
   (:require
     [blobble.core :as blob]
@@ -6,28 +6,27 @@
     [merkledag.data.edn :as edn]
     [multihash.core :as multihash])
   (:import
-    (com.google.protobuf
-      ByteString)
+    com.google.protobuf.ByteString
     (merkledag.proto
       Merkledag$MerkleLink
       Merkledag$MerkleNode)
-    (multihash.core
-      Multihash)
-    (java.nio
-      ByteBuffer)))
+    multihash.core.Multihash
+    java.nio.ByteBuffer))
 
 
-;; ## Protobuffer Encoding
-
+;; Protobuffer Schema Types
 (def LinkEncoding (pb/protodef Merkledag$MerkleLink))
 (def NodeEncoding (pb/protodef Merkledag$MerkleNode))
 
 
+
+;; ## Serialization / Encoding
+
 (defn- serialize-data-segment
-  "Encodes a data segment from some input. If the input is a byte array or a
-  `ByteBuffer`, it is used directly as the segment. If it is `nil`, no data
-  segment is returned. Otherwise, the value is serialized using the provided
-  handlers."
+  "Encodes a data segment from some input into a protobuf `ByteString`. If the
+  input is a byte array or a `ByteBuffer`, it is used directly as the segment.
+  If it is `nil`, no data segment is returned. Otherwise, the value is
+  serialized to EDN using the provided type plugins."
   ^ByteString
   [types data]
   (cond
@@ -41,7 +40,8 @@
       (ByteString/copyFrom (edn/print-data types data))))
 
 
-(defn- encode-proto-link
+(defn- encode-protobuf-link
+  "Encodes a merkle link into a protobuf representation."
   [link]
   (pb/protobuf
     LinkEncoding
@@ -52,27 +52,34 @@
     :tsize (:tsize link)))
 
 
-(defn- encode-proto-node
-  "Encodes a list of links and a data value into a protobuffer representation."
+(defn- encode-protobuf-node
+  "Encodes a list of links and a data value into a protobuf representation."
   [types links data]
   (let [node (pb/protobuf NodeEncoding)
         data-bs (serialize-data-segment types data)]
     (cond-> (pb/protobuf NodeEncoding)
       (seq links)
-        (assoc :links (map encode-proto-link (sort-by :name links)))
+        (assoc :links (map encode-protobuf-link (sort-by :name links)))
       data-bs
         (assoc :data data-bs))))
 
 
-(defn node->blob
-  [links data]
-  (-> (encode-proto-node links data)
+(defn encode
+  "Encodes a merkle node as a blob with extra `:links` and `:data` entries. The
+  `:content` will be a canonical serialized binary representation and the `:id`
+  will be a multihash of the contents."
+  [types links data]
+  (-> (encode-protobuf-node links data)
       (pb/protobuf-dump)
-      (blob/read!)))
+      (blob/read!)
+      (assoc :links links :data data)))
 
 
-(defn blob->node
-  [blob]
+
+;; ## Deserialization / Decoding
+
+(defn decode
+  [types {:keys [id content] :as blob}]
   ; try to parse content as protobuf node
   ;   try to parse data in link table context
   ;     else return raw data
