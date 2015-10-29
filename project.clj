@@ -15,4 +15,8 @@
    [mvxcvi/puget "0.9.2"]
    [org.clojure/clojure "1.7.0"]
    [org.clojure/tools.logging "0.3.1"]
-   [org.flatland/protobuf "0.8.1"]])
+   [org.flatland/protobuf "0.8.1"]]
+
+  :profiles
+  {:repl {:source-paths ["dev"]
+          :dependencies [[org.clojure/tools.namespace "0.2.10"]]}})
