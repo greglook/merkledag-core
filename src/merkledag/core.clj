@@ -30,10 +30,6 @@
     (merkledag/link "posting-2" posting-node-2)]
    :finance.transaction/state :finance.transaction.state/cleared})
 
-; Serializing this involves walking the structure to translate anything wrapped
-; in a MerkleLink into a serialized object with a known hash to link to.
-
-
 
 
 ;; ## Merkle Graph Link
@@ -82,19 +78,19 @@
                [(:name that) (:target that)])))
 
 
-  IMeta
+  clojure.lang.IMeta
 
   (meta [_] _meta)
 
 
-  IObj
+  clojure.lang.IObj
 
   (withMeta
     [_ meta-map]
     (MerkleLink. _name _target _tsize meta-map))
 
 
-  ILookup
+  clojure.lang.ILookup
 
   (valAt
     [this k not-found]
@@ -109,7 +105,7 @@
     (.valAt this k nil))
 
 
-  IDeref
+  clojure.lang.IDeref
 
   (deref
     [this]
@@ -172,10 +168,8 @@
       nil
     (instance? Multihash target)
       target
-    (instance? Blob target)
-      (do (when (and *blob-store* (nil? (blob/stat *blob-store* (:id target))))
-            (blob/put! *blob-store* target))
-          (:id target))
+    (instance? MerkleNode target)
+      (:id target)
     :else
       (throw (IllegalArgumentException.
                (str "Cannot resolve type " (class target)
@@ -205,5 +199,5 @@
                        ", already points to " (:target extant)))))
        (let [link' (MerkleLink. name target' tsize' nil)]
          (when *link-table*
-           (set! #'*link-table* (conj *link-table* link')))
+           (set! *link-table* (conj *link-table* link')))
          link')))))

@@ -13,6 +13,7 @@
   The collection of data type plugins maps the symbol _tag_ for each type to
   the plugin for that type."
   (:require
+    [clojure.edn :as edn]
     [multihash.core :as multihash]
     [puget.dispatch :as dispatch]
     [puget.printer :as puget])

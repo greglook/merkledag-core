@@ -1,6 +1,7 @@
 (ns merkledag.codec
   "MerkleDAG types and serialization functions."
   (:require
+    [blobble.core :as blob]
     [flatland.protobuf.core :as pb]
     [merkledag.data.edn :as edn]
     [multihash.core :as multihash])

@@ -11,7 +11,7 @@
   [[byte-streams "0.1.13"]
    [clj-time "0.11.0"]
    [mvxcvi/blobble "0.1.0-SNAPSHOT"]
-   [mvxcvi/multihash "0.3.0-SNAPSHOT"]
+   [mvxcvi/multihash "0.2.0"]
    [mvxcvi/puget "0.9.2"]
    [org.clojure/clojure "1.7.0"]
    [org.clojure/tools.logging "0.3.1"]

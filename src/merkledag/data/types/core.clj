@@ -36,5 +36,5 @@
 
    'uuid
    {:description "Universally-unique identifiers"
-    :reader #(UUID. %)
+    :reader #(UUID/fromString %)
     :writers {UUID str}}})
