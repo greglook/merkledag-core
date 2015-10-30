@@ -1,4 +1,4 @@
-(ns merkledag.data.types
+(ns merkledag.types
   "Support for core types like time instant literals and UUIDs.
 
   Java `Date` and Joda `DateTime` values are rendered to `inst` literals, which

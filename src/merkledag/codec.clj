@@ -2,14 +2,13 @@
   "MerkleDAG protobuffer serialization functions."
   (:require
     [flatland.protobuf.core :as proto]
-    [merkledag.data.edn :as edn]
+    [merkledag.edn :as edn]
     [multihash.core :as multihash])
   (:import
     com.google.protobuf.ByteString
     (merkledag.proto
       Merkledag$MerkleLink
       Merkledag$MerkleNode)
-    multihash.core.Multihash
     java.nio.ByteBuffer))
 
 

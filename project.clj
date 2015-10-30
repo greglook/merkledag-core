@@ -19,7 +19,8 @@
 
   :hiera {:path "doc/ns-hiera.png"
           :vertical false
-          :cluster-depth 2}
+          :cluster-depth 2
+          :ignore-ns #{clj-time}}
 
   :profiles
   {:repl {:source-paths ["dev"]
