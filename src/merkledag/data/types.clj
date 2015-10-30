@@ -1,16 +1,17 @@
-(ns merkledag.data.types.core
+(ns merkledag.data.types
   "Support for core types like time instant literals and UUIDs.
 
   Java `Date` and Joda `DateTime` values are rendered to `inst` literals, which
-  are read back into Joda `DateTime`s."
+  are read back into Joda `DateTime` objects."
   (:require
     (clj-time
       [coerce :as coerce]
       [core :as time]
-      [format :as format :refer [formatters]]))
+      [format :as format :refer [formatters]])
+    [multihash.core :as multihash])
   (:import
-    java.util.Date
-    java.util.UUID
+    (java.util Date UUID)
+    multihash.core.Multihash
     org.joda.time.DateTime))
 
 
@@ -27,7 +28,7 @@
   (format/parse (formatters :date-time) literal))
 
 
-(def plugin-types
+(def type-plugins
   {'inst
    {:description "Instants in time"
     :reader parse-inst
@@ -37,4 +38,14 @@
    'uuid
    {:description "Universally-unique identifiers"
     :reader #(UUID/fromString %)
-    :writers {UUID str}}})
+    :writers {UUID str}}
+
+   'data/hash
+   {:description "Content-addressed multihash references"
+    :reader multihash/decode
+    :writers {Multihash multihash/base58}}
+
+   'data/link
+   {:description "Merkle links within an object"
+    :reader nil  ; TODO: implement
+    :writers {}}})

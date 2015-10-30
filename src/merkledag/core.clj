@@ -1,71 +1,64 @@
 (ns merkledag.core
-  "MerkleDAG types and serialization functions."
+  "Core merkle graph types and protocol functions.
+
+  A _blob_ is a record that represents a binary sequence and a cryptographic
+  digest identifying it. Blobs have two main attributes:
+
+  - `:content` a `ByteBuffer` containing the block contents.
+  - `:id` a `Multihash` identifying the content.
+
+  A _node_ is a blob which follows the merkledag protobuffer format.
+  Nodes in the merkledag may have links to other nodes and some internal data.
+  In addition to an id and content, nodes have two additional attributes:
+
+  - `:links` a sequence of `MerkleLink`s to other nodes in the merkledag.
+  - `:data` the data segment, which may be a parsed value or a raw `ByteBuffer`.
+
+  Nodes _may_ have additional attributes which are not part of the serialized
+  content, such as stat metadata."
   (:require
+    [blobble.core :as blob]
+    [merkledag.codec :as codec]
     [multihash.core :as multihash])
   (:import
+    blobble.core.Blob
     multihash.core.Multihash))
 
 
-;; ## Node Codec Protocol
+;; ## Graph Repository
 
-(defprotocol NodeCodec
-  "Protocol for serializing and deserializing merkle nodes into binary values."
-
-  (encode-node
-    [codec attributes]
-    "Converts a map of attributes into a binary sequence and returns a new
-    `MerkleNode` value updated with an `:id` and `:content`. The serialized node
-    MUST record the `:links` and `:data` from the attributes, if present. Any
-    additional attributes MAY be supported, depending on the codec.")
-
-  (decode-node
-    [codec block]
-    "Parses the contents of a block to determine the deserialized structure of
-    a `MerkleNode`. The block MUST contain a multihash `:id` and a byte buffer
-    `:content`."))
+;; The graph repository wraps a content-addressable blob store and handles
+;; serializing nodes and links into Protobuffer-encoded objects.
+(defrecord GraphRepo
+  [store types])
 
 
-
-;; ## Merkle Graph Protocol
-
-(defprotocol GraphRepository
-  "Protocol defining the API for a repository of merkle graph data."
-
-  ; add
-  ; cat
-  ; ls
-  ; block.get
-  ; block.put
-  ; object.get
-  ; object.put
-  ; object.data
-  ; object.stat
-  ; object.links
-
-  (get-block
-    [repo id])
-
-  (put-block!
-    [repo block])
-
-  (list-links
-    [repo id])
-
-  (get-node
-    [repo id])
-
-  (put-node!
-    [repo node]))
-
-
-(def ^:dynamic *graph-repo* nil)
+(def ^:dynamic *graph-repo*
+  "Current graph repository context."
+  nil)
 
 
 (defmacro with-repo
   "Execute the body with `*graph-repo*` bound to the given value."
   [repo & body]
   `(binding [*graph-repo* ~repo]
-     ~body))
+     ~@body))
+
+
+
+;; ## Merkle Graph Nodes
+
+;; Nodes are `Blob` records which contain a link table with named multihashes
+;; referring to other nodes, and a data segment with either an opaque byte
+;; sequence or a parsed data structure value. A node is a Blob which has been
+;; successfully decoded into (or encoded from) the protobuf encoding.
+;;
+;; - `:id`      multihash reference to the blob the node serializes to
+;; - `:content` the canonical representation of this node
+;; - `:links`   vector of MerkleLink values
+;; - `:data`    the contained data value, structure, or raw bytes
+(declare get-node)
+(declare put-node!)
 
 
 
@@ -145,12 +138,8 @@
   clojure.lang.IDeref
 
   (deref
-    [this]
-    (when-not *graph-repo*
-      (throw (IllegalStateException.
-               (str "Cannot look up node for " this
-                    " with no bound repo"))))
-    (get-node *graph-repo* _target)))
+    [link]
+    (get-node *graph-repo* (:target link))))
 
 
 ;; Remove automatic constructor function.
@@ -158,44 +147,7 @@
 
 
 
-;; ## Merkle Graph Node
-
-;; Nodes contain a link table with named multihashes referring to other nodes,
-;; and a data segment with either an opaque byte sequence or a parsed data
-;; structure value. A node is essentially a Blob which has been successfully
-;; decoded into (or encoded from) the protobuf encoding.
-;;
-;; - `:id`      multihash reference to the blob the node serializes to
-;; - `:content` the canonical representation of this node
-;; - `:links`   vector of MerkleLink values
-;; - `:data`    the contained data value, structure, or raw bytes
-;;
-(defrecord MerkleNode
-  [id content links data])
-
-
-;; Remove automatic constructor function.
-(ns-unmap *ns* '->MerkleNode)
-
-
-
 ;; ## Raw Constructors
-
-(defn ->node
-  "Constructs a `MerkleNode` from a sequence of merkle links and a data value."
-  [codec links data]
-  (when (nil? codec)
-    (throw (IllegalArgumentException.
-             "Cannot serialize merkle node without codec.")))
-  (when-not (or (nil? links)
-                (and (sequential? links)
-                     (every? (partial instance? MerkleLink) links)))
-    (throw (IllegalArgumentException.
-             (str "Node links must be a sequence of merkle links, got: "
-                  (pr-str links)))))
-  (when (or links data)
-    (encode-node codec {:links links, :data data})))
-
 
 (defn ->link
   "Constructs a `MerkleLink` value, validating the inputs."
@@ -215,24 +167,33 @@
   (MerkleLink. name target tsize nil))
 
 
+(defn ->node
+  "Constructs a new node from a sequence of merkle links and a data value. The
+  repo is used to control serialization and other security features."
+  [repo links data]
+  (when-not (or (nil? links)
+                (and (sequential? links)
+                     (every? (partial instance? MerkleLink) links)))
+    (throw (IllegalArgumentException.
+             (str "Node links must be a sequence of merkle links, got: "
+                  (pr-str links)))))
+  (when-let [node-bytes (codec/encode (:types repo) links data)]
+    (-> node-bytes
+        (blob/read!)
+        (assoc :links (some-> links vec)
+               :data data))))
+
+
 
 ;; ## Magic Constructors
 
-(def ^:dynamic *link-table* nil)
-(def ^:dynamic *codec* nil)
+(def ^:dynamic ^:no-doc *link-table*
+  "Contextual link table used to collect links when defining nodes, and to
+  assign links when parsing nodes."
+  nil)
 
 
-(defmacro node
-  "Constructs a new merkle node."
-  ([data]
-   `(node nil ~data))
-  ([links data]
-   `(binding [*link-table* (vec ~links)]
-      (let [data# ~data]
-        (->node *codec* *link-table* data#)))))
-
-
-(defn- resolve-link
+(defn resolve-link
   "Resolves a link against the current `*link-table*`, if any."
   [name]
   (when-not (string? name)
@@ -242,14 +203,14 @@
         *link-table*))
 
 
-(defn- resolve-target
+(defn resolve-target
   [target]
   (cond
     (nil? target)
       nil
     (instance? Multihash target)
       target
-    (instance? MerkleNode target)
+    (instance? Blob target)
       (:id target)
     :else
       (throw (IllegalArgumentException.
@@ -261,7 +222,7 @@
   "Constructs a new merkle link. The name should be a string. If no target is
   given, the name is looked up in the `*link-table*`. If it doesn't resolve to
   anything, the target will be `nil` and the link will be _broken_. If the
-  target is a multihash, it is used directly. If it is a `MerkleNode`, the id
+  target is a multihash, it is used directly. If it is a node, the id
   is used."
   ([name]
    (or (resolve-link name)
@@ -282,3 +243,47 @@
          (when *link-table*
            (set! *link-table* (conj *link-table* link')))
          link')))))
+
+
+(defmacro node
+  "Constructs a new merkle node. Uses the contextual `*graph-repo*` to serialize
+  the node data."
+  ([data]
+   `(node nil ~data))
+  ([links data]
+   `(binding [*link-table* (vec ~links)]
+      (let [data# ~data]
+        (->node *graph-repo* *link-table* data#)))))
+
+
+
+;; ## Graph Repo Functions
+
+(defn get-node
+  "Retrieve a node from the given repository's blob store, parsed by the repo's
+  codec."
+  [repo id]
+  (when-not repo
+    (throw (IllegalArgumentException.
+             (str "Cannot look up node for " (pr-str id)
+                  " with no repo"))))
+  (some->>
+    id
+    (blob/get (:store repo))
+    (codec/decode (:types repo))))
+
+
+(defn put-node!
+  "Store a node (or map with links and data) in the repository. Returns an
+  updated blob record with the serialized node."
+  [repo node]
+  (when-not repo
+    (throw (IllegalArgumentException.
+             (str "Cannot store node for " (pr-str (:id node))
+                  " with no repo"))))
+  (when node
+    (let [{:keys [id content links data]} node]
+      (if (and id content)
+        (blob/put! (:store repo) node)
+        (when (or links data)
+          (blob/put! (:store repo) (->node repo links data)))))))
