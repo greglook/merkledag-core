@@ -14,7 +14,6 @@
   the plugin for that type."
   (:require
     [clojure.edn :as edn]
-    [multihash.core :as multihash]
     [puget.dispatch :as dispatch]
     [puget.printer :as puget])
   (:import
@@ -24,8 +23,7 @@
       InputStreamReader
       OutputStreamWriter
       PushbackReader)
-    java.nio.charset.Charset
-    multihash.core.Multihash))
+    java.nio.charset.Charset))
 
 
 (def ^:no-doc ^Charset data-charset

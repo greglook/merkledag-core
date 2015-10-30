@@ -1,8 +1,9 @@
-(ns merkledag.data.codec
-  "MerkleDAG types and serialization functions."
+(ns merkledag.codec.protobuf
+  "MerkleDAG protobuffer serialization functions."
   (:require
     [blobble.core :as blob]
     [flatland.protobuf.core :as pb]
+    [merkledag.core :as merkle]
     [merkledag.data.edn :as edn]
     [multihash.core :as multihash])
   (:import
@@ -20,7 +21,7 @@
 
 
 
-;; ## Serialization / Encoding
+;; ## Encoding Functions
 
 (defn- serialize-data-segment
   "Encodes a data segment from some input into a protobuf `ByteString`. If the
@@ -64,24 +65,34 @@
         (assoc :data data-bs))))
 
 
-(defn encode
-  "Encodes a merkle node as a blob with extra `:links` and `:data` entries. The
-  `:content` will be a canonical serialized binary representation and the `:id`
-  will be a multihash of the contents."
-  [types links data]
-  (-> (encode-protobuf-node links data)
-      (pb/protobuf-dump)
-      (blob/read!)
-      (assoc :links links :data data)))
-
-
 
 ;; ## Deserialization / Decoding
 
-(defn decode
-  [types {:keys [id content] :as blob}]
-  ; try to parse content as protobuf node
-  ;   try to parse data in link table context
-  ;     else return raw data
-  ;   else return "raw" node
-  (throw (RuntimeException. "Not Yet Implemented")))
+; ...
+
+
+
+;; ## Codec Implementation
+
+(defrecord ProtobufCodec
+  [types]
+
+  merkle/NodeCodec
+
+  (encode-node
+    [this attributes]
+    (let [{:keys [links data]} attributes]
+      (-> (encode-protobuf-node types links data)
+          (pb/protobuf-dump)
+          (blob/read!)
+          (assoc :links (some-> links vec) :data data)
+          (merkle/map->MerkleNode))))
+
+
+  (decode-node
+    [this block]
+    ; try to parse content as protobuf node
+    ;   try to parse data in link table context
+    ;     else return raw data
+    ;   else return "raw" node
+    (throw (RuntimeException. "Not Yet Implemented"))))

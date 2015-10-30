@@ -194,7 +194,7 @@
              (str "Node links must be a sequence of merkle links, got: "
                   (pr-str links)))))
   (when (or links data)
-    (map->MerkleNode (encode-node codec {:links links, :data data}))))
+    (encode-node codec {:links links, :data data})))
 
 
 (defn ->link
