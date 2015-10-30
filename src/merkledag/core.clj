@@ -52,6 +52,38 @@
 
 
 
+;; ## Merkle Graph Node
+
+;; Nodes contain a link table with named multihashes referring to other nodes,
+;; and a data segment with either an opaque byte sequence or a parsed data
+;; structure value. A node is essentially a Blob which has been successfully
+;; decoded into (or encoded from) the protobuf encoding.
+;;
+;; - `:id`      multihash reference to the blob the node serializes to
+;; - `:content` the canonical representation of this node
+;; - `:links`   vector of MerkleLink values
+;; - `:data`    the contained data value, structure, or raw bytes
+;;
+(defrecord MerkleNode
+  [id content links data])
+
+
+(defn ->node
+  [types links data]
+  (map->MerkleNode (codec/encode types links data)))
+
+
+(defmacro node
+  "Constructs a new merkle node."
+  ([data]
+   `(node nil ~data))
+  ([links data]
+   `(binding [*link-table* (vec ~links)]
+      (let [data# ~data]
+        (->node (:types *graph-repo*) *link-table* data#)))))
+
+
+
 ;; ## Merkle Graph Link
 
 ;; Links have three main properties. Note that **only** link-name and target
@@ -208,36 +240,3 @@
          (when *link-table*
            (set! *link-table* (conj *link-table* link')))
          link')))))
-
-
-;; ## Merkle Graph Node
-
-;; Nodes contain a link table with named multihashes referring to other nodes,
-;; and a data segment with either an opaque byte sequence or a parsed data
-;; structure value. A node is essentially a Blob which has been successfully
-;; decoded into (or encoded from) the protobuf encoding.
-;;
-;; - `:id`      multihash reference to the blob the node serializes to
-;; - `:content` the canonical representation of this node
-;; - `:links`   vector of MerkleLink values
-;; - `:data`    the contained data value, structure, or raw bytes
-;;
-(defrecord MerkleNode
-  [id content links data])
-
-
-(defn ->node
-  [types links data]
-  (map->MerkleNode (codec/encode types links data)))
-
-
-(defmacro node
-  "Constructs a new merkle node."
-  ([data]
-   `(node nil ~data))
-  ([links data]
-   `(binding [*link-table* (vec ~links)]
-      (let [data# ~data]
-        (->node (:types *graph-repo* *link-table* data#)))))
-
-
