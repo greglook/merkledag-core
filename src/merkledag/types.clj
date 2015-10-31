@@ -8,9 +8,11 @@
       [coerce :as coerce]
       [core :as time]
       [format :as format :refer [formatters]])
+    [merkledag.core]
     [multihash.core :as multihash])
   (:import
     (java.util Date UUID)
+    merkledag.core.MerkleLink
     multihash.core.Multihash
     org.joda.time.DateTime))
 
@@ -28,7 +30,7 @@
   (format/parse (formatters :date-time) literal))
 
 
-(def type-plugins
+(def core-types
   {'inst
    {:description "Instants in time"
     :reader parse-inst
@@ -48,4 +50,4 @@
    'data/link
    {:description "Merkle links within an object"
     :reader nil  ; TODO: implement
-    :writers {}}})
+    :writers {MerkleLink :name}}})
