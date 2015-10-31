@@ -57,8 +57,22 @@
 ;; - `:content` the canonical representation of this node
 ;; - `:links`   vector of MerkleLink values
 ;; - `:data`    the contained data value, structure, or raw bytes
+
 (declare get-node)
 (declare put-node!)
+
+
+(defn total-size
+  "Calculates the total size of data reachable from the given node.
+
+  Raw blobs and nodes with no links have a total size equal to their `:content`
+  length.  Each link in the node's link table adds its `:tsize` to the total.
+  Returns `nil` if no node is given."
+  [node]
+  (when-let [size (blob/size node)]
+    (->> (:links node)
+         (map :tsize)
+         (reduce (fnil + 0) size))))
 
 
 
@@ -235,8 +249,9 @@
    (or (resolve-link name)
        (MerkleLink. name nil nil nil)))
   ([name target]
-   ; TODO: look up tsize from linked target, if blob
-   (link name target nil))
+   (let [tsize (when (instance? Blob target)
+                 (total-size target))]
+     (link name target tsize)))
   ([name target tsize]
    (let [extant (resolve-link name)
          target' (resolve-target target)
