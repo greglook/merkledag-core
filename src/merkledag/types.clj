@@ -8,11 +8,11 @@
       [coerce :as coerce]
       [core :as time]
       [format :as format :refer [formatters]])
-    [merkledag.core]
+    [merkledag.graph :as graph]
     [multihash.core :as multihash])
   (:import
     (java.util Date UUID)
-    merkledag.core.MerkleLink
+    merkledag.graph.MerkleLink
     multihash.core.Multihash
     org.joda.time.DateTime))
 
@@ -49,5 +49,5 @@
 
    'data/link
    {:description "Merkle links within an object"
-    :reader nil  ; TODO: implement
+    :reader graph/link
     :writers {MerkleLink :name}}})

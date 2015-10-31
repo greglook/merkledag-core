@@ -1,4 +1,4 @@
-(ns merkledag.core
+(ns merkledag.graph
   "Core merkle graph types and protocol functions.
 
   A _blob_ is a record that represents a binary sequence and a cryptographic
