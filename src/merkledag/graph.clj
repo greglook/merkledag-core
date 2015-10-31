@@ -235,6 +235,7 @@
    (or (resolve-link name)
        (MerkleLink. name nil nil nil)))
   ([name target]
+   ; TODO: look up tsize from linked target, if blob
    (link name target nil))
   ([name target tsize]
    (let [extant (resolve-link name)
@@ -258,6 +259,8 @@
   ([data]
    `(node nil ~data))
   ([links data]
+   ; FIXME: potential bug where realizing ~links may register links in an enclosing
+   ; blob because *link-table* is non-nil.
    `(binding [*link-table* (vec ~links)]
       (let [data# ~data]
         (->node *graph-repo* *link-table* data#)))))
