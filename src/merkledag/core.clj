@@ -138,8 +138,15 @@
   clojure.lang.IDeref
 
   (deref
-    [link]
-    (get-node *graph-repo* (:target link))))
+    [this]
+    (get-node *graph-repo* _target))
+
+
+  clojure.lang.IPending
+
+  (isRealized
+    [this]
+    false))
 
 
 ;; Remove automatic constructor function.
