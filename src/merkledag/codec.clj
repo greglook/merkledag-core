@@ -5,7 +5,7 @@
     [byte-streams :as bytes]
     [flatland.protobuf.core :as proto]
     [merkledag.edn :as edn]
-    [merkledag.link :as link :refer [*link-table*]]
+    [merkledag.link :as link]
     [multihash.core :as multihash])
   (:import
     com.google.protobuf.ByteString
@@ -92,7 +92,7 @@
   "Decodes a data segment from an object in the context of its link table."
   [types links data]
   (when data
-    (binding [*link-table* links]
+    (binding [link/*link-table* links]
       (or (edn/parse-data types data)
           data))))
 
