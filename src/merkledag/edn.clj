@@ -13,6 +13,8 @@
   The collection of data type plugins maps the symbol _tag_ for each type to
   the plugin for that type."
   (:require
+    [byte-streams :as bytes :refer [bytes=]]
+    [byte-streams.protocols :refer [take-bytes!]]
     [clojure.edn :as edn]
     [puget.dispatch :as dispatch]
     [puget.printer :as puget])
@@ -67,15 +69,6 @@
 
 ;; ## Value Reading
 
-(defn check-header
-  "Reads the first few bytes from an object's content to determine whether it
-  is a data object. Returns true if the header matches."
-  [^bytes content]
-  (let [header (.getBytes data-header data-charset)
-        len (count header)]
-    (= (seq header) (take len (seq content)))))
-
-
 (defn types->data-readers
   "Converts a map of type definitions to a map of tag symbols to reader
   functions."
@@ -85,14 +78,23 @@
        (into {})))
 
 
+(defn check-header!
+  "Reads the first few bytes from an object's content to determine whether it
+  is a data object. Returns true if the header matches. Note that this method
+  consumes bytes from the source!"
+  [content]
+  (let [header (.getBytes data-header data-charset)
+        len (count header)]
+    (bytes= header (take-bytes! content len nil))))
+
+
 (defn parse-data
   "Reads the contents of the given blob and attempts to parse it as an EDN data
   structure. Returns the parsed value, or nil if the content is not EDN."
   [types content]
-  (when (check-header content)
-    (with-open [reader (-> content
-                           (ByteArrayInputStream.)
-                           (InputStreamReader. data-charset)
-                           (PushbackReader.))]
-      (.skip reader (count data-header))
-      (edn/read {:readers (types->data-readers types)} reader))))
+  (let [input (bytes/to-input-stream content)]
+    (when (check-header! input)
+      (with-open [reader (-> input
+                             (InputStreamReader. data-charset)
+                             (PushbackReader.))]
+        (edn/read {:readers (types->data-readers types)} reader)))))
