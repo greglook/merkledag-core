@@ -21,6 +21,7 @@
     [blobble.store.memory :refer [memory-store]]
     (merkledag
       [codec :as codec]
+      [data :as data]
       [link :as link :refer [*link-table*]])
     [multihash.core :as multihash])
   (:import
@@ -66,27 +67,6 @@
      ~@body))
 
 
-
-;; ## Merkle Graph Nodes
-
-;; Nodes are `Blob` records which contain a link table with named multihashes
-;; referring to other nodes, and a data segment with either an opaque byte
-;; sequence or a parsed data structure value. A node is a Blob which has been
-;; successfully decoded into (or encoded from) the protobuf encoding.
-;;
-;; - `:id`      multihash reference to the blob the node serializes to
-;; - `:content` the canonical representation of this node
-;; - `:links`   vector of MerkleLink values
-;; - `:data`    the contained data value, structure, or raw bytes
-
-
-(def ^:dynamic *get-node*
-  "Dynamic var which can be bound to a function which fetches a node from some
-  contextual graph repository. If available, this is used to resolve links when
-  they are `deref`ed."
-  nil)
-
-
 (defn total-size
   "Calculates the total size of data reachable from the given node.
 
@@ -102,6 +82,13 @@
 
 
 ;; ## Merkle Graph Link
+
+(def ^:dynamic *get-node*
+  "Dynamic var which can be bound to a function which fetches a node from some
+  contextual graph repository. If available, this is used to resolve links when
+  they are `deref`ed."
+  nil)
+
 
 ;; Links have three main properties. Note that **only** link-name and target
 ;; are used for equality and comparison checks!
@@ -195,9 +182,6 @@
 (ns-unmap *ns* '->MerkleLink)
 
 
-
-;; ## Raw Constructors
-
 (defn ->link
   "Constructs a `MerkleLink` value, validating the inputs."
   [name target tsize]
@@ -216,29 +200,10 @@
   (MerkleLink. name target tsize nil))
 
 
-(defn ->node
-  "Constructs a new node from a sequence of merkle links and a data value. The
-  repo is used to control serialization and other security features."
-  [repo links data]
-  (when-not (or (nil? links)
-                (and (sequential? links)
-                     (every? (partial instance? MerkleLink) links)))
-    (throw (IllegalArgumentException.
-             (str "Node links must be a sequence of merkle links, got: "
-                  (pr-str links)))))
-  (when-let [node-bytes (codec/encode (:types repo) links data)]
-    (assoc (blob/read! node-bytes)
-           :links (some-> links vec)
-           :data data)))
-
-
-
-;; ## Magic Constructors
-
 (defn link
   "Constructs a new merkle link. The name should be a string. If no target is
   given, the name is looked up in the `*link-table*`. If it doesn't resolve to
-  anything, the target will be `nil` and the link will be _broken_. If the
+  anything, the target will be `nil` and it will be a _broken_ link. If the
   target is a multihash, it is used directly. If it is a node, the id
   is used."
   ([name]
@@ -262,6 +227,44 @@
          (when *link-table*
            (set! *link-table* (conj *link-table* link')))
          link')))))
+
+
+
+;; ## Merkle Graph Nodes
+
+;; Nodes are `Blob` records which contain a link table with named multihashes
+;; referring to other nodes, and a data segment with either an opaque byte
+;; sequence or a parsed data structure value. A node is a Blob which has been
+;; successfully decoded into (or encoded from) the protobuf encoding.
+;;
+;; - `:id`      multihash reference to the blob the node serializes to
+;; - `:content` the canonical representation of this node
+;; - `:links`   vector of MerkleLink values
+;; - `:data`    the contained data value, structure, or raw bytes
+
+
+(def link-type
+  {'data/link
+   {:description "Merkle links within an object"
+    :reader link
+    :writers {MerkleLink :name}}})
+
+
+(defn ->node
+  "Constructs a new node from a sequence of merkle links and a data value. The
+  repo is used to control serialization and other security features."
+  [repo links data]
+  (when-not (or (nil? links)
+                (and (sequential? links)
+                     (every? (partial instance? MerkleLink) links)))
+    (throw (IllegalArgumentException.
+             (str "Node links must be a sequence of merkle links, got: "
+                  (pr-str links)))))
+  (let [types (merge (:types repo data/core-types) link-type)]
+    (when-let [node-bytes (codec/encode types links data)]
+      (assoc (blob/read! node-bytes)
+             :links (some-> links vec)
+             :data data))))
 
 
 (defmacro node
