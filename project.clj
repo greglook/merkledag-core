@@ -19,8 +19,9 @@
 
   :hiera {:path "target/ns-hiera.png"
           :vertical false
-          :cluster-depth 2
-          :ignore-ns #{clj-time}}
+          :cluster-depth 1
+          :show-external true
+          :ignore-ns #{clojure byte-streams}}
 
   :profiles
   {:repl {:source-paths ["dev"]

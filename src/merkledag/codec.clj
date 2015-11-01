@@ -1,5 +1,7 @@
 (ns merkledag.codec
-  "MerkleDAG protobuffer serialization functions."
+  "MerkleDAG protobuffer serialization functions.
+
+  Codecs should have two properties, `:types` and `:link-constructor`."
   (:require
     [blobble.core :as blob]
     [byte-streams :as bytes]
@@ -67,13 +69,17 @@
   "Encodes a list of links and some data value as a protocol buffer binary
   sequence."
   ^bytes
-  [types links data]
+  [codec links data]
   (let [links' (some->> (seq links)
                         (sort-by :name)
                         (mapv encode-protobuf-link))
-        data' (encode-data-segment types data)]
+        data' (encode-data-segment (:types codec) data)]
     (when (or links' data')
-      (proto/protobuf-dump (encode-protobuf-node links' data')))))
+      (-> (encode-protobuf-node links' data')
+          (proto/protobuf-dump)
+          (blob/read!)
+          (assoc :links (some-> links vec)
+                 :data data)))))
 
 
 
@@ -81,20 +87,17 @@
 
 (defn- decode-link
   "Decodes a protobuffer link value into a map representing a MerkleLink."
-  [link]
-  (array-map
-    :name (:name link)
-    :hash (multihash/decode (.toByteArray ^ByteString (:hash link)))
-    :tsize (:tsize link)))
+  [constructor link]
+  (constructor
+    (:name link)
+    (multihash/decode (.toByteArray ^ByteString (:hash link)))
+    (:tsize link)))
 
 
 (defn- decode-data
   "Decodes a data segment from an object in the context of its link table."
   [types links data]
   (when data
-    ; FIXME: the links here are just maps, since this namespace can't require
-    ; the graph namespace to construct MerkleLink values. As a result, all the
-    ; links read in the data structure wind up as maps, not link values.
     (binding [link/*link-table* links]
       (or (edn/parse-data types data)
           data))))
@@ -105,15 +108,19 @@
 
   Returns an updated blob record with `:links` and `:data` filled in. Returns
   nil if blob is nil or has no content."
-  [types blob]
+  [codec blob]
   (when-let [content (blob/open blob)]
     ; Try to parse content as protobuf node.
     (if-let [node (proto/protobuf-load-stream NodeEncoding content)]
-      (let [links (some->> node :links (seq) (mapv decode-link))
-            data-segment (when-let [^ByteString bs (:data node)] (.asReadOnlyByteBuffer bs))]
+      (let [links (some->>
+                    (:links node)
+                    (seq)
+                    (mapv (partial decode-link (:link-constructor codec))))
+            data-segment (when-let [^ByteString bs (:data node)]
+                           (.asReadOnlyByteBuffer bs))]
         ; Try to parse data in link table context.
         (assoc blob
                :links links
-               :data (decode-data types links data-segment)))
+               :data (decode-data (:types codec) links data-segment)))
       ; Data is not protobuffer-encoded, return raw block.
       blob)))

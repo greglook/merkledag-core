@@ -18,53 +18,13 @@
   content, such as stat metadata."
   (:require
     [blobble.core :as blob]
-    [blobble.store.memory :refer [memory-store]]
     (merkledag
       [codec :as codec]
-      [data :as data]
       [link :as link :refer [*link-table*]])
     [multihash.core :as multihash])
   (:import
     blobble.core.Blob
     multihash.core.Multihash))
-
-
-;; ## Graph Repository
-
-;; The graph repository wraps a content-addressable blob store and handles
-;; serializing nodes and links into Protobuffer-encoded objects.
-(defrecord GraphRepo
-  [store types])
-
-
-;; Remove automatic constructor functions.
-(ns-unmap *ns* '->GraphRepo)
-(ns-unmap *ns* 'map->GraphRepo)
-
-
-(defn graph-repo
-  "Constructs a new merkledag graph repository. If no store is given, defaults
-  to a new in-memory blob store. Any types given will override the core type
-  plugins."
-  ([]
-   (graph-repo (memory-store)))
-  ([store]
-   (graph-repo store nil))
-  ([store types]
-   ; FIXME: can't use core-types here, causes circular dependency.
-   (GraphRepo. store types #_(merge core-types types))))
-
-
-(def ^:dynamic *graph-repo*
-  "Current graph repository context."
-  nil)
-
-
-(defmacro with-repo
-  "Execute the body with `*graph-repo*` bound to the given value."
-  [repo & body]
-  `(binding [*graph-repo* ~repo]
-     ~@body))
 
 
 (defn total-size
@@ -168,6 +128,10 @@
     (when-not *get-node*
       (throw (IllegalStateException.
                "Links cannot be dereferenced when no *get-node* function is bound.")))
+    (when-not _target
+      (throw (IllegalArgumentException.
+               (str "Broken link to " (pr-str _name)
+                    " cannot be dereferenced."))))
     (*get-node* _target))
 
 
@@ -189,7 +153,7 @@
     (throw (IllegalArgumentException.
              (str "Link name must be a string, got: "
                   (pr-str name)))))
-  (when-not (instance? Multihash target)
+  (when (and target (not (instance? Multihash target)))
     (throw (IllegalArgumentException.
              (str "Link target must be a multihash, got: "
                   (pr-str target)))))
@@ -230,7 +194,7 @@
 
 
 
-;; ## Merkle Graph Nodes
+;; ## Merkle Graph Node
 
 ;; Nodes are `Blob` records which contain a link table with named multihashes
 ;; referring to other nodes, and a data segment with either an opaque byte
@@ -250,21 +214,23 @@
     :writers {MerkleLink :name}}})
 
 
+(def ^:dynamic *codec*
+  "Current node serialization codec to use."
+  nil)
+
+
 (defn ->node
   "Constructs a new node from a sequence of merkle links and a data value. The
-  repo is used to control serialization and other security features."
-  [repo links data]
+  codec is used to control serialization and other security features."
+  [codec links data]
   (when-not (or (nil? links)
                 (and (sequential? links)
                      (every? (partial instance? MerkleLink) links)))
     (throw (IllegalArgumentException.
              (str "Node links must be a sequence of merkle links, got: "
                   (pr-str links)))))
-  (let [types (merge (:types repo data/core-types) link-type)]
-    (when-let [node-bytes (codec/encode types links data)]
-      (assoc (blob/read! node-bytes)
-             :links (some-> links vec)
-             :data data))))
+  (let [codec (update-in codec [:types] merge link-type)]
+    (codec/encode codec links data)))
 
 
 (defmacro node
@@ -276,38 +242,4 @@
    `(let [links# (binding [*link-table* nil] ~links)]
       (binding [*link-table* (vec links#)]
         (let [data# ~data]
-          (->node *graph-repo* *link-table* data#))))))
-
-
-
-;; ## Graph Repo Functions
-
-(defn get-node
-  "Retrieve a node from the given repository's blob store, parsed by the repo's
-  codec."
-  [repo id]
-  (when-not repo
-    (throw (IllegalArgumentException.
-             (str "Cannot look up node for " (pr-str id)
-                  " with no repo"))))
-  (when-let [node (some->>
-                    id
-                    (blob/get (:store repo))
-                    (codec/decode (:types repo)))]
-    (update node :links (partial mapv #(->link (:name %) (:hash %) (:tsize %))))))
-
-
-(defn put-node!
-  "Store a node (or map with links and data) in the repository. Returns an
-  updated blob record with the serialized node."
-  [repo node]
-  (when-not repo
-    (throw (IllegalArgumentException.
-             (str "Cannot store node for " (pr-str (:id node))
-                  " with no repo"))))
-  (when node
-    (let [{:keys [id content links data]} node]
-      (if (and id content)
-        (blob/put! (:store repo) node)
-        (when (or links data)
-          (blob/put! (:store repo) (->node repo links data)))))))
+          (->node *codec* *link-table* data#))))))

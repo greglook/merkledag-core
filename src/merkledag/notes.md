@@ -5,13 +5,6 @@ when parsing links, so it needs to be able to construct `MerkleLink` values. It
 can handle the overall node okay because `Blob` is from a separate library.
 
 
-## data/core-types -> MerkleLink, graph/link
-
-The `core-types` map defines a rendered representation for `MerkleLink` values,
-so it must be able to resolve the link type. This _could_ be added later on in
-the `graph` namespace if necessary.
-
-
 ## graph/graph-repo -> data/core-types
 
 Newly constructed code should use the built-in `core-types` by default.
