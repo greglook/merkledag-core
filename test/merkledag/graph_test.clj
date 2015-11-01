@@ -2,7 +2,11 @@
   (:require
     [blobble.core :as blob]
     [blobble.store.memory :refer [memory-store]]
-    [byte-streams :as bytes]
+    [byte-streams :as bytes :refer [bytes=]]
+    (clj-time
+      [coerce :as coerce]
+      [core :as time]
+      [format :as format :refer [formatters]])
     [clojure.test :refer :all]
     [merkledag.graph :as merkle]
     [merkledag.types :refer [core-types]]
@@ -11,15 +15,20 @@
     [puget.printer :as puget])
   (:import
     merkledag.graph.MerkleLink
-    multihash.core.Multihash))
+    multihash.core.Multihash
+    org.joda.time.DateTime))
 
 
-(def print-options
-  {:print-handlers
-   (dispatch/chained-lookup
-     {Multihash (puget/tagged-handler 'data/hash multihash/base58)
-      MerkleLink (puget/tagged-handler 'data/link (juxt :name :target :tsize))}
-     puget/common-handlers)})
+(defn dprint
+  [v]
+  (puget/cprint
+    v
+    {:print-handlers
+     (dispatch/chained-lookup
+       {DateTime (puget/tagged-handler 'inst (partial format/unparse (formatters :date-time)))
+        Multihash (puget/tagged-handler 'data/hash multihash/base58)
+        MerkleLink (puget/tagged-handler 'data/link (juxt :name :target :tsize))}
+       puget/common-handlers)}))
 
 
 (def hash-1 (multihash/decode "Qmb2TGZBNWDuWsJVxX7MBQjvtB3cUc4aFQqrST32iASnEh"))
@@ -27,8 +36,9 @@
 
 
 (deftest a-test
-  (let [store (memory-store)]
-    (merkle/with-repo {:types core-types, :store store}
+  (let [store (memory-store)
+        repo {:types core-types, :store store}]
+    (merkle/with-repo repo
       (testing "basic node properties"
         (let [node (merkle/node
                      [(merkle/link "@context" hash-1)]
@@ -58,8 +68,22 @@
                         :time #inst "2013-10-08T00:00:00Z"
                         :entries [(merkle/link "posting-1" node-1)
                                   (merkle/link "posting-2" node-2)]})]
-          ;(puget/cprint node-3 print-options)
           ;(bytes/print-bytes (:content node-3))
           (is (= 3 (count (:links node-3))))
           (is (every? (partial instance? MerkleLink) (:links node-3)))
+          (merkle/put-node! repo node-1)
+          (merkle/put-node! repo node-2)
+          (merkle/put-node! repo node-3)
+          (let [node' (merkle/get-node repo (:id node-3))]
+            (is (= (:id node') (:id node-3)))
+            (is (bytes= (:content node') (:content node-3)))
+            (dprint node')
+            (is (= (:links node') (:links node-3)))
+            (is (= (:data node') (:data node-3))))
+
+          ;(dprint node-1)
+          ;(dprint @(first (:entries (:data node-3))))
           )))))
+
+
+; TODO: test raw :data segments
