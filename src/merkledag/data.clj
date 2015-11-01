@@ -1,4 +1,4 @@
-(ns merkledag.types
+(ns merkledag.data
   "Support for core types like time instant literals and UUIDs.
 
   Java `Date` and Joda `DateTime` values are rendered to `inst` literals, which
@@ -7,7 +7,7 @@
     (clj-time
       [coerce :as coerce]
       [core :as time]
-      [format :as format :refer [formatters]])
+      [format :as tformat])
     [merkledag.graph :as graph]
     [multihash.core :as multihash])
   (:import
@@ -17,17 +17,27 @@
     org.joda.time.DateTime))
 
 
+(def inst-format
+  "Joda-time formatter/parser for timestamps."
+  (tformat/formatter
+    time/utc
+    "yyyy-MM-dd'T'HH:mm:ss.SSSZ"
+    "yyyy-MM-dd'T'HH:mm:ssZ"
+    "yyyy-MM-dd'T'HH:mm:ss"
+    "yyyy-MM-dd"))
+
+
 (defn render-inst
   "Render a `DateTime` value as an inst string."
   [^DateTime dt]
-  (format/unparse (formatters :date-time) dt))
+  (tformat/unparse inst-format dt))
 
 
 (defn parse-inst
   "Parse a string into a `DateTime`."
   ^DateTime
   [literal]
-  (format/parse (formatters :date-time) literal))
+  (tformat/parse inst-format literal))
 
 
 (def core-types
