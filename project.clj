@@ -8,16 +8,16 @@
   [[lein-protobuf "0.4.3"]]
 
   :dependencies
-  [[byte-streams "0.1.13"]
+  [[byte-streams "0.2.0"]
    [clj-time "0.11.0"]
    [mvxcvi/blobble "0.1.0-SNAPSHOT"]
-   [mvxcvi/multihash "0.2.0"]
+   [mvxcvi/multihash "1.0.0"]
    [mvxcvi/puget "1.0.0"]
    [org.clojure/clojure "1.7.0"]
    [org.clojure/tools.logging "0.3.1"]
    [org.flatland/protobuf "0.8.1"]]
 
-  :hiera {:path "doc/ns-hiera.png"
+  :hiera {:path "target/ns-hiera.png"
           :vertical false
           :cluster-depth 2
           :ignore-ns #{clj-time}}
