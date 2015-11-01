@@ -284,10 +284,11 @@
     (throw (IllegalArgumentException.
              (str "Cannot look up node for " (pr-str id)
                   " with no repo"))))
-  (some->>
-    id
-    (blob/get (:store repo))
-    (codec/decode (:types repo))))
+  (when-let [node (some->>
+                    id
+                    (blob/get (:store repo))
+                    (codec/decode (:types repo)))]
+    (update node :links (partial mapv #(->link (:name %) (:target %) (:tsize %))))))
 
 
 (defn put-node!
