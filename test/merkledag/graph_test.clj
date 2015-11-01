@@ -3,32 +3,15 @@
     [blobble.core :as blob]
     [blobble.store.memory :refer [memory-store]]
     [byte-streams :as bytes :refer [bytes=]]
-    (clj-time
-      [coerce :as coerce]
-      [core :as time]
-      [format :as format :refer [formatters]])
+    [clj-time.core :as time]
     [clojure.test :refer :all]
     [merkledag.graph :as merkle]
-    [merkledag.types :refer [core-types]]
-    [multihash.core :as multihash]
-    [puget.dispatch :as dispatch]
-    [puget.printer :as puget])
+    [merkledag.data :as data]
+    [merkledag.test-utils :refer [dprint]]
+    [multihash.core :as multihash])
   (:import
     merkledag.graph.MerkleLink
-    multihash.core.Multihash
-    org.joda.time.DateTime))
-
-
-(defn dprint
-  [v]
-  (puget/cprint
-    v
-    {:print-handlers
-     (dispatch/chained-lookup
-       {DateTime (puget/tagged-handler 'inst (partial format/unparse (formatters :date-time)))
-        Multihash (puget/tagged-handler 'data/hash multihash/base58)
-        MerkleLink (puget/tagged-handler 'data/link (juxt :name :target :tsize))}
-       puget/common-handlers)}))
+    multihash.core.Multihash))
 
 
 (def hash-1 (multihash/decode "Qmb2TGZBNWDuWsJVxX7MBQjvtB3cUc4aFQqrST32iASnEh"))
@@ -37,7 +20,7 @@
 
 (deftest a-test
   (let [store (memory-store)
-        repo {:types core-types, :store store}]
+        repo {:types data/core-types, :store store}]
     (merkle/with-repo repo
       (testing "basic node properties"
         (let [node (merkle/node
@@ -65,7 +48,7 @@
                         :uuid #uuid "31f7dd72-c7f7-4a15-a98b-0f9248d3aaa6"
                         :title "SCHZ - Reinvest Dividend"
                         :description "Automatic dividend reinvestment."
-                        :time #inst "2013-10-08T00:00:00Z"
+                        :time (data/parse-inst "2013-10-08T00:00:00")
                         :entries [(merkle/link "posting-1" node-1)
                                   (merkle/link "posting-2" node-2)]})]
           ;(bytes/print-bytes (:content node-3))
@@ -79,6 +62,7 @@
             (is (bytes= (:content node') (:content node-3)))
             (dprint node')
             (is (= (:links node') (:links node-3)))
+            (dprint [(:data node') (:data node-3)])
             (is (= (:data node') (:data node-3))))
 
           ;(dprint node-1)
