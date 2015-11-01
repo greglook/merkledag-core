@@ -1,8 +1,11 @@
 (ns merkledag.codec
   "MerkleDAG protobuffer serialization functions."
   (:require
+    [blobble.core :as blob]
+    [byte-streams :as bytes]
     [flatland.protobuf.core :as proto]
     [merkledag.edn :as edn]
+    [merkledag.link :as link :refer [*link-table*]]
     [multihash.core :as multihash])
   (:import
     com.google.protobuf.ByteString
@@ -76,12 +79,38 @@
 
 ;; ## Decoding Functions
 
-; ...
+(defn- decode-link
+  "Decodes a protobuffer link value into a map representing a MerkleLink."
+  [link]
+  (array-map
+    :name (:name link)
+    :hash (multihash/decode (.toByteArray ^ByteString (:hash link)))
+    :tsize (:tsize link)))
+
+
+(defn- decode-data
+  "Decodes a data segment from an object in the context of its link table."
+  [types links data]
+  (when data
+    (binding [*link-table* links]
+      (or (edn/parse-data types data)
+          data))))
+
 
 (defn decode
+  "Decodes a blob to determine whether it's a full object or a raw block.
+
+  Returns an updated blob record with `:links` and `:data` filled in. Returns
+  nil if blob is nil or has no content."
   [types blob]
-  ; try to parse content as protobuf node
-  ;   try to parse data in link table context
-  ;     else return raw data
-  ;   else return raw blob
-  (throw (RuntimeException. "Not Yet Implemented")))
+  (when-let [content (blob/open blob)]
+    ; Try to parse content as protobuf node.
+    (if-let [node (proto/protobuf-load-stream NodeEncoding content)]
+      (let [links (some->> node :links (seq) (mapv decode-link))
+            data-segment (when-let [^ByteString bs (:data node)] (.asReadOnlyByteBuffer bs))]
+        ; Try to parse data in link table context.
+        (assoc blob
+               :links links
+               :data (decode-data types links data-segment)))
+      ; Data is not protobuffer-encoded, return raw block.
+      blob)))
