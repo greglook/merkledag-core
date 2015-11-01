@@ -18,8 +18,10 @@
   content, such as stat metadata."
   (:require
     [blobble.core :as blob]
-    [merkledag.codec :as codec]
-    [merkledag.link :as link :refer [*link-table*]]
+    [blobble.store.memory :refer [memory-store]]
+    (merkledag
+      [codec :as codec]
+      [link :as link :refer [*link-table*]])
     [multihash.core :as multihash])
   (:import
     blobble.core.Blob
@@ -32,6 +34,24 @@
 ;; serializing nodes and links into Protobuffer-encoded objects.
 (defrecord GraphRepo
   [store types])
+
+
+;; Remove automatic constructor functions.
+(ns-unmap *ns* '->GraphRepo)
+(ns-unmap *ns* 'map->GraphRepo)
+
+
+(defn graph-repo
+  "Constructs a new merkledag graph repository. If no store is given, defaults
+  to a new in-memory blob store. Any types given will override the core type
+  plugins."
+  ([]
+   (graph-repo (memory-store)))
+  ([store]
+   (graph-repo store nil))
+  ([store types]
+   ; FIXME: can't use core-types here, causes circular dependency.
+   (GraphRepo. store types #_(merge core-types types))))
 
 
 (def ^:dynamic *graph-repo*
@@ -59,8 +79,11 @@
 ;; - `:links`   vector of MerkleLink values
 ;; - `:data`    the contained data value, structure, or raw bytes
 
+
+; This is pre-declared because the `IDeref` interface must be inlined in the
+; `MerkleLink` type definition below, but the implementation of `get-node` must
+; know how to construct `MerkleLink` values.
 (declare get-node)
-(declare put-node!)
 
 
 (defn total-size
