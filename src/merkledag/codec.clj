@@ -92,6 +92,9 @@
   "Decodes a data segment from an object in the context of its link table."
   [types links data]
   (when data
+    ; FIXME: the links here are just maps, since this namespace can't require
+    ; the graph namespace to construct MerkleLink values. As a result, all the
+    ; links read in the data structure wind up as maps, not link values.
     (binding [link/*link-table* links]
       (or (edn/parse-data types data)
           data))))

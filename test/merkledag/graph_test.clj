@@ -62,7 +62,7 @@
             (is (bytes= (:content node') (:content node-3)))
             (dprint node')
             (is (= (:links node') (:links node-3)))
-            (dprint [(:data node') (:data node-3)])
+            (dprint [(:data node-3) (:data node')])
             (is (= (:data node') (:data node-3))))
 
           ;(dprint node-1)

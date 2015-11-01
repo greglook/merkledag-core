@@ -20,6 +20,6 @@
 (defmacro dprint
   [v]
   `(do
-     (println "DEBUG:")
+     (print "DEBUG: ")
      (puget/cprint (quote ~v) print-opts)
      (puget/cprint ~v print-opts)))

@@ -288,7 +288,7 @@
                     id
                     (blob/get (:store repo))
                     (codec/decode (:types repo)))]
-    (update node :links (partial mapv #(->link (:name %) (:target %) (:tsize %))))))
+    (update node :links (partial mapv #(->link (:name %) (:hash %) (:tsize %))))))
 
 
 (defn put-node!
