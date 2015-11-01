@@ -80,10 +80,11 @@
 ;; - `:data`    the contained data value, structure, or raw bytes
 
 
-; This is pre-declared because the `IDeref` interface must be inlined in the
-; `MerkleLink` type definition below, but the implementation of `get-node` must
-; know how to construct `MerkleLink` values.
-(declare get-node)
+(def ^:dynamic *get-node*
+  "Dynamic var which can be bound to a function which fetches a node from some
+  contextual graph repository. If available, this is used to resolve links when
+  they are `deref`ed."
+  nil)
 
 
 (defn total-size
@@ -177,7 +178,10 @@
 
   (deref
     [this]
-    (get-node *graph-repo* _target))
+    (when-not *get-node*
+      (throw (IllegalStateException.
+               "Links cannot be dereferenced when no *get-node* function is bound.")))
+    (*get-node* _target))
 
 
   clojure.lang.IPending

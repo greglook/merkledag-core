@@ -17,13 +17,10 @@ the `graph` namespace if necessary.
 Newly constructed code should use the built-in `core-types` by default.
 
 
-## MerkleLink/deref -> graph/get-node, graph/\*graph-repo\*
+## MerkleLink/deref -> \*get-node\*
 
-In order to provide auto-fetching behavior via `IDeref`, the link type must be
-able to call `get-node` against the currently-bound `*graph-repo*`. An
-alternative might be to bind a function on `Multihash -> Blob`. Unfortunately,
-`IDeref` must be implemented _inline_ in the `deftype` because it's an
-interface, not a protocol.
+MerkleLink's IDeref now uses a local dynamic var to point at the function to use
+to resolve links.
 
 
 ## graph/get-node -> codec/decode
