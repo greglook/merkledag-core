@@ -19,6 +19,7 @@
   (:require
     [blobble.core :as blob]
     [merkledag.codec :as codec]
+    [merkledag.link :as link :refer [*link-table*]]
     [multihash.core :as multihash])
   (:import
     blobble.core.Blob
@@ -199,45 +200,13 @@
              (str "Node links must be a sequence of merkle links, got: "
                   (pr-str links)))))
   (when-let [node-bytes (codec/encode (:types repo) links data)]
-    (-> node-bytes
-        (blob/read!)
-        (assoc :links (some-> links vec)
-               :data data))))
+    (assoc (blob/read! node-bytes)
+           :links (some-> links vec)
+           :data data)))
 
 
 
 ;; ## Magic Constructors
-
-(def ^:dynamic ^:no-doc *link-table*
-  "Contextual link table used to collect links when defining nodes, and to
-  assign links when parsing nodes."
-  nil)
-
-
-(defn resolve-link
-  "Resolves a link against the current `*link-table*`, if any."
-  [name]
-  (when-not (string? name)
-    (throw (IllegalArgumentException.
-             (str "Link name must be a string, got: " (pr-str name)))))
-  (some #(when (= name (:name %)) %)
-        *link-table*))
-
-
-(defn resolve-target
-  [target]
-  (cond
-    (nil? target)
-      nil
-    (instance? Multihash target)
-      target
-    (instance? Blob target)
-      (:id target)
-    :else
-      (throw (IllegalArgumentException.
-               (str "Cannot resolve type " (class target)
-                    " as a merkle link target.")))))
-
 
 (defn link
   "Constructs a new merkle link. The name should be a string. If no target is
@@ -246,15 +215,15 @@
   target is a multihash, it is used directly. If it is a node, the id
   is used."
   ([name]
-   (or (resolve-link name)
+   (or (link/resolve name)
        (MerkleLink. name nil nil nil)))
   ([name target]
    (let [tsize (when (instance? Blob target)
                  (total-size target))]
      (link name target tsize)))
   ([name target tsize]
-   (let [extant (resolve-link name)
-         target' (resolve-target target)
+   (let [extant (link/resolve name)
+         target' (link/target target)
          tsize' (or tsize (:tsize extant))]
      (if extant
        (if (= target' (:target extant))
