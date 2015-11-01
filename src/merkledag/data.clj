@@ -8,11 +8,9 @@
       [coerce :as coerce]
       [core :as time]
       [format :as tformat])
-    [merkledag.graph :as graph]
     [multihash.core :as multihash])
   (:import
     (java.util Date UUID)
-    merkledag.graph.MerkleLink
     multihash.core.Multihash
     org.joda.time.DateTime))
 
@@ -55,9 +53,4 @@
    'data/hash
    {:description "Content-addressed multihash references"
     :reader multihash/decode
-    :writers {Multihash multihash/base58}}
-
-   'data/link
-   {:description "Merkle links within an object"
-    :reader graph/link
-    :writers {MerkleLink :name}}})
+    :writers {Multihash multihash/base58}}})

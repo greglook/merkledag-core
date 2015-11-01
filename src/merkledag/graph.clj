@@ -270,11 +270,10 @@
   ([data]
    `(node nil ~data))
   ([links data]
-   ; FIXME: potential bug where realizing ~links may register links in an enclosing
-   ; blob because *link-table* is non-nil.
-   `(binding [*link-table* (vec ~links)]
-      (let [data# ~data]
-        (->node *graph-repo* *link-table* data#)))))
+   `(let [links# (binding [*link-table* nil] ~links)]
+      (binding [*link-table* (vec links#)]
+        (let [data# ~data]
+          (->node *graph-repo* *link-table* data#))))))
 
 
 
