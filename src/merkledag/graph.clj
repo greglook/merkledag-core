@@ -84,13 +84,6 @@
 ;; - `:data`    the contained data value, structure, or raw bytes
 
 
-(def link-type
-  {'data/link
-   {:description "Merkle links within an object"
-    :reader link
-    :writers {MerkleLink :name}}})
-
-
 (def ^:dynamic *codec*
   "Current node serialization codec to use."
   nil)
@@ -106,8 +99,7 @@
     (throw (IllegalArgumentException.
              (str "Node links must be a sequence of merkle links, got: "
                   (pr-str links)))))
-  (let [codec (update-in codec [:types] merge link-type)]
-    (codec/encode codec links data)))
+  (codec/encode codec links data))
 
 
 (defmacro node

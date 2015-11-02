@@ -17,7 +17,8 @@
 
 
 (defn resolve
-  "Resolves a link against the current `*link-table*`, if any."
+  "Resolves a link against the current `*link-table*`, if any. Returns nil if
+  no matching link is found."
   [name]
   (when-not (string? name)
     (throw (IllegalArgumentException.
@@ -163,3 +164,11 @@
              (str "Link size must be an integer, got: "
                   (pr-str tsize)))))
   (MerkleLink. name target tsize nil))
+
+
+(defn read-link
+  "Resolves a link against the current `*link-table*`, or returns a new broken
+  link with a nil target."
+  [name]
+  (or (resolve name)
+      (MerkleLink. name nil nil nil)))
