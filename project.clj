@@ -23,6 +23,10 @@
           :show-external true
           :ignore-ns #{clojure byte-streams}}
 
+  :whidbey {:print-handlers
+            {merkledag.link.MerkleLink (puget.printer/tagged-handler 'data/link (juxt :name :target :tsize))
+             multihash.core.Multihash (puget.printer/tagged-handler 'data/hash multihash.core/base58)}}
+
   :profiles
   {:repl {:source-paths ["dev"]
           :dependencies [[org.clojure/tools.namespace "0.2.10"]]}})
