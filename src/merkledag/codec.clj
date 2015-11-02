@@ -87,11 +87,11 @@
 
 (defn- decode-link
   "Decodes a protobuffer link value into a map representing a MerkleLink."
-  [constructor link]
-  (constructor
-    (:name link)
-    (multihash/decode (.toByteArray ^ByteString (:hash link)))
-    (:tsize link)))
+  [proto-link]
+  (link/->link
+    (:name proto-link)
+    (multihash/decode (.toByteArray ^ByteString (:hash proto-link)))
+    (:tsize proto-link)))
 
 
 (defn- decode-data
@@ -112,10 +112,7 @@
   (when-let [content (blob/open blob)]
     ; Try to parse content as protobuf node.
     (if-let [node (proto/protobuf-load-stream NodeEncoding content)]
-      (let [links (some->>
-                    (:links node)
-                    (seq)
-                    (mapv (partial decode-link (:link-constructor codec))))
+      (let [links (some->> node :links (seq) (mapv decode-link))
             data-segment (when-let [^ByteString bs (:data node)]
                            (.asReadOnlyByteBuffer bs))]
         ; Try to parse data in link table context.
