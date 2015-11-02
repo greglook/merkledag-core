@@ -6,7 +6,7 @@
     [puget.dispatch :as dispatch]
     [puget.printer :as puget])
   (:import
-    merkledag.graph.MerkleLink))
+    merkledag.link.MerkleLink))
 
 
 (def print-opts
