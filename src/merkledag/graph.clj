@@ -163,3 +163,13 @@
         (blob/put! (:store repo) node)
         (when (or links data)
           (blob/put! (:store repo) (->node (:codec repo) links data)))))))
+
+
+(defmacro with-repo
+  "Executes `body` in the context of the given repository. Links will be
+  resolved against the store and nodes constructed from the repo codec."
+  [repo & body]
+  `(let [repo# ~repo]
+     (binding [link/*get-node* (partial get-node repo#)
+               *codec* (:codec repo#)]
+       ~@body)))
