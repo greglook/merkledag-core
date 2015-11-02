@@ -19,8 +19,13 @@
 
   :hiera {:path "target/ns-hiera.png"
           :vertical false
-          :cluster-depth 2
-          :ignore-ns #{clj-time}}
+          :cluster-depth 1
+          :show-external true
+          :ignore-ns #{clojure byte-streams}}
+
+  :whidbey {:print-handlers
+            {merkledag.link.MerkleLink (puget.printer/tagged-handler 'data/link (juxt :name :target :tsize))
+             multihash.core.Multihash (puget.printer/tagged-handler 'data/hash multihash.core/base58)}}
 
   :profiles
   {:repl {:source-paths ["dev"]

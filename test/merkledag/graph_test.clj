@@ -5,12 +5,12 @@
     [byte-streams :as bytes :refer [bytes=]]
     [clj-time.core :as time]
     [clojure.test :refer :all]
-    [merkledag.graph :as merkle]
     [merkledag.data :as data]
+    [merkledag.graph :as merkle]
     [merkledag.test-utils :refer [dprint]]
     [multihash.core :as multihash])
   (:import
-    merkledag.graph.MerkleLink
+    merkledag.link.MerkleLink
     multihash.core.Multihash))
 
 
@@ -20,8 +20,8 @@
 
 (deftest a-test
   (let [store (memory-store)
-        repo {:types data/core-types, :store store}]
-    (merkle/with-repo repo
+        repo (merkle/graph-repo store)]
+    (binding []
       (testing "basic node properties"
         (let [node (merkle/node
                      [(merkle/link "@context" hash-1)]
@@ -60,13 +60,8 @@
           (let [node' (merkle/get-node repo (:id node-3))]
             (is (= (:id node') (:id node-3)))
             (is (bytes= (:content node') (:content node-3)))
-            (dprint node')
             (is (= (:links node') (:links node-3)))
-            (dprint [(:data node-3) (:data node')])
             (is (= (:data node') (:data node-3))))
-
-          ;(dprint node-1)
-          ;(dprint @(first (:entries (:data node-3))))
           )))))
 
 
