@@ -96,12 +96,9 @@
                [(:name that) (:target that)])))
 
 
-  clojure.lang.IMeta
+  clojure.lang.IObj
 
   (meta [_] _meta)
-
-
-  clojure.lang.IObj
 
   (withMeta
     [_ meta-map]

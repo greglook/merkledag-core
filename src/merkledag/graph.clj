@@ -58,7 +58,7 @@
 
 ;; ## Constructors
 
-(defn ->node
+(defn node*
   "Constructs a new node from a sequence of merkle links and a data value. The
   codec is used to control serialization and other security features."
   [codec links data]
@@ -80,7 +80,7 @@
    `(let [links# (binding [*link-table* nil] ~links)]
       (binding [*link-table* (vec links#)]
         (let [data# ~data]
-          (->node *codec* *link-table* data#))))))
+          (node* *codec* *link-table* data#))))))
 
 
 (defn link
