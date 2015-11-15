@@ -1,5 +1,5 @@
 (defproject mvxcvi/merkledag-repo "0.1.0-SNAPSHOT"
-  :description "Merkle-DAG object repository"
+  :description "Graph datastore built on content-addressed merkle hash links"
   :url "http://github.com/greglook/clj-mdag-repo"
   :license {:name "Public Domain"
             :url "http://unlicense.org/"}
