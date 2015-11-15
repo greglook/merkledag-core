@@ -88,8 +88,9 @@
     (bytes= header (take-bytes! content len nil))))
 
 
+; TODO: read every value in the stream
 (defn parse-data
-  "Reads the contents of the given blob and attempts to parse it as an EDN data
+  "Reads the contents of the given block and attempts to parse it as an EDN data
   structure. Returns the parsed value, or nil if the content is not EDN."
   [types content]
   (let [input (bytes/to-input-stream content)]

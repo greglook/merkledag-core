@@ -4,13 +4,15 @@
   :license {:name "Public Domain"
             :url "http://unlicense.org/"}
 
+  :deploy-branches ["master"]
+
   :plugins
   [[lein-protobuf "0.4.3"]]
 
   :dependencies
   [[byte-streams "0.2.0"]
    [clj-time "0.11.0"]
-   [mvxcvi/blobble "0.1.0-SNAPSHOT"]
+   [mvxcvi/blocks "0.5.0"]
    [mvxcvi/multihash "1.0.0"]
    [mvxcvi/puget "1.0.0"]
    [org.clojure/clojure "1.7.0"]
@@ -23,10 +25,11 @@
           :show-external true
           :ignore-ns #{clojure byte-streams}}
 
-  :whidbey {:print-handlers
-            {merkledag.link.MerkleLink (puget.printer/tagged-handler 'data/link (juxt :name :target :tsize))
-             multihash.core.Multihash (puget.printer/tagged-handler 'data/hash multihash.core/base58)}}
+  :whidbey
+  {:tag-types {'blocks.data.Block {'blocks.data.Block (partial into {})}
+               'merkledag.link.MerkleLink {'data/link (juxt :name :target :tsize)}
+               'multihash.core.Multihash {'data/hash 'multihash.core/base58}}}
 
   :profiles
   {:repl {:source-paths ["dev"]
-          :dependencies [[org.clojure/tools.namespace "0.2.10"]]}})
+          :dependencies [[org.clojure/tools.namespace "0.2.11"]]}})

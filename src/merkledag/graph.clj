@@ -1,13 +1,13 @@
 (ns merkledag.graph
   "Core merkle graph types and protocol functions.
 
-  A _blob_ is a record that represents a binary sequence and a cryptographic
-  digest identifying it. Blobs have two main attributes:
+  A _block_ is a record that represents a binary sequence and a cryptographic
+  digest identifying it. Blocks have two main attributes:
 
   - `:content` a `ByteBuffer` containing the block contents.
   - `:id` a `Multihash` identifying the content.
 
-  A _node_ is a blob which follows the merkledag protobuffer format.
+  A _node_ is a block which follows the merkledag protobuffer format.
   Nodes in the merkledag may have links to other nodes and some internal data.
   In addition to an id and content, nodes have two additional attributes:
 
@@ -17,8 +17,8 @@
   Nodes _may_ have additional attributes which are not part of the serialized
   content, such as stat metadata."
   (:require
-    [blobble.core :as blob]
-    [blobble.store.memory :refer [memory-store]]
+    [blocks.core :as block]
+    [blocks.store.memory :refer [memory-store]]
     (merkledag
       [codec :as codec]
       [data :as data]
@@ -45,11 +45,11 @@
 (defn total-size
   "Calculates the total size of data reachable from the given node.
 
-  Raw blobs and nodes with no links have a total size equal to their `:content`
+  Raw blocks and nodes with no links have a total size equal to their `:content`
   length.  Each link in the node's link table adds its `:tsize` to the total.
   Returns `nil` if no node is given."
   [node]
-  (when-let [size (blob/size node)]
+  (when-let [size (:size node)]
     (->> (:links node)
          (map :tsize)
          (reduce (fnil + 0) size))))
@@ -112,7 +112,7 @@
 
 ;; ## Graph Repository
 
-;; The graph repository wraps a content-addressable blob store and handles
+;; The graph repository wraps a content-addressable block store and handles
 ;; serializing nodes and links into Protobuffer-encoded objects.
 (defrecord GraphRepo
   [store codec])
@@ -125,7 +125,7 @@
 
 (defn graph-repo
   "Constructs a new merkledag graph repository. If no store is given, defaults
-  to a new in-memory blob store. Any types given will override the core type
+  to a new in-memory block store. Any types given will override the core type
   plugins."
   ([]
    (graph-repo (memory-store)))
@@ -136,7 +136,7 @@
 
 
 (defn get-node
-  "Retrieve a node from the given repository's blob store, parsed by the repo's
+  "Retrieve a node from the given repository's block store, parsed by the repo's
   codec."
   [repo id]
   (when-not repo
@@ -145,13 +145,13 @@
                   " with no repo"))))
   (some->>
     id
-    (blob/get (:store repo))
+    (block/get (:store repo))
     (codec/decode (:codec repo))))
 
 
 (defn put-node!
   "Store a node (or map with links and data) in the repository. Returns an
-  updated blob record with the serialized node."
+  updated block record with the serialized node."
   [repo node]
   (when-not repo
     (throw (IllegalArgumentException.
@@ -160,9 +160,9 @@
   (when node
     (let [{:keys [id content links data]} node]
       (if (and id content)
-        (blob/put! (:store repo) node)
+        (block/put! (:store repo) node)
         (when (or links data)
-          (blob/put! (:store repo) (->node (:codec repo) links data)))))))
+          (block/put! (:store repo) (node* (:codec repo) links data)))))))
 
 
 (defmacro with-repo

@@ -1,10 +1,10 @@
 (ns merkledag.link
   (:refer-clojure :exclude [resolve])
   (:require
-    [blobble.core :as blob]
+    [blocks.core :as block]
     [multihash.core :as multihash])
   (:import
-    blobble.core.Blob
+    blocks.data.Block
     multihash.core.Multihash))
 
 
@@ -34,7 +34,7 @@
       nil
     (instance? Multihash x)
       x
-    (instance? Blob x)
+    (instance? Block x)
       (:id x)
     :else
       (throw (IllegalArgumentException.
@@ -57,7 +57,7 @@
 ;;
 ;; - `:name` is a string giving the link's name from an object link table.
 ;; - `:target` is the merklehash to which the link points.
-;; - `:tsize` is the total number of bytes reachable from the linked blob.
+;; - `:tsize` is the total number of bytes reachable from the linked block.
 ;;   This should equal the sum of the target's links' tsizes, plus the size
 ;;   of the object itself.
 ;;

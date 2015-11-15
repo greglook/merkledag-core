@@ -3,7 +3,7 @@
 
   Codecs should have two properties, `:types` and `:link-constructor`."
   (:require
-    [blobble.core :as blob]
+    [blocks.core :as block]
     [byte-streams :as bytes]
     [flatland.protobuf.core :as proto]
     [merkledag.edn :as edn]
@@ -77,7 +77,7 @@
     (when (or links' data')
       (-> (encode-protobuf-node links' data')
           (proto/protobuf-dump)
-          (blob/read!)
+          (block/read!)
           (assoc :links (some-> links vec)
                  :data data)))))
 
@@ -100,24 +100,25 @@
   (when data
     (binding [link/*link-table* links]
       (or (edn/parse-data types data)
+          ; TODO: convert to PersystentBytes
           data))))
 
 
 (defn decode
-  "Decodes a blob to determine whether it's a full object or a raw block.
+  "Decodes a block to determine whether it's a full object or a raw block.
 
-  Returns an updated blob record with `:links` and `:data` filled in. Returns
-  nil if blob is nil or has no content."
-  [codec blob]
-  (when-let [content (blob/open blob)]
-    ; Try to parse content as protobuf node.
-    (if-let [node (proto/protobuf-load-stream NodeEncoding content)]
-      (let [links (some->> node :links (seq) (mapv decode-link))
-            data-segment (when-let [^ByteString bs (:data node)]
-                           (.asReadOnlyByteBuffer bs))]
-        ; Try to parse data in link table context.
-        (assoc blob
-               :links links
-               :data (decode-data (:types codec) links data-segment)))
-      ; Data is not protobuffer-encoded, return raw block.
-      blob)))
+  Returns an updated block record with `:links` and `:data` filled in. Returns
+  nil if block is nil or has no content."
+  [codec block]
+  ; Try to parse content as protobuf node.
+  (if-let [node (with-open [content (block/open block)]
+                  (proto/protobuf-load-stream NodeEncoding content))]
+    (let [links (some->> node :links (seq) (mapv decode-link))
+          data-segment (when-let [^ByteString bs (:data node)]
+                         (.asReadOnlyByteBuffer bs))]
+      ; Try to parse data in link table context.
+      (assoc block
+             :links links
+             :data (decode-data (:types codec) links data-segment)))
+    ; Data is not protobuffer-encoded, return raw block.
+    block))

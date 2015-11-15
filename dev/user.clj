@@ -1,6 +1,6 @@
 (ns user
   (:require
-    [blobble.core :as blob]
+    [blocks.core :as block]
     (clj-time
       [core :as time]
       [coerce :as coerce-time]
@@ -20,7 +20,8 @@
 
 
 (def print-options
-  {:print-handlers
+  {:print-color true
+   :print-handlers
    (puget.dispatch/chained-lookup
      {Multihash (puget/tagged-handler 'data/hash multihash/base58)
       MerkleLink (puget/tagged-handler 'data/link (juxt :name :target :tsize))}
