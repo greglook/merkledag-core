@@ -19,11 +19,11 @@
    [org.clojure/tools.logging "0.3.1"]
    [org.flatland/protobuf "0.8.1"]]
 
-  :hiera {:path "target/ns-hiera.png"
-          :vertical false
-          :cluster-depth 1
-          :show-external true
-          :ignore-ns #{clojure byte-streams}}
+  :hiera
+  {:vertical false
+   :cluster-depth 1
+   :show-external true
+   :ignore-ns #{byte-streams clj-time clojure multihash}}
 
   :whidbey
   {:tag-types {'blocks.data.Block {'blocks.data.Block (partial into {})}

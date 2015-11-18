@@ -3,15 +3,24 @@ Clojure Merkle-DAG
 
 **WORK IN PROGRESS**
 
-This repo implements a repository of Merkle-DAG objects. This is essentially a
-simplified version of [IPFS](https://github.com/ipfs/ipfs) without the sharing
-or distributed parts.
+This library implements a simplified version of the
+[IPFS](//github.com/ipfs/ipfs) thin-waist data layer. This builds on
+[content-addressable block storage](//github.com/greglook/blocks) with a codec
+to translate the Merkle-DAG data structure into serialized block data.
 
 ## Concepts
 
-- A [multihash](https://github.com/jbenet/multihash) is a _value_ describing a
+- A [multihash](https://github.com/greglook/clj-multihash) is a _value_ describing a
   hashing algorithm and a digest.
-- A _blob_ is a sequence of bytes, identified by a multihash address.
+- A _block_ is a sequence of bytes, identified by a multihash identifier.
+- Blocks can be referenced by _merkle links_, which have a string name and a
+  multihash target.
+- Finally a _node_ is a block encoded with an (optional) table of links and an
+  (optional) data segment containing some other data values.
+
+## Node Encoding
+
+...
 
 ## License
 
