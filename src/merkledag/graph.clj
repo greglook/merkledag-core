@@ -25,8 +25,14 @@
       [link :as link :refer [*link-table*]])
     [multihash.core :as multihash])
   (:import
+    blocks.data.Block
     merkledag.link.MerkleLink
     multihash.core.Multihash))
+
+
+(defmethod link/target Block
+  [block]
+  (:id block))
 
 
 (def base-codec

@@ -1,10 +1,8 @@
 (ns merkledag.link
   (:refer-clojure :exclude [resolve])
   (:require
-    [blocks.core :as block]
     [multihash.core :as multihash])
   (:import
-    blocks.data.Block
     multihash.core.Multihash))
 
 
@@ -27,19 +25,17 @@
         *link-table*))
 
 
-(defn target
-  [x]
-  (cond
-    (nil? x)
-      nil
-    (instance? Multihash x)
-      x
-    (instance? Block x)
-      (:id x)
-    :else
-      (throw (IllegalArgumentException.
-               (str "Cannot resolve type " (class x)
-                    " as a merkle link target.")))))
+(defmulti target
+  "Multimethod which returns the multihash identifying the given value."
+  class)
+
+(defmethod target nil
+  [_]
+  nil)
+
+(defmethod target Multihash
+  [mhash]
+  mhash)
 
 
 
@@ -83,7 +79,7 @@
 
   (hashCode
     [this]
-    (hash-combine _name _target))
+    (hash-combine (hash _name) (hash _target)))
 
 
   Comparable
@@ -124,13 +120,13 @@
 
   (deref
     [this]
-    (when-not *get-node*
-      (throw (IllegalStateException.
-               "Links cannot be dereferenced when no *get-node* function is bound.")))
     (when-not _target
       (throw (IllegalArgumentException.
                (str "Broken link to " (pr-str _name)
                     " cannot be dereferenced."))))
+    (when-not *get-node*
+      (throw (IllegalStateException.
+               (str "Cannot dereference " this " when no *get-node* function is bound."))))
     (*get-node* _target))
 
 
