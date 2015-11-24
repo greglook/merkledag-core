@@ -2,20 +2,22 @@
   "Core merkle graph types and protocol functions.
 
   A _block_ is a record that represents a binary sequence and a cryptographic
-  digest identifying it. Blocks have two main attributes:
+  digest identifying it. Blocks have two primary attributes in addition to
+  their byte content:
 
-  - `:content` a `ByteBuffer` containing the block contents.
-  - `:id` a `Multihash` identifying the content.
+  - `:id` a _multihash_ identifying the block content.
+  - `:size` an integer counting the number of bytes in the content.
 
-  A _node_ is a block which follows the merkledag protobuffer format.
-  Nodes in the merkledag may have links to other nodes and some internal data.
-  In addition to an id and content, nodes have two additional attributes:
+  A _node_ is a block which follows the merkledag format. Nodes in the
+  merkledag may have links to other nodes as well as some internal data. In
+  addition to the block properties, nodes have two additional attributes:
 
   - `:links` a sequence of `MerkleLink`s to other nodes in the merkledag.
-  - `:data` the data segment, which may be a parsed value or a raw `ByteBuffer`.
+  - `:data` the data segment, which may be a parsed value or a raw byte
+    sequence.
 
-  Nodes _may_ have additional attributes which are not part of the serialized
-  content, such as stat metadata."
+  Like blocks, nodes _may_ have additional attributes which are not part of the
+  serialized content."
   (:require
     [blocks.core :as block]
     [merkledag.link :as link :refer [*link-table*]]
@@ -26,6 +28,7 @@
     multihash.core.Multihash))
 
 
+; TODO: figure out where this should live, and whether it should wrap multicodec.
 (defprotocol NodeFormat
   "Protocol for formatters which can construct and decode node records."
 
@@ -37,7 +40,6 @@
     [formatter block]
     "Decodes the block to determine the node structure. Returns an updated block
     value with `:links` and `:data` set appropriately."))
-
 
 
 (defmethod link/target Block
