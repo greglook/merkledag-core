@@ -1,4 +1,4 @@
-(ns merkledag.codec
+(ns merkledag.format.protobuf
   "MerkleDAG protobuffer serialization functions.
 
   Codecs should have two properties, `:types` and `:link-constructor`."
@@ -6,7 +6,6 @@
     [blocks.core :as block]
     [byte-streams :as bytes]
     [flatland.protobuf.core :as proto]
-    [merkledag.edn :as edn]
     [merkledag.link :as link]
     [multicodec.core :as multicodec]
     [multihash.core :as multihash])
@@ -21,19 +20,6 @@
 ;; Protobuffer Schema Types
 (def LinkEncoding (proto/protodef Merkledag$MerkleLink))
 (def NodeEncoding (proto/protodef Merkledag$MerkleNode))
-
-
-(defprotocol NodeFormat
-  "Protocol for formatters which can construct and decode node records."
-
-  (build-node
-    [codec links data]
-    "Encodes the links and data of a node into a block value.")
-
-  (parse-node
-    [codec block]
-    "Decodes the block to determine the node structure. Returns an updated block
-    value with `:links` and `:data` set appropriately."))
 
 
 
@@ -67,7 +53,7 @@
       (ByteString/copyFrom ^ByteBuffer data)
     ; TODO: PersistentBytes?
     :else
-      (ByteString/copyFrom (multicodec/encode codec baos data))))
+      (ByteString/copyFrom (multicodec/encode codec data))))
 
 
 (defn- encode-protobuf-node
@@ -108,7 +94,7 @@
 
 
 
-;; ## Protobuffer Node Codec
+;; ## Protobuffer Node Format
 
 (defrecord ProtobufFormat
   [codec]

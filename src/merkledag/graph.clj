@@ -18,11 +18,7 @@
   content, such as stat metadata."
   (:require
     [blocks.core :as block]
-    [blocks.store.memory :refer [memory-store]]
-    (merkledag
-      [codec :as codec]
-      [data :as data]
-      [link :as link :refer [*link-table*]])
+    [merkledag.link :as link :refer [*link-table*]]
     [multihash.core :as multihash])
   (:import
     blocks.data.Block
@@ -30,19 +26,28 @@
     multihash.core.Multihash))
 
 
+(defprotocol NodeFormat
+  "Protocol for formatters which can construct and decode node records."
+
+  (build-node
+    [formatter links data]
+    "Encodes the links and data of a node into a block value.")
+
+  (parse-node
+    [formatter block]
+    "Decodes the block to determine the node structure. Returns an updated block
+    value with `:links` and `:data` set appropriately."))
+
+
+
 (defmethod link/target Block
   [block]
   (:id block))
 
 
-(def base-codec
-  "Basic codec for creating nodes."
-  {:types data/core-types})
-
-
-(def ^:dynamic *codec*
-  "Current node serialization codec to use."
-  base-codec)
+(def ^:dynamic *format*
+  "Current node serialization format to use."
+  nil)
 
 
 
@@ -66,19 +71,19 @@
 
 (defn node*
   "Constructs a new node from a sequence of merkle links and a data value. The
-  codec is used to control serialization and other security features."
-  [codec links data]
+  formatter is used to control serialization and other security features."
+  [formatter links data]
   (when-not (or (nil? links)
                 (and (sequential? links)
                      (every? (partial instance? MerkleLink) links)))
     (throw (IllegalArgumentException.
              (str "Node links must be a sequence of merkle links, got: "
                   (pr-str links)))))
-  (codec/encode codec links data))
+  (build-node formatter links data))
 
 
 (defmacro node
-  "Constructs a new merkle node. Uses the contextual `*codec*` to serialize the
+  "Constructs a new merkle node. Uses the contextual `*format*` to serialize the
   node data."
   ([data]
    `(node nil ~data))
@@ -86,7 +91,7 @@
    `(let [links# (binding [*link-table* nil] ~links)]
       (binding [*link-table* (vec links#)]
         (let [data# ~data]
-          (node* *codec* *link-table* data#))))))
+          (node* *format* *link-table* data#))))))
 
 
 (defn link
@@ -120,30 +125,15 @@
 
 ;; The graph repository wraps a content-addressable block store and handles
 ;; serializing nodes and links into Protobuffer-encoded objects.
-(defrecord GraphRepo
-  [store codec])
-
-
-;; Remove automatic constructor functions.
-(ns-unmap *ns* '->GraphRepo)
-(ns-unmap *ns* 'map->GraphRepo)
-
-
 (defn graph-repo
-  "Constructs a new merkledag graph repository. If no store is given, defaults
-  to a new in-memory block store. Any types given will override the core type
-  plugins."
-  ([]
-   (graph-repo (memory-store)))
-  ([store]
-   (graph-repo store nil))
-  ([store codec]
-   (GraphRepo. store (merge base-codec codec))))
+  [store format]
+  {:store store
+   :format format})
 
 
 (defn get-node
   "Retrieve a node from the given repository's block store, parsed by the repo's
-  codec."
+  format."
   [repo id]
   (when-not repo
     (throw (IllegalArgumentException.
@@ -152,7 +142,7 @@
   (some->>
     id
     (block/get (:store repo))
-    (codec/decode (:codec repo))))
+    (parse-node (:format repo))))
 
 
 (defn put-node!
@@ -163,19 +153,18 @@
     (throw (IllegalArgumentException.
              (str "Cannot store node for " (pr-str (:id node))
                   " with no repo"))))
-  (when node
-    (let [{:keys [id content links data]} node]
-      (if (and id content)
-        (block/put! (:store repo) node)
-        (when (or links data)
-          (block/put! (:store repo) (node* (:codec repo) links data)))))))
+  (when-let [{:keys [id links data]} node]
+    (if id
+      (block/put! (:store repo) node)
+      (when (or links data)
+        (block/put! (:store repo) (node* (:format repo) links data))))))
 
 
 (defmacro with-repo
   "Executes `body` in the context of the given repository. Links will be
-  resolved against the store and nodes constructed from the repo codec."
+  resolved against the store and nodes constructed from the repo format."
   [repo & body]
   `(let [repo# ~repo]
      (binding [link/*get-node* (partial get-node repo#)
-               *codec* (:codec repo#)]
+               *format* (:format repo#)]
        ~@body)))

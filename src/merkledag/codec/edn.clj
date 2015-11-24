@@ -1,4 +1,4 @@
-(ns merkledag.edn
+(ns merkledag.codec.edn
   "Functions to handle structured data formatted as EDN.
 
   Special types are handled by plugins which define three important
