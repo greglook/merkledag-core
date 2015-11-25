@@ -6,12 +6,15 @@
     [blocks.core :as block]
     [byte-streams :as bytes]
     [flatland.protobuf.core :as proto]
+    [merkledag.core :as merkle]
     [merkledag.link :as link]
     [multicodec.core :as multicodec]
     [multihash.core :as multihash])
   (:import
-    com.google.protobuf.ByteString
-    (merkledag.proto
+    (com.google.protobuf
+      ByteString
+      InvalidProtocolBufferException)
+    (merkledag.format.protobuf
       Merkledag$MerkleLink
       Merkledag$MerkleNode)
     java.nio.ByteBuffer))
@@ -37,32 +40,15 @@
     :tsize (:tsize link)))
 
 
-(defn- encode-protobuf-data
-  "Encodes some data into a protobuf `ByteString`. If the input is a byte array
-  or a `ByteBuffer`, it is used directly as the segment.  If it is `nil`, no
-  data segment is returned. Otherwise, the value is encoded using the given
-  codec."
-  ^ByteString
-  [codec data]
-  (cond
-    (nil? data)
-      nil
-    (instance? (Class/forName "[B") data)
-      (ByteString/copyFrom ^bytes data)
-    (instance? ByteBuffer data)
-      (ByteString/copyFrom ^ByteBuffer data)
-    ; TODO: PersistentBytes?
-    :else
-      (ByteString/copyFrom (multicodec/encode codec data))))
-
-
 (defn- encode-protobuf-node
   "Encodes a list of links and a data value into a protobuf representation."
   [codec links data]
   (let [links' (some->> (seq links)
                         (sort-by :name)
                         (mapv encode-protobuf-link))
-        data' (encode-protobuf-data codec data)]
+        data' (some->> data
+                       (multicodec/encode codec)
+                       (ByteString/copyFrom))]
     (when (or links' data')
       (cond-> (proto/protobuf NodeEncoding)
         links'
@@ -99,7 +85,7 @@
 (defrecord ProtobufFormat
   [codec]
 
-  NodeFormat
+  merkle/NodeFormat
 
   (build-node
     [this links data]
@@ -112,12 +98,20 @@
 
   (parse-node
     [this block]
-    ; Try to parse content as protobuf node.
-    (if-let [node (with-open [content (block/open block)]
-                    (proto/protobuf-load-stream NodeEncoding content))]
-      ; Try to parse data in link table context.
-      (assoc block
-             :links (some->> node :links seq (mapv decode-link))
-             :data (decode-data (:data node)))
-      ; Data is not protobuffer-encoded, return raw block.
-      block)))
+    (try
+      ; Try to parse content as protobuf node.
+      (let [node (with-open [content (block/open block)]
+                   (proto/protobuf-load-stream NodeEncoding content))
+            links (some->> node :links seq (mapv decode-link))]
+        ; Try to parse data in link table context.
+        (assoc block
+               :links links
+               :data (decode-data codec links (:data node))))
+      (catch InvalidProtocolBufferException e
+        ; Data is not protobuffer-encoded, return raw block.
+        block))))
+
+
+(defn protobuf-format
+  [codec]
+  (ProtobufFormat. codec))
