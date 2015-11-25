@@ -1,7 +1,7 @@
 (ns merkledag.test-utils
   (:require
     [merkledag.graph :as merkle]
-    [merkledag.edn :as edn]
+    [merkledag.codec.edn :as edn]
     [merkledag.data :as data]
     [puget.dispatch :as dispatch]
     [puget.printer :as puget])
