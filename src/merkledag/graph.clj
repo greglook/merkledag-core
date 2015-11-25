@@ -1,29 +1,25 @@
 (ns merkledag.graph
-  "Core merkle graph types and protocol functions.
-
-  A _block_ is a record that represents a binary sequence and a cryptographic
-  digest identifying it. Blocks have two primary attributes in addition to
-  their byte content:
-
-  - `:id` a _multihash_ identifying the block content.
-  - `:size` an integer counting the number of bytes in the content.
-
-  A _node_ is a block which follows the merkledag format. Nodes in the
-  merkledag may have links to other nodes as well as some internal data. In
-  addition to the block properties, nodes have two additional attributes:
-
-  - `:links` a sequence of `MerkleLink`s to other nodes in the merkledag.
-  - `:data` the data segment, which may be a parsed value or a raw byte
-    sequence.
-
-  Like blocks, nodes _may_ have additional attributes which are not part of the
-  serialized content."
+  "A graph is a collection of nodes with interconnected links."
   (:require
     [blocks.core :as block]
     [merkledag.core :as merkle]
     [merkledag.link :as link :refer [*link-table*]])
   (:import
     blocks.data.Block))
+
+
+(defprotocol MerkleGraph
+  "Protocol for interacting with a graph of merkle nodes."
+
+  (get-node
+    [graph id]
+    "Retrieves and parses the block identified by the given multihash.")
+
+  (put-node!
+    [graph node]
+    "Stores a node in the graph for later retrieval. Should accept a pre-built
+    node block or a map with `:links` and `:data` entries."))
+
 
 
 (defmethod link/target Block
@@ -39,19 +35,19 @@
 (defrecord BlockGraph
   [store format]
 
-  merkle/MerkleGraph
+  MerkleGraph
 
   (get-node
     [this id]
     (when-let [block (block/-get this id)]
-      (merkle/parse-node block)))
+      (merkle/parse-node format block)))
 
 
   (put-node!
     [this node]
     (when-let [{:keys [id links data]} node]
       (if id
-        (block/put! store block)
+        (block/put! store node)
         (when (or links data)
           (block/put! store (merkle/build-node format links data))))) )
 
@@ -94,6 +90,6 @@
   against the store and nodes constructed from the format."
   [graph & body]
   `(let [graph# ~graph]
-     (binding [link/*get-node* (partial block/get graph#)
-               *format* (:format graph#)]
+     (binding [link/*get-node* (partial get-node graph#)
+               merkle/*format* (:format graph#)]
        ~@body)))

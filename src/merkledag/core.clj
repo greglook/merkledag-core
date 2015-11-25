@@ -38,19 +38,6 @@
     value with `:links` and `:data` set appropriately."))
 
 
-(defprotocol MerkleGraph
-  "Protocol for interacting with a graph of merkle nodes."
-
-  (get-node
-    [graph id]
-    "Retrieves and parses the block identified by the given multihash.")
-
-  (put-node!
-    [graph node]
-    "Stores a node in the graph for later retrieval. Should accept a pre-built
-    node block or a map with `:links` and `:data` entries."))
-
-
 
 ;; ## Utility Functions
 
@@ -64,7 +51,7 @@
   (when-let [size (:size node)]
     (->> (:links node)
          (map :tsize)
-         (reduce (fnil + 0) size))))
+         (reduce (fnil + 0 0) size))))
 
 
 
