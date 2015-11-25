@@ -20,26 +20,10 @@
   serialized content."
   (:require
     [blocks.core :as block]
-    [merkledag.link :as link :refer [*link-table*]]
-    [multihash.core :as multihash])
+    [merkledag.core :as merkle]
+    [merkledag.link :as link :refer [*link-table*]])
   (:import
-    blocks.data.Block
-    merkledag.link.MerkleLink
-    multihash.core.Multihash))
-
-
-; TODO: figure out where this should live, and whether it should wrap multicodec.
-(defprotocol NodeFormat
-  "Protocol for formatters which can construct and decode node records."
-
-  (build-node
-    [formatter links data]
-    "Encodes the links and data of a node into a block value.")
-
-  (parse-node
-    [formatter block]
-    "Decodes the block to determine the node structure. Returns an updated block
-    value with `:links` and `:data` set appropriately."))
+    blocks.data.Block))
 
 
 (defmethod link/target Block
@@ -47,126 +31,69 @@
   (:id block))
 
 
-(def ^:dynamic *format*
-  "Current node serialization format to use."
-  nil)
 
+;; ## Block Graph Store
 
-
-;; ## Utility Functions
-
-(defn total-size
-  "Calculates the total size of data reachable from the given node.
-
-  Raw blocks and nodes with no links have a total size equal to their `:content`
-  length.  Each link in the node's link table adds its `:tsize` to the total.
-  Returns `nil` if no node is given."
-  [node]
-  (when-let [size (:size node)]
-    (->> (:links node)
-         (map :tsize)
-         (reduce (fnil + 0) size))))
-
-
-
-;; ## Constructors
-
-(defn node*
-  "Constructs a new node from a sequence of merkle links and a data value. The
-  formatter is used to control serialization and other security features."
-  [formatter links data]
-  (when-not (or (nil? links)
-                (and (sequential? links)
-                     (every? (partial instance? MerkleLink) links)))
-    (throw (IllegalArgumentException.
-             (str "Node links must be a sequence of merkle links, got: "
-                  (pr-str links)))))
-  (build-node formatter links data))
-
-
-(defmacro node
-  "Constructs a new merkle node. Uses the contextual `*format*` to serialize the
-  node data."
-  ([data]
-   `(node nil ~data))
-  ([links data]
-   `(let [links# (binding [*link-table* nil] ~links)]
-      (binding [*link-table* (vec links#)]
-        (let [data# ~data]
-          (node* *format* *link-table* data#))))))
-
-
-(defn link
-  "Constructs a new merkle link. The name should be a string. If no target is
-  given, the name is looked up in the `*link-table*`. If it doesn't resolve to
-  anything, the target will be `nil` and it will be a _broken_ link. If the
-  target is a multihash, it is used directly. If it is a node, the id
-  is used."
-  ([name]
-   (link/read-link name))
-  ([name target]
-   (link name target (total-size target)))
-  ([name target tsize]
-   (let [extant (link/resolve name)
-         target' (link/target target)
-         tsize' (or tsize (:tsize extant))]
-     (if extant
-       (if (= target' (:target extant))
-         extant
-         (throw (IllegalStateException.
-                  (str "Can't link " name " to " target'
-                       ", already points to " (:target extant)))))
-       (let [link' (MerkleLink. name target' tsize' nil)]
-         (when *link-table*
-           (set! *link-table* (conj *link-table* link')))
-         link')))))
-
-
-
-;; ## Graph Repository
-
-;; The graph repository wraps a content-addressable block store and handles
+;; The graph store wraps a content-addressable block store and handles
 ;; serializing nodes and links into Protobuffer-encoded objects.
-(defn graph-repo
+(defrecord BlockGraph
   [store format]
-  {:store store
-   :format format})
+
+  merkle/MerkleGraph
+
+  (get-node
+    [this id]
+    (when-let [block (block/-get this id)]
+      (merkle/parse-node block)))
 
 
-(defn get-node
-  "Retrieve a node from the given repository's block store, parsed by the repo's
-  format."
-  [repo id]
-  (when-not repo
-    (throw (IllegalArgumentException.
-             (str "Cannot look up node for " (pr-str id)
-                  " with no repo"))))
-  (some->>
-    id
-    (block/get (:store repo))
-    (parse-node (:format repo))))
+  (put-node!
+    [this node]
+    (when-let [{:keys [id links data]} node]
+      (if id
+        (block/put! store block)
+        (when (or links data)
+          (block/put! store (merkle/build-node format links data))))) )
 
 
-(defn put-node!
-  "Store a node (or map with links and data) in the repository. Returns an
-  updated block record with the serialized node."
-  [repo node]
-  (when-not repo
-    (throw (IllegalArgumentException.
-             (str "Cannot store node for " (pr-str (:id node))
-                  " with no repo"))))
-  (when-let [{:keys [id links data]} node]
-    (if id
-      (block/put! (:store repo) node)
-      (when (or links data)
-        (block/put! (:store repo) (node* (:format repo) links data))))))
+  block/BlockStore
+
+  (stat
+    [this id]
+    (block/stat store id))
 
 
-(defmacro with-repo
-  "Executes `body` in the context of the given repository. Links will be
-  resolved against the store and nodes constructed from the repo format."
-  [repo & body]
-  `(let [repo# ~repo]
-     (binding [link/*get-node* (partial get-node repo#)
-               *format* (:format repo#)]
+  (-list
+    [this opts]
+    (block/-list store opts))
+
+
+  (-get
+    [this id]
+    (block/-get store id))
+
+
+  (put!
+    [this block]
+    (block/put! store block))
+
+
+  (delete!
+    [this id]
+    (block/delete! store id)))
+
+
+(defn block-graph
+  [store format]
+  ; TODO: check args
+  (BlockGraph. store format))
+
+
+(defmacro with-graph
+  "Executes `body` in the context of the given graph. Links will be resolved
+  against the store and nodes constructed from the format."
+  [graph & body]
+  `(let [graph# ~graph]
+     (binding [link/*get-node* (partial block/get graph#)
+               *format* (:format graph#)]
        ~@body)))
