@@ -2,29 +2,46 @@
   "A graph is a collection of nodes with interconnected links."
   (:require
     [blocks.core :as block]
-    [merkledag.core :as merkle]
-    [merkledag.link :as link :refer [*link-table*]])
+    [blocks.store.memory :refer [memory-store]]
+    (merkledag
+      [core :as merkle]
+      [data :as data]
+      [link :as link])
+    [merkledag.codec.edn :refer [edn-codec]]
+    [merkledag.format.protobuf :refer [protobuf-format]]
+    [multicodec.codecs :as codecs])
   (:import
     blocks.data.Block))
-
-
-(defprotocol MerkleGraph
-  "Protocol for interacting with a graph of merkle nodes."
-
-  (get-node
-    [graph id]
-    "Retrieves and parses the block identified by the given multihash.")
-
-  (put-node!
-    [graph node]
-    "Stores a node in the graph for later retrieval. Should accept a pre-built
-    node block or a map with `:links` and `:data` entries."))
-
 
 
 (defmethod link/target Block
   [block]
   (:id block))
+
+
+(defn select-encoder
+  "Choose text codec for strings, bin codec for raw bytes, and EDN for
+  everything else."
+  [_ value]
+  (cond
+    (string? value)
+      :text
+    (or (instance? (Class/forName "[B") value)
+        (instance? java.nio.ByteBuffer value)
+        (instance? blocks.data.PersistentBytes value))
+      :bin
+    :else
+      :edn))
+
+
+(defmacro with-context
+  "Executes `body` in the context of the given graph. Links will be resolved
+  against the graph's store and nodes constructed from the graph's format."
+  [graph & body]
+  `(let [graph# ~graph]
+     (binding [link/*get-node* (partial merkle/get-node graph#)
+               merkle/*format* (:format graph#)]
+       ~@body)))
 
 
 
@@ -35,7 +52,7 @@
 (defrecord BlockGraph
   [store format]
 
-  MerkleGraph
+  merkle/MerkleGraph
 
   (get-node
     [this id]
@@ -80,16 +97,16 @@
 
 
 (defn block-graph
-  [store format]
-  ; TODO: check args
-  (BlockGraph. store format))
-
-
-(defmacro with-graph
-  "Executes `body` in the context of the given graph. Links will be resolved
-  against the store and nodes constructed from the format."
-  [graph & body]
-  `(let [graph# ~graph]
-     (binding [link/*get-node* (partial get-node graph#)
-               merkle/*format* (:format graph#)]
-       ~@body)))
+  ([]
+   (block-graph (memory-store)))
+  ([store]
+   (block-graph store nil))
+  ([store types]
+   (BlockGraph.
+     store
+     (protobuf-format
+       (assoc (codecs/mux-codec
+                :edn  (edn-codec (merge data/core-types types))
+                :text (codecs/text-codec)
+                :bin  (codecs/bin-codec))
+              :select-encoder select-encoder)))))

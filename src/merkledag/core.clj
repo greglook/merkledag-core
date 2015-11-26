@@ -24,7 +24,9 @@
     merkledag.link.MerkleLink))
 
 
-; TODO: figure out where this should live, and whether it should wrap multicodec.
+
+;; ## Protocols
+
 (defprotocol NodeFormat
   "Protocol for formatters which can construct and decode node records."
 
@@ -36,6 +38,19 @@
     [formatter block]
     "Decodes the block to determine the node structure. Returns an updated block
     value with `:links` and `:data` set appropriately."))
+
+
+(defprotocol MerkleGraph
+  "Protocol for interacting with a graph of merkle nodes."
+
+  (get-node
+    [graph id]
+    "Retrieves and parses the block identified by the given multihash.")
+
+  (put-node!
+    [graph node]
+    "Stores a node in the graph for later retrieval. Should accept a pre-built
+    node block or a map with `:links` and `:data` entries."))
 
 
 
@@ -55,7 +70,7 @@
 
 
 
-;; ## Constructors
+;; ## Value Constructors
 
 (def ^:dynamic *format*
   "Current node serialization format to use."
