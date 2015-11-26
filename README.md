@@ -60,7 +60,7 @@ The API for this library needs to support:
                   :uuid #uuid "31f7dd72-c7f7-4a15-a98b-0f9248d3aaa6"
                   :title "Gas Station"
                   :description "Bought a pack of gum."
-                  :time (data/parse-inst "2013-10-08T00:00:00")
+                  :time #inst "2013-10-08T00:00:00"
                   :entries [(merkle/link "posting-1" node-1)
                             (merkle/link "posting-2" node-2)]})]
     (merkle/put-node! graph node-1)
@@ -71,6 +71,7 @@ The API for this library needs to support:
 Now that the graph has some data, we can ask the graph for nodes back:
 
 ```clojure
+; Nodes are Block values with :links and :data entries:
 => (merkle/get-node graph (:id node-3))
 #blocks.data.Block
 {:data {:description "Bought a pack of gum.",
@@ -85,6 +86,14 @@ Now that the graph has some data, we can ask the graph for nodes back:
          #data/link ["posting-1" #data/hash "QmYUJXaPqsreTj8wfxxeYfbi1cPAh7j434LxVSFB2ucPUQ" 49]
          #data/link ["posting-2" #data/hash "QmTJaJRFW45X6JfJPDoXbjRHuRKuJN5YPEq3PG4XHvcZoS" 61]],
  :size 397}
+
+; We can create a new link to this in turn, automatically calculating the total size:
+=> (merkle/link *1)
+#data/link ["tx" #data/hash "QmbbRoCQAzvZFjJGupbzKfqWRkLR6HxfxEZmDpw2Kjkqc7" 507]
+
+; Resolving links in the context of a graph looks up the target:
+=> (graph/with-context graph (= node-3 (deref *1)))
+true
 ```
 
 ## License
