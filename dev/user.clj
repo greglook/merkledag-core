@@ -62,8 +62,8 @@
                    [(merkle/link "@context" context-hash)]
                    {:type :finance/transaction
                     :uuid #uuid "31f7dd72-c7f7-4a15-a98b-0f9248d3aaa6"
-                    :title "SCHZ - Reinvest Dividend"
-                    :description "Automatic dividend reinvestment."
+                    :title "Gas Station"
+                    :description "Bought a pack of gum."
                     :time (data/parse-inst "2013-10-08T00:00:00")
                     :entries [(merkle/link "posting-1" node-1)
                               (merkle/link "posting-2" node-2)]})]

@@ -41,39 +41,13 @@ The API for this library needs to support:
 
 ```clojure
 (require
-  '[blocks.store.file :refer [file-store]]
   '[merkledag.core :as merkle]
-  '[merkledag.graph :as graph]
-  '[merkledag.format.protouf :refer [protobuf-format]
-  '[merkledag.codec.edn :refer [edn-codec]
-  '[multicodec.codecs :as codecs])
+  '[merkledag.graph :as graph])
 
-(defn select-encoder
-  "Choose text codec for strings, bin codec for raw bytes, and EDN for
-  everything else."
-  [_ value]
-  (cond
-    (string? value)
-      :text
-    (or (instance? (Class/forName "[B") value)
-        (instance? java.nio.ByteBuffer value)
-        (instance? blocks.data.PersistentBytes value))
-      :bin
-    :else
-      :edn))))))
+(def graph (graph/block-graph))
 
-(def graph
-  (graph/block-graph
-    (file-store "/tmp/blocks")
-    (protobuf-format
-      (assoc (codecs/mux-codec
-               :edn  (edn-codec types)
-               :text (codecs/text-codec)
-               :bin  (codecs/bin-codec))
-             :select-encoder select-encoder))))
-
-(graph/with-graph graph
-  (let [context-hash (multihash/decode "Qmb2TGZBNWDuWsJVxX7MBQjvtB3cUc4aFQqrST32iASnEh")
+(graph/with-context graph
+  (let [hash-1 (multihash/decode "Qmb2TGZBNWDuWsJVxX7MBQjvtB3cUc4aFQqrST32iASnEh")
         node-1 (merkle/node
                  {:type :finance/posting
                   :uuid "foo-bar"})
@@ -81,19 +55,36 @@ The API for this library needs to support:
                  {:type :finance/posting
                   :uuid "frobblenitz omnibus"})
         node-3 (merkle/node
-                 [(merkle/link "@context" context-hash)]
+                 [(merkle/link "@context" hash-1)]
                  {:type :finance/transaction
                   :uuid #uuid "31f7dd72-c7f7-4a15-a98b-0f9248d3aaa6"
-                  :title "SCHZ - Reinvest Dividend"
-                  :description "Automatic dividend reinvestment."
+                  :title "Gas Station"
+                  :description "Bought a pack of gum."
                   :time (data/parse-inst "2013-10-08T00:00:00")
                   :entries [(merkle/link "posting-1" node-1)
                             (merkle/link "posting-2" node-2)]})]
-    (graph/put-node! graph node-1)
-    (graph/put-node! graph node-2)
-    (graph/put-node! graph node-3))
+    (merkle/put-node! graph node-1)
+    (merkle/put-node! graph node-2)
+    (merkle/put-node! graph node-3))
+```
 
-(graph/get-node graph id)
+Now that the graph has some data, we can ask the graph for nodes back:
+
+```clojure
+=> (merkle/get-node graph (:id node-3))
+#blocks.data.Block
+{:data {:description "Bought a pack of gum.",
+        :entries [#data/link ["posting-1" #data/hash "QmYUJXaPqsreTj8wfxxeYfbi1cPAh7j434LxVSFB2ucPUQ" 49]
+                  #data/link ["posting-2" #data/hash "QmTJaJRFW45X6JfJPDoXbjRHuRKuJN5YPEq3PG4XHvcZoS" 61]],
+        :time #inst "2013-10-08T00:00:00.000Z",
+        :title "Gas Station",
+        :type :finance/transaction,
+        :uuid #uuid "31f7dd72-c7f7-4a15-a98b-0f9248d3aaa6"},
+ :id #data/hash "QmbbRoCQAzvZFjJGupbzKfqWRkLR6HxfxEZmDpw2Kjkqc7",
+ :links [#data/link ["@context" #data/hash "Qmb2TGZBNWDuWsJVxX7MBQjvtB3cUc4aFQqrST32iASnEh" nil]
+         #data/link ["posting-1" #data/hash "QmYUJXaPqsreTj8wfxxeYfbi1cPAh7j434LxVSFB2ucPUQ" 49]
+         #data/link ["posting-2" #data/hash "QmTJaJRFW45X6JfJPDoXbjRHuRKuJN5YPEq3PG4XHvcZoS" 61]],
+ :size 397}
 ```
 
 ## License
