@@ -4,9 +4,10 @@ Clojure Merkle-DAG
 **WORK IN PROGRESS**
 
 This library implements a simplified version of the
-[IPFS](//github.com/ipfs/ipfs) merkle-dag data layer. This builds on
-[content-addressable block storage](//github.com/greglook/blocks) with a codec
-to translate the Merkle-DAG data structure into serialized block data.
+[IPFS](//github.com/ipfs/ipfs) merkle-dag data layer. This combines
+[content-addressable block storage](//github.com/greglook/blocks) with a [set of
+codecs](//github.com/greglook/clj-multicodec) to translate between the
+Merkle-DAG data structure and serialized blocks.
 
 ## Concepts
 
@@ -17,6 +18,9 @@ to translate the Merkle-DAG data structure into serialized block data.
   multihash target, and a referred size.
 - A _node_ is a block following a certain format which encodes a table of merkle
   links and a data segment containing some other information.
+- The node _format_ defines how the links and data are serialized into a block.
+  Links have a well-defined structure, while node data uses a variable set of
+  codecs based on data type.
 - The data segment is serialized with a
   [multicodec](//github.com/greglook/clj-multicodec) header to make the encoding
   discoverable and upgradable.
@@ -24,16 +28,12 @@ to translate the Merkle-DAG data structure into serialized block data.
 Using these concepts, we can build a directed acyclic graph of nodes referencing
 other nodes through merkle links.
 
-## Node Format
-
-...
-
 ## API
 
 The API for this library needs to support:
 - Constructing a graph interface with:
   - Choice of type plugins to support new data types.
-  - Choice of data codecs. (JSON, EDN, CBOR, etc)
+  - Choice of data codecs. (text, JSON, EDN, CBOR, etc)
 - Creating links to multihash targets.
 - Creating new node blocks without storing them.
 - Storing blocks (both nodes and raw) in the graph.
