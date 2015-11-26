@@ -1,10 +1,8 @@
 (ns merkledag.link
   (:refer-clojure :exclude [resolve])
   (:require
-    [blobble.core :as blob]
     [multihash.core :as multihash])
   (:import
-    blobble.core.Blob
     multihash.core.Multihash))
 
 
@@ -27,19 +25,17 @@
         *link-table*))
 
 
-(defn target
-  [x]
-  (cond
-    (nil? x)
-      nil
-    (instance? Multihash x)
-      x
-    (instance? Blob x)
-      (:id x)
-    :else
-      (throw (IllegalArgumentException.
-               (str "Cannot resolve type " (class x)
-                    " as a merkle link target.")))))
+(defmulti target
+  "Multimethod which returns the multihash identifying the given value."
+  class)
+
+(defmethod target nil
+  [_]
+  nil)
+
+(defmethod target Multihash
+  [mhash]
+  mhash)
 
 
 
@@ -57,7 +53,7 @@
 ;;
 ;; - `:name` is a string giving the link's name from an object link table.
 ;; - `:target` is the merklehash to which the link points.
-;; - `:tsize` is the total number of bytes reachable from the linked blob.
+;; - `:tsize` is the total number of bytes reachable from the linked block.
 ;;   This should equal the sum of the target's links' tsizes, plus the size
 ;;   of the object itself.
 ;;
@@ -83,7 +79,7 @@
 
   (hashCode
     [this]
-    (hash-combine _name _target))
+    (hash-combine (hash _name) (hash _target)))
 
 
   Comparable
@@ -96,12 +92,9 @@
                [(:name that) (:target that)])))
 
 
-  clojure.lang.IMeta
+  clojure.lang.IObj
 
   (meta [_] _meta)
-
-
-  clojure.lang.IObj
 
   (withMeta
     [_ meta-map]
@@ -127,13 +120,13 @@
 
   (deref
     [this]
-    (when-not *get-node*
-      (throw (IllegalStateException.
-               "Links cannot be dereferenced when no *get-node* function is bound.")))
     (when-not _target
       (throw (IllegalArgumentException.
                (str "Broken link to " (pr-str _name)
                     " cannot be dereferenced."))))
+    (when-not *get-node*
+      (throw (IllegalStateException.
+               (str "Cannot dereference " this " when no *get-node* function is bound."))))
     (*get-node* _target))
 
 

@@ -1,4 +1,4 @@
-package merkledag.proto;
+package merkledag.format.protobuf;
 
 
 // An IPFS MerkleDAG Link
