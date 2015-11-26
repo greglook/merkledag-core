@@ -1,7 +1,5 @@
-Clojure Merkle-DAG
-==================
-
-**WORK IN PROGRESS**
+Clojure MerkleDAG
+=================
 
 This library implements a simplified version of the
 [IPFS](//github.com/ipfs/ipfs) merkle-dag data layer. This combines
