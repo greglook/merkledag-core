@@ -23,8 +23,8 @@
   :hiera
   {:vertical false
    :cluster-depth 1
-   :show-external true
-   :ignore-ns #{byte-streams clj-time clojure multihash}}
+   :ignore-ns #{byte-streams clj-time clojure}
+   :show-external true}
 
   :whidbey
   {:tag-types {'blocks.data.Block {'blocks.data.Block (partial into {})}

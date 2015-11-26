@@ -58,7 +58,7 @@
 
 
 
-;; ## Protobuffer Decoding Functions
+;; ## Decoding Functions
 
 (defn- decode-link
   "Decodes a protobuffer link value into a map representing a MerkleLink."
