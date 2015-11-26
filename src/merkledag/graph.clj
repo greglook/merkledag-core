@@ -66,7 +66,7 @@
       (if id
         (block/put! store node)
         (when (or links data)
-          (block/put! store (merkle/build-node format links data))))) )
+          (block/put! store (merkle/build-node format links data))))))
 
 
   block/BlockStore
