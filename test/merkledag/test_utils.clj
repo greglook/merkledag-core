@@ -9,6 +9,13 @@
     merkledag.link.MerkleLink))
 
 
+(defn random-bytes
+  [length]
+  (let [data (byte-array length)]
+    (.nextBytes (java.security.SecureRandom.) data)
+    data))
+
+
 (def print-opts
   {:print-handlers
    (dispatch/chained-lookup
