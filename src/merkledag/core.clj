@@ -19,26 +19,15 @@
   Like blocks, nodes _may_ have additional attributes which are not part of the
   serialized content."
   (:require
-    [merkledag.link :as link :refer [*link-table*]])
+    (merkledag
+      [format :as format]
+      [link :as link :refer [*link-table*]]))
   (:import
     merkledag.link.MerkleLink))
 
 
 
 ;; ## Protocols
-
-(defprotocol NodeFormat
-  "Protocol for formatters which can construct and decode node records."
-
-  (build-node
-    [formatter links data]
-    "Encodes the links and data of a node into a block value.")
-
-  (parse-node
-    [formatter block]
-    "Decodes the block to determine the node structure. Returns an updated block
-    value with `:links` and `:data` set appropriately."))
-
 
 (defprotocol MerkleGraph
   "Protocol for interacting with a graph of merkle nodes."
@@ -73,7 +62,7 @@
 ;; ## Value Constructors
 
 (def ^:dynamic *format*
-  "Current node serialization format to use."
+  "Dynamic node serialization format to use."
   nil)
 
 
@@ -90,7 +79,7 @@
           links# (binding [*link-table* nil] ~extra-links)]
       (binding [*link-table* (vec links#)]
         (let [data# ~data]
-          (build-node format# *link-table* data#))))))
+          (format/build-node format# *link-table* data#))))))
 
 
 (defn link

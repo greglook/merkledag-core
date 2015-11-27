@@ -6,46 +6,11 @@
     (merkledag
       [core :as merkle]
       [data :as data]
+      [format :as format]
       [link :as link])
     [merkledag.codec.edn :refer [edn-codec]]
-    [merkledag.format.protobuf :refer [protobuf-format]]
-    [multicodec.codecs :as codecs])
-  (:import
-    blocks.data.Block))
+    [multicodec.codecs :as codecs]))
 
-
-(defmethod link/target Block
-  [block]
-  (:id block))
-
-
-(defn select-encoder
-  "Choose text codec for strings, bin codec for raw bytes, and EDN for
-  everything else."
-  [_ value]
-  (cond
-    (string? value)
-      :text
-    (or (instance? (Class/forName "[B") value)
-        (instance? java.nio.ByteBuffer value)
-        (instance? blocks.data.PersistentBytes value))
-      :bin
-    :else
-      :edn))
-
-
-(defmacro with-context
-  "Executes `body` in the context of the given graph. Links will be resolved
-  against the graph's store and nodes constructed from the graph's format."
-  [graph & body]
-  `(let [graph# ~graph]
-     (binding [link/*get-node* (partial merkle/get-node graph#)
-               merkle/*format* (:format graph#)]
-       ~@body)))
-
-
-
-;; ## Block Graph Store
 
 ;; The graph store wraps a content-addressable block store and handles
 ;; serializing nodes and links into Protobuffer-encoded objects.
@@ -56,8 +21,8 @@
 
   (get-node
     [this id]
-    (when-let [block (block/-get this id)]
-      (merkle/parse-node format block)))
+    (when-let [block (block/get store id)]
+      (format/parse-node format block)))
 
 
   (put-node!
@@ -66,7 +31,7 @@
       (if id
         (block/put! store node)
         (when (or links data)
-          (block/put! store (merkle/build-node format links data))))))
+          (block/put! store (format/build-node format links data))))))
 
 
   block/BlockStore
@@ -97,6 +62,11 @@
 
 
 (defn block-graph
+  "Constructs a new merkle graph backed by a block store.
+
+  If no store is given, this defaults to a new empty in-memory block store. Type
+  extensions may be provided in an aditional argument, which will be merged into
+  the core types."
   ([]
    (block-graph (memory-store)))
   ([store]
@@ -104,9 +74,19 @@
   ([store types]
    (BlockGraph.
      store
-     (protobuf-format
+     (format/protobuf-format
        (assoc (codecs/mux-codec
                 :edn  (edn-codec (merge data/core-types types))
                 :text (codecs/text-codec)
-                :bin  (codecs/bin-codec))
-              :select-encoder select-encoder)))))
+                :bin  (codecs/bin-codec))  ; TODO: replace with custom bin codec
+              :select-encoder format/select-encoder)))))
+
+
+(defmacro with-context
+  "Executes `body` in the context of the given graph. Links will be resolved
+  against the graph's store and nodes constructed from the graph's format."
+  [graph & body]
+  `(let [graph# ~graph]
+     (binding [link/*get-node* (partial merkle/get-node graph#)
+               merkle/*format* (:format graph#)]
+       ~@body)))

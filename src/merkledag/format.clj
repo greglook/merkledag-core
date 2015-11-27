@@ -1,32 +1,49 @@
-(ns merkledag.format.protobuf
-  "MerkleDAG protobuffer serialization functions.
+(ns merkledag.format
+  "Serialization protocol for encoding the links and data of a node into a block
+  and later decoding back into data.
 
-  Codecs should have two properties, `:types` and `:link-constructor`."
+  This namespace also provides the sole format implementation, using
+  protocol buffers."
   (:require
     [blocks.core :as block]
     [byte-streams :as bytes]
     [flatland.protobuf.core :as proto]
-    [merkledag.core :as merkle]
     [merkledag.link :as link]
     [multicodec.core :as multicodec]
     [multihash.core :as multihash])
   (:import
+    blocks.data.Block
     (com.google.protobuf
       ByteString
       InvalidProtocolBufferException)
-    (merkledag.format.protobuf
+    (merkledag.format
       Merkledag$MerkleLink
-      Merkledag$MerkleNode)
-    java.nio.ByteBuffer))
+      Merkledag$MerkleNode)))
 
 
-;; Protobuffer Schema Types
+(defprotocol NodeFormat
+  "Protocol for formatters which can construct and decode node records."
+
+  (build-node
+    [formatter links data]
+    "Encodes the links and data of a node into a block value.")
+
+  (parse-node
+    [formatter block]
+    "Decodes the block to determine the node structure. Returns an updated block
+    value with `:links` and `:data` set appropriately."))
+
+
+
+;; ## Protocol Buffer Format
+
+;; Schema Types
 (def LinkEncoding (proto/protodef Merkledag$MerkleLink))
 (def NodeEncoding (proto/protodef Merkledag$MerkleNode))
 
 
 
-;; ## Encoding Functions
+;; ### Encoding Functions
 
 (defn- encode-protobuf-link
   "Encodes a merkle link into a protobuf representation."
@@ -58,7 +75,7 @@
 
 
 
-;; ## Decoding Functions
+;; ### Decoding Functions
 
 (defn- decode-link
   "Decodes a protobuffer link value into a map representing a MerkleLink."
@@ -80,12 +97,12 @@
 
 
 
-;; ## Protobuffer Node Format
+;; ### Protobuffer Node Format
 
 (defrecord ProtobufFormat
   [codec]
 
-  merkle/NodeFormat
+  NodeFormat
 
   (build-node
     [this links data]
@@ -113,5 +130,38 @@
 
 
 (defn protobuf-format
+  "Creates a new protobuf node formatter which will use the given multicodec to
+  read and write data segments."
   [codec]
   (ProtobufFormat. codec))
+
+
+
+;; ## Utility Functions
+
+;; Extend link targeting to blocks for convenience.
+(defmethod link/target Block
+  [block]
+  (:id block))
+
+
+(def binary?
+  "Predicate which returns true if the argument is a byte array, `ByteBuffer`,
+  or `PersistentBytes` value."
+  [x]
+  (or (instance? (Class/forName "[B") x)
+      (instance? java.nio.ByteBuffer x)
+      (instance? blocks.data.PersistentBytes x)))
+
+
+(defn select-encoder
+  "Chooses text codec for strings, bin codec for raw bytes, and EDN for
+  everything else."
+  [_ value]
+  (cond
+    (string? value)
+      :text
+    (binary? value)
+      :bin
+    :else
+      :edn))
