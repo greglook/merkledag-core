@@ -8,7 +8,6 @@
       [data :as data]
       [format :as format]
       [link :as link])
-    [merkledag.codec.edn :refer [edn-codec]]
     [multicodec.codecs :as codecs]))
 
 
@@ -74,12 +73,7 @@
   ([store types]
    (BlockGraph.
      store
-     (format/protobuf-format
-       (assoc (codecs/mux-codec
-                :edn  (edn-codec (merge data/core-types types))
-                :text (codecs/text-codec)
-                :bin  (codecs/bin-codec))  ; TODO: replace with custom bin codec
-              :select-encoder format/select-encoder)))))
+     (format/protobuf-format (merge data/core-types types)))))
 
 
 (defmacro with-context

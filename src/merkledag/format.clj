@@ -9,7 +9,12 @@
     [byte-streams :as bytes]
     [flatland.protobuf.core :as proto]
     [merkledag.link :as link]
-    [multicodec.core :as multicodec]
+    (merkledag.codec
+      [bin :refer [bin-codec]]
+      [edn :refer [edn-codec]])
+    (multicodec
+      [codecs :as codecs]
+      [core :as multicodec])
     [multihash.core :as multihash])
   (:import
     blocks.data.Block
@@ -32,6 +37,37 @@
     [formatter block]
     "Decodes the block to determine the node structure. Returns an updated block
     value with `:links` and `:data` set appropriately."))
+
+
+
+;; ## Utility Functions
+
+;; Extend link targeting to blocks for convenience.
+(defmethod link/target Block
+  [block]
+  (:id block))
+
+
+(defn binary?
+  "Predicate which returns true if the argument is a byte array, `ByteBuffer`,
+  or `PersistentBytes` value."
+  [x]
+  (or (instance? java.nio.ByteBuffer x)
+      (instance? blocks.data.PersistentBytes x)
+      (instance? (Class/forName "[B") x)))
+
+
+(defn select-encoder
+  "Chooses text codec for strings, bin codec for raw bytes, and EDN for
+  everything else."
+  [_ value]
+  (cond
+    (string? value)
+      :text
+    (binary? value)
+      :bin
+    :else
+      :edn))
 
 
 
@@ -129,39 +165,21 @@
         block))))
 
 
+;; Remove automatic constructor function.s
+(ns-unmap *ns* '->ProtobufFormat)
+(ns-unmap *ns* 'map->ProtobufFormat)
+
+
 (defn protobuf-format
-  "Creates a new protobuf node formatter which will use the given multicodec to
-  read and write data segments."
-  [codec]
-  (ProtobufFormat. codec))
+  "Creates a new protobuf node formatter with a multiplexing data codec.
 
-
-
-;; ## Utility Functions
-
-;; Extend link targeting to blocks for convenience.
-(defmethod link/target Block
-  [block]
-  (:id block))
-
-
-(def binary?
-  "Predicate which returns true if the argument is a byte array, `ByteBuffer`,
-  or `PersistentBytes` value."
-  [x]
-  (or (instance? (Class/forName "[B") x)
-      (instance? java.nio.ByteBuffer x)
-      (instance? blocks.data.PersistentBytes x)))
-
-
-(defn select-encoder
-  "Chooses text codec for strings, bin codec for raw bytes, and EDN for
-  everything else."
-  [_ value]
-  (cond
-    (string? value)
-      :text
-    (binary? value)
-      :bin
-    :else
-      :edn))
+  By default, this uses binary and text encodings for bytes and strings, and
+  EDN for everything else. The first argument should provide data type
+  definitions for the codecs to use."
+  [types]
+  (-> (codecs/mux-codec
+        :edn  (edn-codec types)
+        :bin  (bin-codec)
+        :text (codecs/text-codec))
+      (assoc :select-encoder select-encoder)
+      (ProtobufFormat.)))
