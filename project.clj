@@ -1,4 +1,4 @@
-(defproject mvxcvi/merkledag-repo "0.2.0-SNAPSHOT"
+(defproject mvxcvi/merkledag "0.2.0-SNAPSHOT"
   :description "Graph datastore built on content-addressed merkle hash links"
   :url "http://github.com/greglook/clj-mdag-repo"
   :license {:name "Public Domain"
