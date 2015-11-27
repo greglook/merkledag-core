@@ -23,7 +23,7 @@
   :hiera
   {:vertical false
    :cluster-depth 1
-   :ignore-ns #{byte-streams clj-time clojure}
+   :ignore-ns #{byte-streams clj-time clojure flatland puget}
    :show-external true}
 
   :whidbey
