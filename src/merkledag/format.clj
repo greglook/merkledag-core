@@ -57,17 +57,18 @@
       (instance? (Class/forName "[B") x)))
 
 
-(defn select-encoder
-  "Chooses text codec for strings, bin codec for raw bytes, and EDN for
-  everything else."
-  [_ value]
-  (cond
-    (string? value)
-      :text
-    (binary? value)
-      :bin
-    :else
-      :edn))
+(defn encoding-selector
+  "Constructs a function which returns `:text` for strings, `:bin` for raw byte
+  types, and the given value for everything else."
+  [default]
+  (fn select [_ value]
+    (cond
+      (string? value)
+        :text
+      (binary? value)
+        :bin
+      :else
+        default)))
 
 
 
@@ -165,21 +166,19 @@
         block))))
 
 
-;; Remove automatic constructor function.s
+;; Remove automatic constructor functions.
 (ns-unmap *ns* '->ProtobufFormat)
 (ns-unmap *ns* 'map->ProtobufFormat)
 
 
 (defn protobuf-format
-  "Creates a new protobuf node formatter with a multiplexing data codec.
-
-  By default, this uses binary and text encodings for bytes and strings, and
-  EDN for everything else. The first argument should provide data type
-  definitions for the codecs to use."
+  "Creates a new protobuf node formatter with a multiplexing data codec. By
+  default, this uses binary and text encodings for bytes and strings, and EDN
+  for everything else. The argument should provide data type definitions."
   [types]
   (-> (codecs/mux-codec
         :edn  (edn-codec types)
         :bin  (bin-codec)
         :text (codecs/text-codec))
-      (assoc :select-encoder select-encoder)
+      (assoc :select-encoder (encoding-selector :edn))
       (ProtobufFormat.)))
