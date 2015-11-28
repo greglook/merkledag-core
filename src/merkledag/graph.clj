@@ -7,8 +7,7 @@
       [core :as merkle]
       [data :as data]
       [format :as format]
-      [link :as link])
-    [multicodec.codecs :as codecs]))
+      [link :as link])))
 
 
 ;; The graph store wraps a content-addressable block store and handles

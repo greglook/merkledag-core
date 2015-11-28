@@ -15,7 +15,6 @@
   (:require
     [clojure.edn :as edn]
     [multicodec.core :as multicodec]
-    [puget.dispatch :as dispatch]
     [puget.printer :as puget])
   (:import
     (java.io
@@ -36,6 +35,7 @@
   "Converts a map of type definitions to a dispatching function to look up
   print-handlers."
   [types]
+  ; TODO: inheritance?
   (->> types
        (mapcat (fn [[tag {:keys [writers]}]]
                  (map (fn [[cls writer]]

@@ -8,13 +8,13 @@
     [blocks.core :as block]
     [byte-streams :as bytes]
     [flatland.protobuf.core :as proto]
-    [merkledag.link :as link]
     (merkledag.codec
       [bin :refer [bin-codec]]
       [edn :refer [edn-codec]])
+    [merkledag.link :as link]
     (multicodec
       [codecs :as codecs]
-      [core :as multicodec])
+      [core :as codec])
     [multihash.core :as multihash])
   (:import
     blocks.data.Block
@@ -100,7 +100,7 @@
                         (sort-by :name)
                         (mapv encode-protobuf-link))
         data' (some->> data
-                       (multicodec/encode codec)
+                       (codec/encode codec)
                        (ByteString/copyFrom))]
     (when (or links' data')
       (cond-> (proto/protobuf NodeEncoding)
@@ -129,7 +129,7 @@
     (binding [link/*link-table* links]
       (->> (.asReadOnlyByteBuffer data)
            (bytes/to-input-stream)
-           (multicodec/decode! codec)))))
+           (codec/decode! codec)))))
 
 
 

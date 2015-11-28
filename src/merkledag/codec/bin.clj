@@ -9,7 +9,6 @@
     blocks.data.PersistentBytes
     (java.io
       ByteArrayOutputStream
-      InputStream
       OutputStream)
     java.nio.ByteBuffer))
 
