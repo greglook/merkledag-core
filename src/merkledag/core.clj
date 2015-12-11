@@ -25,6 +25,12 @@
   (:import
     merkledag.link.MerkleLink))
 
+;; It should be simple to:
+;; - Create a "buffer" on top of an existing graph.
+;; - Take some root pins into the graph.
+;; - 'Mutate' the pins by updating into the nodes by resolving paths.
+;; - Clean up the buffer by garbage collecting from the mutated pins.
+;; - 'Flush' the buffer by writing all the blocks to the backing store.
 
 
 ;; ## Protocols
@@ -52,6 +58,7 @@
   Each link in the node's link table adds its `:tsize` to the total. Returns
   `nil` if no node is given."
   [node]
+  ; TODO: support links
   (when-let [size (:size node)]
     (->> (:links node)
          (map :tsize)
