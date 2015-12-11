@@ -6,40 +6,7 @@
     multihash.core.Multihash))
 
 
-;; ## Link Table
-
-(def ^:dynamic *link-table*
-  "Contextual link table used to collect links when defining nodes, and to
-  assign links when parsing nodes."
-  nil)
-
-
-(defn resolve
-  "Resolves a link against the current `*link-table*`, if any. Returns nil if
-  no matching link is found."
-  [name]
-  (when-not (string? name)
-    (throw (IllegalArgumentException.
-             (str "Link name must be a string, got: " (pr-str name)))))
-  (some #(when (= name (:name %)) %)
-        *link-table*))
-
-
-(defmulti target
-  "Multimethod which returns the multihash identifying the given value."
-  class)
-
-(defmethod target nil
-  [_]
-  nil)
-
-(defmethod target Multihash
-  [mhash]
-  mhash)
-
-
-
-;; ## Merkle Link Type
+;; ## Link Type
 
 (def ^:dynamic *get-node*
   "Dynamic var which can be bound to a function which fetches a node from some
@@ -159,9 +126,50 @@
   (MerkleLink. name target tsize nil))
 
 
+
+;; ## Link Table
+
+(def ^:dynamic *link-table*
+  "Contextual link table used to collect links when defining nodes, and to
+  assign links when parsing nodes."
+  nil)
+
+
+(defn resolve
+  "Resolves a link against the current `*link-table*`, if any. Returns nil if
+  no matching link is found."
+  ([name]
+   (resolve name *link-table*))
+  ([name link-table]
+   (when-not (string? name)
+     (throw (IllegalArgumentException.
+              (str "Link name must be a string, got: " (pr-str name)))))
+   (some #(when (= name (:name %)) %) link-table)))
+
+
 (defn read-link
   "Resolves a link against the current `*link-table*`, or returns a new broken
   link with a nil target."
   [name]
   (or (resolve name)
       (MerkleLink. name nil nil nil)))
+
+
+
+;; ## Utility Functions
+
+(defmulti target
+  "Multimethod which returns the multihash identifying the given value."
+  class)
+
+(defmethod target nil
+  [_]
+  nil)
+
+(defmethod target Multihash
+  [mhash]
+  mhash)
+
+(defmethod target MerkleLink
+  [link]
+  (:target link))
