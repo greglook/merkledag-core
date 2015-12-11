@@ -58,24 +58,6 @@
   (instance? MerkleLink value))
 
 
-(defn get-path
-  "Retrieve a node by recursively resolving a path through a sequence of nodes."
-  [graph root & path]
-  (loop [id root
-         path (->> path (str/join "/") (str/split #"/"))]
-    (if (seq path)
-      (if-let [node (get-node graph id)]
-        (let [segment (first path)
-              target (link/resolve segment (:links node))]
-          (when-not target
-            (throw (ex-info (str "Node " id " has no link named " (pr-str segment))
-                            {:node id, :link segment})))
-          (recur target (rest path)))
-        (throw (ex-info (str "Linked node " id " is not available")
-                        {:node id})))
-      id)))
-
-
 (defn total-size
   "Calculates the total size of data reachable from the given node.
 
@@ -114,6 +96,13 @@
           (format/build-node format# *link-table* data#))))))
 
 
+(defn link*
+  "Non-magical link constructor which calls `link/target` and `total-size` on
+  the target value."
+  [name target]
+  (link/->link name (link/target target) (total-size target)))
+
+
 (defn link
   "Constructs a new merkle link. The name should be a string. If no target is
   given, the name is looked up in the `*link-table*`. If it doesn't resolve to
@@ -134,7 +123,78 @@
          (throw (IllegalStateException.
                   (str "Can't link " name " to " target'
                        ", already points to " (:target extant)))))
-       (let [link' (MerkleLink. name target' tsize' nil)]
+       (let [link' (link/->link name target' tsize')]
          (when *link-table*
            (set! *link-table* (conj *link-table* link')))
          link')))))
+
+
+
+;; ## Data Manipulation
+
+(defn get-in-node
+  "Retrieve a node by recursively resolving a path through a sequence of nodes."
+  ([root path]
+   (get-in-node root path nil))
+  ([root path not-found]
+   (loop [node root
+          path (->> path (str/join "/") (str/split #"/"))]
+     (if node
+       (if (seq path)
+         (if-let [link (link/resolve (str (first path)) (:links node))]
+           (if-let [child @link]
+             (recur child (rest path))
+             (throw (ex-info (str "Linked node " (:target link) " is not available")
+                             {:node (:id node)})))
+           not-found)
+         node)
+       not-found))))
+
+
+(defn update-node
+  "Updates the given node by substituting in the given links and potentially
+  running a function to update the body.
+
+  If the given links have names, and links with matching names exist in the
+  current node, they will be replaced with the new links. Otherwise, the links
+  will be appended "
+  ([node links]
+   (update-node node links identity))
+  ([node links f & args]
+   (let [links' (reduce (fn [ls l]
+                          (let [[before after] (split-with #(not= (:name l) (:name %)) ls)]
+                            (concat before [l] (rest after))))
+                        (:links node)
+                        links)]
+     (node links' (apply f (:data node) args)))))
+
+
+(defn update-node-link
+  "Helper function for updating a single link in a node to point to a new node.
+  Returns the updated node."
+  [node link-name target]
+  (update-node node [(link* link-name target)]))
+
+
+(defn update-in-node
+  "Returns a sequence of nodes, the first of which is the updated root node."
+  [node path f & args]
+  (if (empty? path)
+    ; Base Case: empty path segment
+    [(apply f node args)]
+    ; Recursive Case: first path segment
+    (let [link-name (str (first path))
+          child (when node
+                  (some-> (link/resolve link-name (:links node)) (deref)))]
+      (when-let [children (apply update-in-node child (rest path) f args)]
+        (cons (if node
+                (update-node-link node link-name (first children))
+                (node [(link* link-name (first children))] nil))
+              children)))))
+
+
+
+;; ## Garbage Collection
+
+; TODO: (sweep-nodes graph root) -> #{multihashes}
+; TODO: (garbage-collect! graph #{roots}) -> stats
