@@ -19,6 +19,7 @@
   Like blocks, nodes _may_ have additional attributes which are not part of the
   serialized content."
   (:require
+    [clojure.string :as str]
     (merkledag
       [format :as format]
       [link :as link :refer [*link-table*]]))
@@ -50,6 +51,30 @@
 
 
 ;; ## Utility Functions
+
+(defn link?
+  "Returns true if the value is a `MerkleLink`."
+  [value]
+  (instance? MerkleLink value))
+
+
+(defn get-path
+  "Retrieve a node by recursively resolving a path through a sequence of nodes."
+  [graph root & path]
+  (loop [id root
+         path (->> path (str/join "/") (str/split #"/"))]
+    (if (seq path)
+      (if-let [node (get-node graph id)]
+        (let [segment (first path)
+              target (link/resolve segment (:links node))]
+          (when-not target
+            (throw (ex-info (str "Node " id " has no link named " (pr-str segment))
+                            {:node id, :link segment})))
+          (recur target (rest path)))
+        (throw (ex-info (str "Linked node " id " is not available")
+                        {:node id})))
+      id)))
+
 
 (defn total-size
   "Calculates the total size of data reachable from the given node.
