@@ -3,6 +3,7 @@
   (:require
     (merkledag
       [core :as merkle])
+    [multihash.core :as multihash]
     [rhizome.viz :as rhizome]))
 
 
@@ -25,8 +26,10 @@
       (fn adjacent [node]
         (keep (comp node-map :target) (:links node)))
       :node->descriptor (fn [node]
-                          ; TODO: vector? :title? :data/type?
-                          {:label (:id node)})
+                          {:label (let [short-hash (subs (multihash/base58 (:id node)) 0 8)]
+                                    (if-let [data (:data node)]
+                                      (remove nil? [short-hash (:data/type data) (:title data)])
+                                      short-hash))})
       :edge->descriptor (fn [from to]
                           (let [lname (some #(when (= (:id to) (:target %)) (:name %)) (:links from))]
                             {:label lname})))))

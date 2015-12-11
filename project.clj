@@ -12,14 +12,14 @@
   :dependencies
   [[byte-streams "0.2.0"]
    [clj-time "0.11.0"]
-   [org.flatland/protobuf "0.8.1"]
    [mvxcvi/blocks "0.5.0"]
    [mvxcvi/multicodec "0.4.0"]
    [mvxcvi/multihash "1.1.0"]
    [mvxcvi/puget "1.0.0"]
    [org.clojure/clojure "1.7.0"]
    [org.clojure/tools.logging "0.3.1"]
-   [org.flatland/protobuf "0.8.1"]]
+   [org.flatland/protobuf "0.8.1"]
+   [rhizome "0.2.5"]]
 
   :hiera
   {:vertical false

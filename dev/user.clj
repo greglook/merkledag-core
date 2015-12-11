@@ -1,8 +1,9 @@
 (ns user
   (:require
     [blocks.core :as block]
-    [blocks.store.file :refer [file-store]]
-    [blocks.store.memory :refer [memory-store]]
+    (blocks.store
+      [file :refer [file-store]]
+      [memory :refer [memory-store]])
     [byte-streams :as bytes]
     (clj-time
       [core :as time]
@@ -14,13 +15,14 @@
     (merkledag
       [core :as merkle]
       [data :as data]
-      [graph :as graph])
-    [merkledag.codec.edn :refer [edn-codec]]
-    [merkledag.format.protobuf :refer [protobuf-format]]
-    [multicodec.core :as multicodec]
-    [multicodec.codecs :as codecs]
+      [format :as format :refer [protobuf-format]]
+      [graph :as graph]
+      [viz :as viz])
+    (multicodec
+      [core :as multicodec]
+      [codecs :as codecs])
     [multihash.core :as multihash]
-    [puget.dispatch]
+    #_[puget.dispatch]
     [puget.printer :as puget])
   (:import
     merkledag.link.MerkleLink
