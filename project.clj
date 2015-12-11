@@ -29,6 +29,7 @@
 
   :whidbey
   {:tag-types {'blocks.data.Block {'blocks.data.Block (partial into {})}
+               'org.joda.time.DateTime {'inst str}
                'merkledag.link.MerkleLink {'data/link (juxt :name :target :tsize)}
                'multihash.core.Multihash {'data/hash 'multihash.core/base58}}}
 

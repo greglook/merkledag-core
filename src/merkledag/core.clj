@@ -160,13 +160,13 @@
   will be appended "
   ([node links]
    (update-node node links identity))
-  ([node links f & args]
+  ([node- links f & args]
    (let [links' (reduce (fn [ls l]
                           (let [[before after] (split-with #(not= (:name l) (:name %)) ls)]
                             (concat before [l] (rest after))))
-                        (:links node)
+                        (:links node-)
                         links)]
-     (node links' (apply f (:data node) args)))))
+     (node links' (apply f (:data node-) args)))))
 
 
 (defn update-node-link

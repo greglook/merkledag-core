@@ -22,7 +22,6 @@
       [core :as multicodec]
       [codecs :as codecs])
     [multihash.core :as multihash]
-    #_[puget.dispatch]
     [puget.printer :as puget])
   (:import
     merkledag.link.MerkleLink
@@ -55,14 +54,14 @@
   (graph/with-context graph
     (let [context-hash (multihash/decode "Qmb2TGZBNWDuWsJVxX7MBQjvtB3cUc4aFQqrST32iASnEh")
           node-1 (merkle/node
-                   {:type :finance/posting
+                   {:data/type :finance/posting
                     :uuid "foo-bar"})
           node-2 (merkle/node
-                   {:type :finance/posting
+                   {:data/type :finance/posting
                     :uuid "frobblenitz omnibus"})
           node-3 (merkle/node
                    [(merkle/link "@context" context-hash)]
-                   {:type :finance/transaction
+                   {:data/type :finance/transaction
                     :uuid #uuid "31f7dd72-c7f7-4a15-a98b-0f9248d3aaa6"
                     :title "Gas Station"
                     :description "Bought a pack of gum."
