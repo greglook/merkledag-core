@@ -20,7 +20,7 @@
     (testing "encoding"
       (is (= "" (test-encode nil))
           "nil value should encode to nil")
-      (is (= "false" (test-encode false)))
-      (is (= "123\nfoo\n:bar" (test-encode [123 'foo :bar]))))
+      (is (= "false\n" (test-encode false)))
+      (is (= "123\nfoo\n:bar\n" (test-encode '(123 foo :bar)))))
     (testing "decoding"
-      (is (= [:foo 'bar 456] (test-decode ":foo\nbar\n456"))))))
+      (is (= [:foo 'bar 456] (test-decode ":foo\nbar\n456\n"))))))

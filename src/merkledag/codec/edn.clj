@@ -60,24 +60,36 @@
 
   (encode!
     [this output value]
-    (let [printer (puget/canonical-printer (types->print-handlers types))]
-      (let [data (OutputStreamWriter. ^OutputStream output data-charset)
-            encoded (puget/render-str printer value)]
-        ; TODO: write sequential collections as multiline values?
-        (.write data encoded)
+    (when (some? value)
+      (let [printer (puget/canonical-printer (types->print-handlers types))
+            data (OutputStreamWriter. ^OutputStream output data-charset)
+            write-value #(let [encoded (puget/render-str printer %)]
+                           (.write data encoded)
+                           (.write data "\n")
+                           (inc (count (.getBytes encoded data-charset))))
+            byte-size (if (list? value)
+                        (reduce #(+ %1 (write-value %2)) 0 value)
+                        (write-value value))]
         (.flush data)
-        (count (.getBytes encoded data-charset)))))
+        byte-size)))
 
 
   multicodec/Decoder
 
   (decode!
     [this input]
-    (let [reader (-> ^InputStream input
+    (let [opts {:readers (types->data-readers types)
+                :eof ::end-stream}
+          reader (-> ^InputStream input
                      (InputStreamReader. data-charset)
-                     (PushbackReader.))]
-      ; TODO: read every value in the stream
-      (edn/read {:readers (types->data-readers types)} reader))))
+                     (PushbackReader.))
+          read-stream (partial edn/read opts reader)
+          values (doall (take-while (partial not= ::end-stream)
+                                    (repeatedly read-stream)))]
+      ; TODO: not sure I like this behavior - it's not simple.
+      (if (> 2 (count values))
+        (first values)
+        (seq values)))))
 
 
 ;; Remove automatic constructor functions.
