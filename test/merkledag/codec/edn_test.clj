@@ -23,4 +23,5 @@
       (is (= "false\n" (test-encode false)))
       (is (= "123\nfoo\n:bar\n" (test-encode '(123 foo :bar)))))
     (testing "decoding"
+      (is (= {:alpha true, :beta 'bar, "foo" 123} (test-decode "{:alpha true :beta bar \"foo\" 123}")))
       (is (= [:foo 'bar 456] (test-decode ":foo\nbar\n456\n"))))))
