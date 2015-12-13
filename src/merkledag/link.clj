@@ -141,10 +141,7 @@
   ([name]
    (resolve name *link-table*))
   ([name link-table]
-   (when-not (string? name)
-     (throw (IllegalArgumentException.
-              (str "Link name must be a string, got: " (pr-str name)))))
-   (some #(when (= name (:name %)) %) link-table)))
+   (first (filter #(= (str name) (:name %)) link-table))))
 
 
 (defn read-link
@@ -152,7 +149,7 @@
   link with a nil target."
   [name]
   (or (resolve name)
-      (MerkleLink. name nil nil nil)))
+      (MerkleLink. (str name) nil nil nil)))
 
 
 
