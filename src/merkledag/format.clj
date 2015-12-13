@@ -42,10 +42,12 @@
 
 ;; ## Utility Functions
 
-;; Extend link targeting to blocks for convenience.
-(defmethod link/target Block
-  [block]
-  (:id block))
+;; Extend link targeting to blocks.
+(extend-protocol link/Target
+  Block
+  (link-to
+    [block name]
+    (link/create name (:id block) (link/total-size block))))
 
 
 (defn binary?
@@ -117,7 +119,7 @@
 (defn- decode-link
   "Decodes a protobuffer link value into a map representing a MerkleLink."
   [proto-link]
-  (link/->link
+  (link/create
     (:name proto-link)
     (multihash/decode (.toByteArray ^ByteString (:hash proto-link)))
     (:tsize proto-link)))

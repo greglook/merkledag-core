@@ -58,20 +58,6 @@
   (instance? MerkleLink value))
 
 
-(defn total-size
-  "Calculates the total size of data reachable from the given node.
-
-  Raw blocks and nodes with no links have a total size equal to their `:size`.
-  Each link in the node's link table adds its `:tsize` to the total. Returns
-  `nil` if no node is given."
-  [node]
-  ; TODO: support links
-  (when-let [size (:size node)]
-    (->> (:links node)
-         (map :tsize)
-         (reduce (fnil + 0 0) size))))
-
-
 
 ;; ## Value Constructors
 
@@ -97,36 +83,32 @@
 
 
 (defn link*
-  "Non-magical link constructor which calls `link/target` and `total-size` on
-  the target value."
+  "Non-magical link constructor which uses the `link/Target` protocol to build
+  a link to the target value."
   [name target]
-  (link/->link name (link/target target) (total-size target)))
+  (link/link-to target name))
 
 
 (defn link
   "Constructs a new merkle link. The name should be a string. If no target is
-  given, the name is looked up in the `*link-table*`. If it doesn't resolve to
-  anything, the target will be `nil` and it will be a _broken_ link. If the
-  target is a multihash, it is used directly. If it is a node, the id
-  is used."
+  given, the name is looked up in the dynamic `*link-table*`. Otherwise, this
+  constructs a link to the target and adds it to the link table."
   ([name]
    (link/read-link name))
   ([name target]
-   (link name target (total-size target)))
-  ([name target tsize]
-   (let [extant (link/resolve name)
-         target' (link/target target)
-         tsize' (or tsize (:tsize extant))]
-     (if extant
-       (if (= target' (:target extant))
+   (let [new-link (link* name target)]
+     (if-let [extant (link/resolve name)]
+       ; Check if existing link matches.
+       (if (= (:target new-link) (:target extant))
          extant
          (throw (IllegalStateException.
-                  (str "Can't link " name " to " target'
+                  (str "Can't link " name " to " (:target new-link)
                        ", already points to " (:target extant)))))
-       (let [link' (link/->link name target' tsize')]
+       ; No existing link, use new one.
+       (do
          (when *link-table*
-           (set! *link-table* (conj *link-table* link')))
-         link')))))
+           (set! *link-table* (conj *link-table* new-link)))
+         new-link)))))
 
 
 

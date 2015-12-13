@@ -108,7 +108,7 @@
 (ns-unmap *ns* '->MerkleLink)
 
 
-(defn ->link
+(defn create
   "Constructs a `MerkleLink` value, validating the inputs."
   [name target tsize]
   (when-not (string? name)
@@ -148,25 +148,41 @@
   "Resolves a link against the current `*link-table*`, or returns a new broken
   link with a nil target."
   [name]
-  (or (resolve name)
-      (MerkleLink. (str name) nil nil nil)))
+  ; TODO: should this also support positional link references?
+  (when name
+    (or (resolve name)
+        (MerkleLink. (str name) nil nil nil))))
 
 
 
 ;; ## Utility Functions
 
-(defmulti target
-  "Multimethod which returns the multihash identifying the given value."
-  class)
+(defn total-size
+  "Calculates the total size of data reachable from the given node. Expects a
+  map with `:size` and `:links` entries.
 
-(defmethod target nil
-  [_]
-  nil)
+  Raw blocks and nodes with no links have a total size equal to their `:size`.
+  Each link in the node's link table adds its `:tsize` to the total. Returns
+  `nil` if no node is given."
+  [node]
+  (when-let [size (:size node)]
+    (->> (:links node)
+         (map :tsize)
+         (reduce (fnil + 0 0) size))))
 
-(defmethod target Multihash
-  [mhash]
-  mhash)
 
-(defmethod target MerkleLink
-  [link]
-  (:target link))
+(defprotocol Target
+  "Protocol for values which can be targeted by a merkle link."
+
+  (link-to
+    [target name]
+    "Constructs a new named merkle link to the given target."))
+
+
+(extend-protocol Target
+
+  Multihash
+  (link-to [mhash name] (create name mhash nil))
+
+  MerkleLink
+  (link-to [link name] (create name (:target link) (:tsize link))))
