@@ -1,8 +1,10 @@
 (ns merkledag.link
   (:refer-clojure :exclude [resolve])
   (:require
+    [blocks.core :as block]
     [multihash.core :as multihash])
   (:import
+    blocks.data.Block
     multihash.core.Multihash))
 
 
@@ -159,7 +161,7 @@
 
 (defn total-size
   "Calculates the total size of data reachable from the given node. Expects a
-  map with `:size` and `:links` entries.
+  block with `:size` and `:links` entries.
 
   Raw blocks and nodes with no links have a total size equal to their `:size`.
   Each link in the node's link table adds its `:tsize` to the total. Returns
@@ -182,7 +184,16 @@
 (extend-protocol Target
 
   Multihash
-  (link-to [mhash name] (create name mhash nil))
+  (link-to
+    [mhash name]
+    (create name mhash nil))
 
   MerkleLink
-  (link-to [link name] (create name (:target link) (:tsize link))))
+  (link-to
+    [link name]
+    (create name (:target link) (:tsize link)))
+
+  Block
+  (link-to
+    [block name]
+    (create name (:id block) (total-size block))))

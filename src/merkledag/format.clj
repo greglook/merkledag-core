@@ -17,7 +17,6 @@
       [core :as codec])
     [multihash.core :as multihash])
   (:import
-    blocks.data.Block
     (com.google.protobuf
       ByteString
       InvalidProtocolBufferException)
@@ -41,14 +40,6 @@
 
 
 ;; ## Utility Functions
-
-;; Extend link targeting to blocks.
-(extend-protocol link/Target
-  Block
-  (link-to
-    [block name]
-    (link/create name (:id block) (link/total-size block))))
-
 
 (defn binary?
   "Predicate which returns true if the argument is a byte array, `ByteBuffer`,
