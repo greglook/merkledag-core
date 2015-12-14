@@ -141,9 +141,10 @@
   "Resolves a link against the current `*link-table*`, if any. Returns nil if
   no matching link is found."
   ([name]
-   (resolve name *link-table*))
-  ([name link-table]
-   (first (filter #(= (str name) (:name %)) link-table))))
+   (resolve *link-table* name))
+  ([link-table name]
+   (when name
+     (first (filter #(= (str name) (:name %)) link-table)))))
 
 
 (defn read-link
