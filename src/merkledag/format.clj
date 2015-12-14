@@ -91,7 +91,7 @@
   "Encodes a list of links and a data value into a protobuf representation."
   [codec links data]
   (let [links' (some->> (seq links)
-                        (sort-by :name)
+                        (sort-by :name) ; TODO: how does this impact empty-named links?
                         (mapv encode-protobuf-link))
         data' (some->> data
                        (codec/encode codec)
@@ -149,7 +149,7 @@
       ; Try to parse content as protobuf node.
       (let [node (with-open [content (block/open block)]
                    (proto/protobuf-load-stream NodeEncoding content))
-            links (some->> node :links seq (mapv decode-link))]
+            links (some->> (:links node) (seq) (mapv decode-link))]
         ; Try to parse data in link table context.
         (assoc block
                :links links
