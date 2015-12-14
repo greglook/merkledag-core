@@ -143,11 +143,7 @@
   ([node links]
    (update-node node links identity))
   ([node- links f & args]
-   (let [links' (reduce (fn [ls l]
-                          (let [[before after] (split-with #(not= (:name l) (:name %)) ls)]
-                            (concat before [l] (rest after))))
-                        (:links node-)
-                        links)]
+   (let [links' (reduce link/update-links (:links node-) links)]
      (node links' (apply f (:data node-) args)))))
 
 
