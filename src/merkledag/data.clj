@@ -40,7 +40,7 @@
   (tformat/parse inst-format literal))
 
 
-(def core-types
+(def edn-types
   {'inst
    {:description "Instants in time"
     :reader parse-inst

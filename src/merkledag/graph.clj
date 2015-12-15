@@ -29,7 +29,7 @@
       (if id
         (block/put! store node)
         (when (or links data)
-          (block/put! store (format/build-node format links data))))))
+          (block/put! store (format/format-node format links data))))))
 
 
   block/BlockStore
@@ -72,7 +72,7 @@
   ([store types]
    (BlockGraph.
      store
-     (format/protobuf-format (merge data/core-types types)))))
+     (format/protobuf-format (merge data/edn-types types)))))
 
 
 (defmacro with-context

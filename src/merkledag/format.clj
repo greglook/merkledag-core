@@ -8,10 +8,12 @@
     [blocks.core :as block]
     [byte-streams :as bytes]
     [flatland.protobuf.core :as proto]
+    (merkledag
+      [data :as data]
+      [link :as link])
     (merkledag.codec
       [bin :refer [bin-codec]]
       [edn :refer [edn-codec]])
-    [merkledag.link :as link]
     (multicodec
       [codecs :as codecs]
       [core :as codec])
@@ -25,10 +27,11 @@
       Merkledag$MerkleNode)))
 
 
-(defprotocol NodeFormat
-  "Protocol for formatters which can construct and decode node records."
+(defprotocol BlockFormat
+  "Protocol for formatters which can construct and parse node records as
+  content-addressed blocks."
 
-  (build-node
+  (format-node
     [formatter links data]
     "Encodes the links and data of a node into a block value.")
 
@@ -127,14 +130,14 @@
 
 
 
-;; ### Protobuffer Node Format
+;; ### ProtocolBuffer Format
 
 (defrecord ProtobufFormat
   [codec]
 
-  NodeFormat
+  BlockFormat
 
-  (build-node
+  (format-node
     [this links data]
     (when-let [node (encode-protobuf-node codec links data)]
       (-> (proto/protobuf-dump node)
@@ -166,12 +169,15 @@
 
 (defn protobuf-format
   "Creates a new protobuf node formatter with a multiplexing data codec. By
-  default, this uses binary and text encodings for bytes and strings, and EDN
-  for everything else. The argument should provide data type definitions."
-  [types]
-  (-> (codecs/mux-codec
-        :edn  (edn-codec types)
-        :bin  (bin-codec)
-        :text (codecs/text-codec))
-      (assoc :select-encoder (encoding-selector :edn))
-      (ProtobufFormat.)))
+  default, this uses binary and text encodings for bytes and strings, and the
+  given data codec for everything else. By default, this uses the EDN codec
+  with a standard set of types."
+  ([]
+   (protobuf-format :edn (edn-codec data/edn-types)))
+  ([mux-key data-codec]
+   (-> (codecs/mux-codec
+         :bin (bin-codec)
+         :text (codecs/text-codec)
+         mux-key data-codec)
+       (assoc :select-encoder (encoding-selector mux-key))
+       (ProtobufFormat.))))
