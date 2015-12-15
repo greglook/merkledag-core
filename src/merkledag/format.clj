@@ -27,6 +27,10 @@
       Merkledag$MerkleNode)))
 
 
+(def LinkEncoding (proto/protodef Merkledag$MerkleLink))
+(def NodeEncoding (proto/protodef Merkledag$MerkleNode))
+
+
 (defprotocol BlockFormat
   "Protocol for formatters which can construct and parse node records as
   content-addressed blocks."
@@ -42,41 +46,7 @@
 
 
 
-;; ## Utility Functions
-
-(defn binary?
-  "Predicate which returns true if the argument is a byte array, `ByteBuffer`,
-  or `PersistentBytes` value."
-  [x]
-  (or (instance? java.nio.ByteBuffer x)
-      (instance? blocks.data.PersistentBytes x)
-      (instance? (Class/forName "[B") x)))
-
-
-(defn encoding-selector
-  "Constructs a function which returns `:text` for strings, `:bin` for raw byte
-  types, and the given value for everything else."
-  [default]
-  (fn select [_ value]
-    (cond
-      (string? value)
-        :text
-      (binary? value)
-        :bin
-      :else
-        default)))
-
-
-
-;; ## Protocol Buffer Format
-
-;; Schema Types
-(def LinkEncoding (proto/protodef Merkledag$MerkleLink))
-(def NodeEncoding (proto/protodef Merkledag$MerkleNode))
-
-
-
-;; ### Encoding Functions
+;; ## Encoding Functions
 
 (defn- encode-protobuf-link
   "Encodes a merkle link into a protobuf representation."
@@ -108,7 +78,7 @@
 
 
 
-;; ### Decoding Functions
+;; ## Decoding Functions
 
 (defn- decode-link
   "Decodes a protobuffer link value into a map representing a MerkleLink."
@@ -130,7 +100,7 @@
 
 
 
-;; ### ProtocolBuffer Format
+;; ## ProtocolBuffer Format
 
 (defrecord ProtobufFormat
   [codec]
@@ -168,16 +138,53 @@
 
 
 (defn protobuf-format
-  "Creates a new protobuf node formatter with a multiplexing data codec. By
-  default, this uses binary and text encodings for bytes and strings, and the
-  given data codec for everything else. By default, this uses the EDN codec
-  with a standard set of types."
+  "Creates a new protobuf node formatter with a codec for handling data
+  segments.
+
+  By default, the codec will use a multiplexing codec to select among binary
+  and text encodings for bytes and strings, and EDN for everything else."
+  [codec]
+  (when-not (and (satisfies? codec/Encoder codec)
+                 (satisfies? codec/Decoder codec))
+    (throw (IllegalArgumentException.
+             (str "Format codec must support both encoding and decoding: "
+                  (pr-str codec)))))
+  (ProtobufFormat. codec))
+
+
+
+;; ## Standard EDN Formatter
+
+; TODO: should this section move to another ns?
+; - merkledag.codec.bin
+; - merkledag.codec.edn
+; - merkledag.data
+; - multicodec.codecs
+
+(defn encoding-selector
+  "Constructs a function which returns `:text` for strings, `:bin` for raw byte
+  types, and the given value for everything else."
+  [default]
+  (fn select
+    [_ value]
+    (cond
+      (string? value)
+        :text
+      (satisfies? merkledag.codec.bin/BinaryData value)
+        :bin
+      :else
+        default)))
+
+
+(defn protobuf-edn-format
+  "Creates a new protobuf node formatter which will use a multiplexing codec to
+  select among binary, text, and EDN encodings based on the value type."
   ([]
-   (protobuf-format :edn (edn-codec data/edn-types)))
-  ([mux-key data-codec]
+   (protobuf-edn-format data/edn-types))
+  ([types]
    (-> (codecs/mux-codec
          :bin (bin-codec)
          :text (codecs/text-codec)
-         mux-key data-codec)
-       (assoc :select-encoder (encoding-selector mux-key))
-       (ProtobufFormat.))))
+         :edn (edn-codec types))
+       (assoc :select-encoder (encoding-selector :edn))
+       (protobuf-format))))

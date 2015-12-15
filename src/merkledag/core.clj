@@ -40,7 +40,7 @@
 (def block-format
   "The standard format used to convert between structured node data and block
   values."
-  (format/protobuf-format))
+  (format/protobuf-edn-format))
 
 
 (defn set-format!

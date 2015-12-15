@@ -14,7 +14,7 @@
 
 
 (def test-format
-  (format/protobuf-format))
+  (format/protobuf-edn-format))
 
 
 (deftest node-construction
