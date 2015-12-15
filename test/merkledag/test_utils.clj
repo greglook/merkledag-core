@@ -20,7 +20,7 @@
   {:print-handlers
    (dispatch/chained-lookup
      {MerkleLink (puget/tagged-handler 'data/link (juxt :name :target :tsize))}
-     (edn/types->print-handlers data/core-types)
+     (edn/types->print-handlers data/edn-types)
      puget/common-handlers)})
 
 

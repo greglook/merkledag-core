@@ -14,13 +14,13 @@
 
 
 (def test-format
-  (format/protobuf-format nil))
+  (format/protobuf-format))
 
 
 (deftest node-construction
-  (is (nil? (format/build-node test-format nil nil)))
+  (is (nil? (format/format-node test-format nil nil)))
   (let [data (random-bytes 32)
-        node (format/build-node test-format nil data)]
+        node (format/format-node test-format nil data)]
     (is (= 41 (:size node))) ; 32 + 9 byte field overhead
     (is (nil? (:links node)))
     (is (bytes= data (:data node))))
@@ -28,12 +28,12 @@
         links [(link/create "@context" (multihash/sha1 "foo") 123)
                (link/create "abc" (multihash/sha1 "bar") nil)
                (link/create "xyz" (multihash/sha2-256 "baz") 87)]
-        node (format/build-node test-format links data)]
+        node (format/format-node test-format links data)]
     (is (pos? (:size node)))
     (is (= links (:links node)))
     (is (= data (:data node))))
   (let [links [(link/create "abc" (multihash/sha1 "xyz") 852)]
-        node (format/build-node test-format links nil)]
+        node (format/format-node test-format links nil)]
     (is (pos? (:size node)))
     (is (= links (:links node)))
     (is (nil? (:data node)))))
@@ -51,7 +51,7 @@
           links [(link/create "@context" (multihash/sha1 "foo") 123)
                  (link/create "abc" (multihash/sha1 "bar") nil)
                  (link/create "xyz" (multihash/sha2-256 "baz") 87)]
-          node (format/build-node test-format links data)
+          node (format/format-node test-format links data)
           block (dissoc node :links :data)
           node' (format/parse-node test-format block)]
       (is (= (:id node) (:id node')))
@@ -61,7 +61,7 @@
       (is (bytes= data (:data node')))))
   (testing "protobuf block with edn data"
     (let [data {:foo "bar", :baz 123}
-          node (format/build-node test-format nil data)
+          node (format/format-node test-format nil data)
           block (dissoc node :links :data)
           node' (format/parse-node test-format block)]
       (is (nil? (:links node')))

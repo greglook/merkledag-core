@@ -26,12 +26,32 @@
   (:import
     merkledag.link.MerkleLink))
 
+
 ;; It should be simple to:
 ;; - Create a "buffer" on top of an existing graph.
 ;; - Take some root pins into the graph.
 ;; - 'Mutate' the pins by updating into the nodes by resolving paths.
 ;; - Clean up the buffer by garbage collecting from the mutated pins.
 ;; - 'Flush' the buffer by writing all the blocks to the backing store.
+
+
+;; ## Global Node Formatter
+
+(def block-format
+  "The standard format used to convert between structured node data and block
+  values."
+  (format/protobuf-format))
+
+
+(defn set-format!
+  "Sets the global node format to the given formatter."
+  [formatter]
+  (when-not (satisfies? format/BlockFormat format)
+    (throw (IllegalArgumentException.
+             (str "Cannot set MerkleDAG block format to type which does not "
+                  "satisfy the BlockFormat protocol: " (class formatter)))))
+  (alter-var-root #'block-format (constantly formatter)))
+
 
 
 ;; ## Protocols
@@ -54,27 +74,6 @@
 
 ;; ## Value Constructors
 
-(def ^:dynamic *format*
-  "Dynamic node serialization format to use."
-  nil)
-
-
-(defmacro node
-  "Constructs a new merkle node. Handles binding of the link table to capture
-  links declared as part of the data. Any links passed as an argument will be
-  placed at the beginning of the link segment."
-  ([data]
-   `(node *format* nil ~data))
-  ([extra-links data]
-   `(node *format* ~extra-links ~data))
-  ([format extra-links data]
-   `(let [format# ~format
-          links# (binding [*link-table* nil] ~extra-links)]
-      (binding [*link-table* (vec links#)]
-        (let [data# ~data]
-          (format/build-node format# *link-table* data#))))))
-
-
 (defn link*
   "Non-magical link constructor which uses the `link/Target` protocol to build
   a link to the target value."
@@ -84,7 +83,7 @@
 
 (defn link
   "Constructs a new merkle link. The name should be a string. If no target is
-  given, the name is looked up in the dynamic `*link-table*`. Otherwise, this
+  given, the name is looked up in the dynamic link table. Otherwise, this
   constructs a link to the target and adds it to the link table."
   ([name]
    (link/read-link name))
@@ -102,6 +101,28 @@
          (when *link-table*
            (set! *link-table* (conj *link-table* new-link)))
          new-link)))))
+
+
+(defn node*
+  "Non-magical node constructor which constructs a block from the given links
+  and data. No attempt is made to ensure the link table is comprehensive."
+  ([data]
+   (node* nil data))
+  ([links data]
+   (format/format-node block-format links data)))
+
+
+(defmacro node
+  "Constructs a new merkle node. Handles binding of the link table to capture
+  links declared as part of the data. Any links passed as an argument will be
+  placed at the beginning of the link segment."
+  ([data]
+   `(node block-format nil ~data))
+  ([extra-links data]
+   `(let [links# (binding [*link-table* nil] ~extra-links)]
+      (binding [*link-table* (vec links#)]
+        (let [data# ~data]
+          (format/format-node block-format *link-table* data#))))))
 
 
 
@@ -132,7 +153,7 @@
 
   If the given links have names, and links with matching names exist in the
   current node, they will be replaced with the new links. Otherwise, the links
-  will be appended "
+  will be appended to the table."
   ([node links]
    (update-node node links identity))
   ([node- links f & args]
