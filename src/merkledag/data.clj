@@ -19,46 +19,18 @@
 
 
 ; TODO: implement type plugin system
+; Should load namespaces under merkledag.data:
+; - merkledag.data.time
+; - merkledag.data.bytes
+; - merkledag.data.units
+; ...
 
 
 ;; ## Standard Types
 
-(def inst-format
-  "Joda-time formatter/parser for timestamps."
-  (tformat/formatter
-    time/utc
-    "yyyy-MM-dd'T'HH:mm:ss.SSSZ"
-    "yyyy-MM-dd'T'HH:mm:ssZ"
-    "yyyy-MM-dd'T'HH:mm:ss"
-    "yyyy-MM-dd"))
-
-
-(defn render-inst
-  "Render a `DateTime` value as an inst string."
-  [^DateTime dt]
-  (tformat/unparse inst-format dt))
-
-
-(defn parse-inst
-  "Parse a string into a `DateTime`."
-  ^DateTime
-  [literal]
-  (tformat/parse inst-format literal))
-
-
-(def edn-types
-  {'inst
-   {:description "Instants in time"
-    :reader parse-inst
-    :writers {Date (comp render-inst coerce/from-date)
-              DateTime render-inst}}
-
-   'uuid
-   {:description "Universally-unique identifiers"
-    :reader #(UUID/fromString %)
-    :writers {UUID str}}
-
-   'data/hash
+(def core-types
+  ; TODO: is data/hash necessary? Multihashes shouldn't show up in data segments.
+  {'data/hash
    {:description "Content-addressed multihash references"
     :reader multihash/decode
     :writers {Multihash multihash/base58}}
@@ -91,7 +63,7 @@
   "Creates a new multiplexing codec to select among binary, text, and EDN
   encodings based on the value type."
   ([]
-   (data-codec edn-types))
+   (data-codec core-types))
   ([types]
    (assoc
      (codecs/mux-codec
