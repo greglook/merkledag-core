@@ -36,6 +36,8 @@
 
 ;; ## Protocols
 
+; TODO: is this necessary? Can just be functions using the global block-format on a regular BlockStore
+; Alternately, replace this protocol with something about pins
 (defprotocol MerkleGraph
   "Protocol for interacting with a graph of merkle nodes."
 
@@ -47,15 +49,6 @@
     [graph node]
     "Stores a node in the graph for later retrieval. Should accept a pre-built
     node block or a map with `:links` and `:data` entries."))
-
-
-
-;; ## Utility Functions
-
-(defn link?
-  "Returns true if the value is a `MerkleLink`."
-  [value]
-  (instance? MerkleLink value))
 
 
 
@@ -174,5 +167,5 @@
 
 ;; ## Garbage Collection
 
-; TODO: (sweep-nodes graph root) -> #{multihashes}
+; TODO: (reachable-blocks graph root) -> #{multihashes}
 ; TODO: (garbage-collect! graph #{roots}) -> stats
