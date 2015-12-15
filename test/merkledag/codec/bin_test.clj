@@ -16,9 +16,6 @@
 (deftest bin-codec
   (let [bin (bin/bin-codec)]
     (testing "encoding"
-      (testing "nil"
-        (is (zero? (codec/encode! bin :out nil))
-            "should write no bytes and return zero"))
       (testing "byte arrays"
         (let [data (random-bytes 32)]
           (is (bytes= data (codec/encode bin data))

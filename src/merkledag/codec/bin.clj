@@ -15,40 +15,40 @@
 
 ;; ## Encoding Multimethod
 
-(defn- byte-writer-dispatch
-  "Dispatches `write-bytes!` arguments on the class of the value to be written."
-  [value output]
-  (class value))
+(defprotocol BinaryData
+  "Protocol for values which can be encoded directly as a binary sequence."
+
+  (write-bytes!
+    [data output]
+    "Writes the binary data to the given output stream. Returns the number of
+    bytes written."))
 
 
-(defmulti write-bytes!
-  "Writes the value as a sequence of bytes to the given output stream. Returns
-  the number of bytes written."
-  #'byte-writer-dispatch)
+(extend-protocol BinaryData
+
+  (class (byte-array 0))
+
+  (write-bytes!
+    [data ^OutputStream output]
+    (.write output data)
+    (count data))
 
 
-(defmethod write-bytes! nil
-  [_ output]
-  0)
+  ByteBuffer
+
+  (write-bytes!
+    [buffer ^OutputStream output]
+    (let [length (.remaining buffer)]
+      (bytes/transfer buffer output)
+      length))
 
 
-(defmethod write-bytes! (Class/forName "[B")
-  [^bytes data ^OutputStream output]
-  (.write output data)
-  (count data))
+  PersistentBytes
 
-
-(defmethod write-bytes! ByteBuffer
-  [^ByteBuffer buffer output]
-  (let [length (.remaining buffer)]
-    (bytes/transfer buffer output)
-    length))
-
-
-(defmethod write-bytes! PersistentBytes
-  [^PersistentBytes content output]
-  (io/copy (.open content) output)
-  (count content))
+  (write-bytes!
+    [content output]
+    (io/copy (.open content) output)
+    (count content)))
 
 
 
