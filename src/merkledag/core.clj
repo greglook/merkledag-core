@@ -21,6 +21,7 @@
   (:require
     [clojure.string :as str]
     (merkledag
+      [data :as data]
       [format :as format]
       [link :as link :refer [*link-table*]]))
   (:import
@@ -40,7 +41,7 @@
 (def block-format
   "The standard format used to convert between structured node data and block
   values."
-  (format/protobuf-edn-format))
+  (format/protobuf-format (data/data-codec)))
 
 
 (defn set-format!

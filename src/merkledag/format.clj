@@ -8,15 +8,8 @@
     [blocks.core :as block]
     [byte-streams :as bytes]
     [flatland.protobuf.core :as proto]
-    (merkledag
-      [data :as data]
-      [link :as link])
-    (merkledag.codec
-      [bin :refer [bin-codec]]
-      [edn :refer [edn-codec]])
-    (multicodec
-      [codecs :as codecs]
-      [core :as codec])
+    [merkledag.link :as link]
+    [multicodec.core :as codec]
     [multihash.core :as multihash])
   (:import
     (com.google.protobuf
@@ -147,44 +140,6 @@
   (when-not (and (satisfies? codec/Encoder codec)
                  (satisfies? codec/Decoder codec))
     (throw (IllegalArgumentException.
-             (str "Format codec must support both encoding and decoding: "
+             (str "Format codec must support both encoding and decoding, got: "
                   (pr-str codec)))))
   (ProtobufFormat. codec))
-
-
-
-;; ## Standard EDN Formatter
-
-; TODO: should this section move to another ns?
-; - merkledag.codec.bin
-; - merkledag.codec.edn
-; - merkledag.data
-; - multicodec.codecs
-
-(defn encoding-selector
-  "Constructs a function which returns `:text` for strings, `:bin` for raw byte
-  types, and the given value for everything else."
-  [default]
-  (fn select
-    [_ value]
-    (cond
-      (string? value)
-        :text
-      (satisfies? merkledag.codec.bin/BinaryData value)
-        :bin
-      :else
-        default)))
-
-
-(defn protobuf-edn-format
-  "Creates a new protobuf node formatter which will use a multiplexing codec to
-  select among binary, text, and EDN encodings based on the value type."
-  ([]
-   (protobuf-edn-format data/edn-types))
-  ([types]
-   (-> (codecs/mux-codec
-         :bin (bin-codec)
-         :text (codecs/text-codec)
-         :edn (edn-codec types))
-       (assoc :select-encoder (encoding-selector :edn))
-       (protobuf-format))))
