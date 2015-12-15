@@ -89,7 +89,17 @@
         (is (nil? (:target x)))
         (is (nil? (:tsize x))))
       (binding [link/*link-table* table]
-        (is (= b (link/read-link "b")))))))
+        (is (= b (link/read-link "b")))))
+    (testing "update-links"
+      (is (= table (link/update-links table nil))
+          "nil link should not change table")
+      (is (= [a] (link/update-links nil a))
+          "nil table should update to one link vector")
+      (is (= [b c a] (link/update-links [b c] a))
+          "new link should append to table")
+      (let [b' (link/create "b" (multihash/sha1 "qux") 32)]
+        (is (= [a b' c] (link/update-links table b'))
+            "new link should replace existing link position")))))
 
 
 (deftest link-targeting

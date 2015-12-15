@@ -161,8 +161,10 @@
   "Returns an updated vector of links with the given link added, replacing any
   existing link with the same name."
   [links new-link]
-  (let [[before after] (split-with #(not= (:name new-link) (:name %)) links)]
-    (vec (concat before [new-link] (rest after)))))
+  (if new-link
+    (let [[before after] (split-with #(not= (:name new-link) (:name %)) links)]
+      (vec (concat before [new-link] (rest after))))
+    links))
 
 
 
