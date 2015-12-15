@@ -30,7 +30,7 @@
 
   (write-bytes!
     [data ^OutputStream output]
-    (.write output data)
+    (.write output ^bytes data)
     (count data))
 
 
