@@ -29,8 +29,11 @@ other nodes through merkle links.
 ## API
 
 The API for this library needs to support:
-- Constructing a graph interface with:
-  - Choice of type plugins to support new data types.
+- Type plugin system to support new data type extensions. Examples:
+  - time values (instants, dates, intervals)
+  - byte sequences (raw, direct, chunk trees)
+  - unit quantities (physical units)
+- Constructing a graph with:
   - Choice of data codecs. (text, JSON, EDN, CBOR, etc)
 - Creating links to multihash targets.
 - Creating new node blocks without storing them.
