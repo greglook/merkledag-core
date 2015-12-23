@@ -6,8 +6,8 @@
       [core :as time]
       [format :as tformat])
     (merkledag.codec
-      [bin :refer [bin-codec]]
-      [edn :refer [edn-codec]])
+      [bin :as bin]
+      [edn :as edn])
     [merkledag.link :as link]
     [multicodec.codecs :as codecs]
     [multihash.core :as multihash])
@@ -69,7 +69,7 @@
     (cond
       (string? value)
         :text
-      (satisfies? merkledag.codec.bin/BinaryData value)
+      (bin/binary? value)
         :bin
       :else
         default)))
@@ -83,7 +83,7 @@
   ([types]
    (assoc
      (codecs/mux-codec
-       :edn  (edn-codec types)
-       :bin  (bin-codec)
+       :edn  (edn/edn-codec types)
+       :bin  (bin/bin-codec)
        :text (codecs/text-codec))
      :select-encoder (encoding-selector :edn))))

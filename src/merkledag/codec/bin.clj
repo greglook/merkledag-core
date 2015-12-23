@@ -24,6 +24,13 @@
     bytes written."))
 
 
+(defn binary?
+  "Helper function which returns true for values which satisfy the `BinaryData`
+  protocol and are valid encoding values."
+  [value]
+  (satisfies? BinaryData value))
+
+
 (extend-protocol BinaryData
 
   (class (byte-array 0))

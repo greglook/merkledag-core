@@ -13,6 +13,14 @@
     java.nio.ByteBuffer))
 
 
+(deftest binary-data
+  (is (true? (bin/binary? (byte-array 10))))
+  (is (true? (bin/binary? (ByteBuffer/wrap (random-bytes 5)))))
+  (is (true? (bin/binary? (PersistentBytes/wrap (random-bytes 5)))))
+  (is (false? (bin/binary? "string")))
+  (is (false? (bin/binary? :keyword))))
+
+
 (deftest bin-codec
   (let [bin (bin/bin-codec)]
     (testing "encoding"
