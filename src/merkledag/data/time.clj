@@ -9,6 +9,7 @@
     java.util.Date
     (org.joda.time
       DateTime
+      Interval
       LocalDate)))
 
 
