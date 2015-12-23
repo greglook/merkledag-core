@@ -1,6 +1,5 @@
 (ns merkledag.test-utils
   (:require
-    [merkledag.graph :as merkle]
     [merkledag.codec.edn :as edn]
     [merkledag.data :as data]
     [puget.dispatch :as dispatch]
@@ -20,7 +19,7 @@
   {:print-handlers
    (dispatch/chained-lookup
      {MerkleLink (puget/tagged-handler 'data/link (juxt :name :target :tsize))}
-     (edn/types->print-handlers data/edn-types)
+     (edn/types->print-handlers data/data-types)
      puget/common-handlers)})
 
 
