@@ -41,6 +41,22 @@
     :writers {MerkleLink :name}}})
 
 
+(def data-types
+  "Registry of all supported data types in the system. This is a merged type
+  map from all registered plugins."
+  core-types)
+
+
+(defn register-types!
+  "Registers types by adding the named var to the data-types set."
+  [t]
+  (when-not (map? t)
+    (throw (IllegalArgumentException.
+             (str "Argument to register-types! must be a type map: " (pr-str t)))))
+  ; TODO: check that t resolves to a valid types map
+  (alter-var-root #'data-types merge t core-types))
+
+
 
 ;; ## Standard Data Codec
 
@@ -63,7 +79,7 @@
   "Creates a new multiplexing codec to select among binary, text, and EDN
   encodings based on the value type."
   ([]
-   (data-codec core-types))
+   (data-codec #'data-types))
   ([types]
    (assoc
      (codecs/mux-codec

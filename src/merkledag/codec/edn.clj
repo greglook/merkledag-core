@@ -35,8 +35,7 @@
   "Converts a map of type definitions to a dispatching function to look up
   print-handlers."
   [types]
-  ; TODO: inheritance?
-  (->> types
+  (->> (if (var? types) @types types)
        (mapcat (fn [[tag {:keys [writers]}]]
                  (map (fn [[cls writer]]
                         [cls (puget/tagged-handler tag writer)])
@@ -48,7 +47,7 @@
   "Converts a map of type definitions to a map of tag symbols to reader
   functions."
   [types]
-  (->> types
+  (->> (if (var? types) @types types)
        (map #(vector (key %) (:reader (val %))))
        (into {})))
 
