@@ -24,8 +24,8 @@
   :hiera
   {:vertical false
    :cluster-depth 1
-   :ignore-ns #{byte-streams clj-time clojure flatland puget}
-   :show-external false}
+   :ignore-ns #{clojure}
+   :show-external true}
 
   :whidbey
   {:tag-types {'blocks.data.Block {'blocks.data.Block (partial into {})}
