@@ -31,11 +31,18 @@
   (Charset/forName "UTF-8"))
 
 
+(defn- resolve-types
+  "Returns the type map from the given argument. Accepts either direct maps or
+  vars holding a map."
+  [types]
+  (if (var? types) @types types))
+
+
 (defn ^:no-doc types->print-handlers
   "Converts a map of type definitions to a dispatching function to look up
   print-handlers."
   [types]
-  (->> (if (var? types) @types types)
+  (->> (resolve-types types)
        (mapcat (fn [[tag {:keys [writers]}]]
                  (map (fn [[cls writer]]
                         [cls (puget/tagged-handler tag writer)])
@@ -47,7 +54,7 @@
   "Converts a map of type definitions to a map of tag symbols to reader
   functions."
   [types]
-  (->> (if (var? types) @types types)
+  (->> (resolve-types types)
        (map #(vector (key %) (:reader (val %))))
        (into {})))
 

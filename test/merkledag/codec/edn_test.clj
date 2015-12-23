@@ -9,10 +9,19 @@
       ByteArrayOutputStream)))
 
 
+(def test-types
+  {'test/foo {:description "Test type"
+              :reader #(vector :test/foo %)
+              :writers {clojure.lang.Ratio str}}})
+
+
+(deftest type-maps
+  (is (= (keys (edn/types->print-handlers test-types))
+         (keys (edn/types->print-handlers #'test-types)))))
+
+
 (deftest edn-codec
-  (let [edn (edn/edn-codec {'test/foo {:description "Test type"
-                                       :reader #(vector :test/foo %)
-                                       :writers {clojure.lang.Ratio str}}})
+  (let [edn (edn/edn-codec test-types)
         test-encode #(let [baos (ByteArrayOutputStream.)]
                        (codec/encode! edn baos %)
                        (String. (.toByteArray baos)))
