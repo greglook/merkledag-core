@@ -48,13 +48,19 @@
 
 
 (defn register-types!
-  "Registers types by adding the named var to the data-types set."
+  "Registers types by merging the given type map into the `data-types` var."
   [t]
   (when-not (map? t)
     (throw (IllegalArgumentException.
              (str "Argument to register-types! must be a type map: " (pr-str t)))))
   ; TODO: check that t resolves to a valid types map
   (alter-var-root #'data-types merge t core-types))
+
+
+(defn reset-types!
+  "Resets the `data-types` var to its initial state."
+  []
+  (alter-var-root #'data-types (constantly core-types)))
 
 
 
