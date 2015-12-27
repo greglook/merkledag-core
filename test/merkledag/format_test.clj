@@ -5,12 +5,28 @@
     (merkledag
       [format :as format]
       [link :as link])
+    [multicodec.core :as codec]
     [multicodec.codecs :refer [text-codec]]
     [multihash.core :as multihash]))
 
 
 (def test-format
   (format/protobuf-format (text-codec)))
+
+
+(deftest format-construction
+  (is (thrown? IllegalArgumentException
+               (format/protobuf-format
+                 (reify codec/Encoder
+                   (encode!
+                     [_ output value]
+                     nil)))))
+  (is (thrown? IllegalArgumentException
+               (format/protobuf-format
+                 (reify codec/Decoder
+                   (decode!
+                     [_ input]
+                     nil))))))
 
 
 (deftest node-construction

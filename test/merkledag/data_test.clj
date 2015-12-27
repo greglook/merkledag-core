@@ -4,7 +4,7 @@
     [merkledag.data :as data]))
 
 
-(deftest foo
+(deftest type-registration
   (is (thrown? IllegalArgumentException
                (data/register-types! :foo)))
   (is (map? (data/register-types! {clojure.lang.Symbol str})))
