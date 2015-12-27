@@ -19,6 +19,7 @@
   Like blocks, nodes _may_ have additional attributes which are not part of the
   serialized content."
   (:require
+    [blocks.core :as block]
     [clojure.string :as str]
     (merkledag
       [data :as data]
@@ -52,24 +53,6 @@
              (str "Cannot set MerkleDAG block format to type which does not "
                   "satisfy the BlockFormat protocol: " (class formatter)))))
   (alter-var-root #'block-format (constantly formatter)))
-
-
-
-;; ## Protocols
-
-; TODO: is this necessary? Can just be functions using the global block-format on a regular BlockStore
-; Alternately, replace this protocol with something about pins
-(defprotocol MerkleGraph
-  "Protocol for interacting with a graph of merkle nodes."
-
-  (get-node
-    [graph id]
-    "Retrieves and parses the block identified by the given multihash.")
-
-  (put-node!
-    [graph node]
-    "Stores a node in the graph for later retrieval. Should accept a pre-built
-    node block or a map with `:links` and `:data` entries."))
 
 
 
@@ -118,7 +101,7 @@
   links declared as part of the data. Any links passed as an argument will be
   placed at the beginning of the link segment."
   ([data]
-   `(node block-format nil ~data))
+   `(node nil ~data))
   ([extra-links data]
    `(let [links# (binding [*link-table* nil] ~extra-links)]
       (binding [*link-table* (vec links#)]
@@ -128,25 +111,6 @@
 
 
 ;; ## Data Manipulation
-
-(defn get-in-node
-  "Retrieve a node by recursively resolving a path through a sequence of nodes."
-  ([root path]
-   (get-in-node root path nil))
-  ([root path not-found]
-   (loop [node root
-          path (->> path (str/join "/") (str/split #"/"))]
-     (if node
-       (if (seq path)
-         (if-let [link (link/resolve (str (first path)) (:links node))]
-           (if-let [child @link]
-             (recur child (rest path))
-             (throw (ex-info (str "Linked node " (:target link) " is not available")
-                             {:node (:id node)})))
-           not-found)
-         node)
-       not-found))))
-
 
 (defn update-node
   "Updates the given node by substituting in the given links and potentially
@@ -169,19 +133,67 @@
   (update-node node [(link* link-name target)]))
 
 
-(defn update-in-node
+
+;; ## Graph Operations
+
+(defn get-node
+  "Retrieves and parses the block identified by the given multihash."
+  [store id]
+  (when-let [block (block/get store id)]
+    (format/parse-node block-format block)))
+
+
+(defn get-link
+  "Convenience function which retrieves a link target as a node."
+  [store link]
+  (when-let [target (:target link)]
+    (get-node store target)))
+
+
+(defn get-path
+  "Retrieve a node by recursively resolving a path through a sequence of nodes.
+  The `path` should be a slash-separated string or a vector of path segments."
+  ([store root path]
+   (get-path store root path nil))
+  ([store root path not-found]
+   (loop [node root
+          path (if (string? path) (str/split #"/" path) (seq path))]
+     (if node
+       (if (seq path)
+         (if-let [link (link/resolve (str (first path)) (:links node))]
+           (if-let [child (get-link store link)]
+             (recur child (rest path))
+             (throw (ex-info (str "Linked node " (:target link) " is not available")
+                             {:node (:id node)})))
+           not-found)
+         node)
+       not-found))))
+
+
+(defn put-node!
+  "Stores a node in the graph for later retrieval. Accepts a pre-built node
+  block or a map with `:links` and `:data` entries."
+  [store node]
+  (when-let [{:keys [id links data]} node]
+    (if id
+      (block/put! store node)
+      (when (or links data)
+        (block/put! store (format/format-node block-format links data))))))
+
+
+(defn update-path
   "Returns a sequence of nodes, the first of which is the updated root node."
-  [node path f & args]
+  [store root path f & args]
   (if (empty? path)
     ; Base Case: empty path segment
-    [(apply f node args)]
+    [(apply f root args)]
     ; Recursive Case: first path segment
     (let [link-name (str (first path))
-          child (when node
-                  (some-> (link/resolve link-name (:links node)) (deref)))]
-      (when-let [children (apply update-in-node child (rest path) f args)]
-        (cons (if node
-                (update-node-link node link-name (first children))
+          child (when-let [link (and root (link/resolve link-name (:links root)))]
+                  (get-link store link))]
+      (when-let [children (apply update-path store child (rest path) f args)]
+        (cons (if root
+                (update-node-link root link-name (first children))
                 (node [(link* link-name (first children))] nil))
               children)))))
 
