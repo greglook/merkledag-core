@@ -55,16 +55,7 @@
       (is (nil? (meta a)) "starts empty")
       (let [a' (vary-meta a assoc ::foo "bar")]
         (is (= a a') "should not affect equality")
-        (is (= "bar" (::foo (meta a'))))))
-    (testing "dereferencing"
-      (is (false? (realized? a)) "nodes should never be realized")
-      (testing "broken link"
-        (is (thrown? IllegalArgumentException
-                     @(link/create "baz" nil nil))))
-      (testing "without dynamic getter"
-        (is (thrown? IllegalStateException @a)))
-      (binding [link/*get-node* #(vector ::node %)]
-        (is (= [::node mhash] @a))))))
+        (is (= "bar" (::foo (meta a'))))))))
 
 
 (deftest link-table

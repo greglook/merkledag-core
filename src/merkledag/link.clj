@@ -10,13 +10,6 @@
 
 ;; ## Link Type
 
-(def ^:dynamic *get-node*
-  "Dynamic var which can be bound to a function which fetches a node from some
-  contextual graph repository. If available, this is used to resolve links when
-  they are `deref`ed."
-  nil)
-
-
 ;; Links have three main properties. Note that **only** link-name and target
 ;; are used for equality and comparison checks!
 ;;
@@ -25,9 +18,6 @@
 ;; - `:tsize` is the total number of bytes reachable from the linked block.
 ;;   This should equal the sum of the target's links' tsizes, plus the size
 ;;   of the object itself.
-;;
-;; In the context of a repo, links can be dereferenced to look up their
-;; contents from the store.
 (deftype MerkleLink
   [_name _target _tsize _meta]
 
@@ -82,28 +72,7 @@
 
   (valAt
     [this k]
-    (.valAt this k nil))
-
-
-  clojure.lang.IDeref
-
-  (deref
-    [this]
-    (when-not _target
-      (throw (IllegalArgumentException.
-               (str "Broken link to " (pr-str _name)
-                    " cannot be dereferenced."))))
-    (when-not *get-node*
-      (throw (IllegalStateException.
-               (str "Cannot dereference " this " when no *get-node* function is bound."))))
-    (*get-node* _target))
-
-
-  clojure.lang.IPending
-
-  (isRealized
-    [this]
-    false))
+    (.valAt this k nil)))
 
 
 ;; Remove automatic constructor function.
