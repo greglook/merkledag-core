@@ -23,9 +23,9 @@
 
   :hiera
   {:vertical false
-   :cluster-depth 1
+   :cluster-depth 2
    :ignore-ns #{clojure}
-   :show-external true}
+   :show-external false}
 
   :whidbey
   {:tag-types {'blocks.data.Block {'blocks.data.Block (partial into {})}

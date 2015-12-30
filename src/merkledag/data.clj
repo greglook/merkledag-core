@@ -1,10 +1,6 @@
 (ns merkledag.data
   "Support for core types and data segment codecs."
   (:require
-    (clj-time
-      [coerce :as coerce]
-      [core :as time]
-      [format :as tformat])
     (merkledag.codec
       [bin :as bin]
       [edn :as edn])
@@ -12,10 +8,8 @@
     [multicodec.codecs :as codecs]
     [multihash.core :as multihash])
   (:import
-    (java.util Date UUID)
     merkledag.link.MerkleLink
-    multihash.core.Multihash
-    org.joda.time.DateTime))
+    multihash.core.Multihash))
 
 
 ; TODO: implement type plugin system
