@@ -7,38 +7,52 @@ This library implements a simplified version of the
 codecs](//github.com/greglook/clj-multicodec) to translate between the
 Merkle-DAG data structure and serialized blocks.
 
+This is currently **work in progress**, as indicated by the version number. Stay
+tuned for progress!
+
 ## Concepts
 
-- A [multihash](https://github.com/greglook/clj-multihash) is a value specifying
-  a hashing algorithm and a digest.
-- A _block_ is a sequence of bytes, identified by a multihash.
-- Blocks can be referenced by _merkle links_, which have a string name, a
-  multihash target, and a referred size.
-- A _node_ is a block following a certain format which encodes a table of merkle
-  links and a data segment containing some other information.
-- The node _format_ defines how the links and data are serialized into a block.
-  Links have a well-defined structure, while node data uses a variable set of
-  codecs based on data type.
-- The data segment is serialized with a
-  [multicodec](//github.com/greglook/clj-multicodec) header to make the encoding
-  discoverable and upgradable.
+- A [multihash](//github.com/greglook/clj-multihash) is a self-describing
+  value specifying a cryptographic hashing algorithm and a digest.
+- A [block](//github.com/greglook/blocks) is a sequence of bytes, identified by
+  a multihash of its content.
+- Blocks can be referenced by _merkle links_, which have a multihash target and
+  an optional name and reference size.
+- A _data block_ is serialized with a [multicodec](//github.com/greglook/clj-multicodec)
+  header to make the encoding discoverable and upgradable. All other blocks are
+  considered 'raw' blocks with opaque binary content.
+- A _node_ is a data block encoded with a specific format which records a table
+  of merkle links and a data value as structured data. Some potential formats
+  are EDN and CBOR.
 
 Using these concepts, we can build a directed acyclic graph of nodes referencing
-other nodes through merkle links.
+each other through merkle links. The data-web structure formed from a given root
+node is immutable, much like the collections in Clojure itself. When updates are
+applied, they create a _new_ root node which structurally shares all of the
+unchanged data with the old version.
 
 ## API
 
-The API for this library needs to support:
-- Type plugin system to support new data type extensions. Examples:
+This library needs to support:
+
+- Extensible plugin system to support new block data types, e.g. `bin`, `text`,
+  `json`, `edn`, `cbor`, etc.
+- Type plugin system to support new data type extensions in nodes. This is
+  generally going to be codec-dependent, for example optimal CBOR
+  representations would differ from the naive encoding of EDN-style tagged
+  literals. Examples:
   - time values (instants, dates, intervals)
   - byte sequences (raw, direct, chunk trees)
   - unit quantities (physical units)
-- Constructing a graph with:
-  - Choice of data codecs. (text, JSON, EDN, CBOR, etc)
 - Creating links to multihash targets.
 - Creating new node blocks without storing them.
 - Storing blocks (both nodes and raw) in the graph.
 - Retrieving a node/block from the graph by multihash id.
+- Path resolution from a root node using link names.
+- Data-web structure helpers like `assoc`, `assoc-in`, `update`, `update-in`,
+  etc.
+
+## Usage
 
 ```clojure
 (require
@@ -91,10 +105,6 @@ Now that the graph has some data, we can ask the graph for nodes back:
 ; We can create a new link to this in turn, automatically calculating the total size:
 => (merkle/link *1)
 #data/link ["tx" #data/hash "QmbbRoCQAzvZFjJGupbzKfqWRkLR6HxfxEZmDpw2Kjkqc7" 507]
-
-; Resolving links in the context of a graph looks up the target:
-=> (graph/with-context graph (= node-3 (deref *1)))
-true
 ```
 
 ## License
