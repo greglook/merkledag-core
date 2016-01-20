@@ -98,11 +98,11 @@
         (seq values)))))
 
 
-;; Remove automatic constructor functions.
-(ns-unmap *ns* '->EDNCodec)
-(ns-unmap *ns* 'map->EDNCodec)
-
-
 (defn edn-codec
   [types]
   (EDNCodec. "/edn/" types))
+
+
+;; Remove automatic constructor functions.
+(ns-unmap *ns* '->EDNCodec)
+(ns-unmap *ns* 'map->EDNCodec)

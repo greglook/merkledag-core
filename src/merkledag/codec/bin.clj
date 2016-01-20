@@ -80,11 +80,11 @@
       (PersistentBytes/wrap (.toByteArray baos)))))
 
 
-;; Remove automatic constructor functions.
-(ns-unmap *ns* '->BinaryCodec)
-(ns-unmap *ns* 'map->BinaryCodec)
-
-
 (defn bin-codec
   []
   (BinaryCodec. (multicodec/headers :bin)))
+
+
+;; Remove automatic constructor functions.
+(ns-unmap *ns* '->BinaryCodec)
+(ns-unmap *ns* 'map->BinaryCodec)
