@@ -32,7 +32,7 @@
    'data/link
    {:description "Merkle links within an object"
     :reader link/read-link
-    :writers {MerkleLink :name}}})
+    :writers {MerkleLink :name}}}) ; TODO: replace this with indexing?
 
 
 (def data-types

@@ -74,6 +74,7 @@
                            (.write data "\n")
                            (inc (count (.getBytes encoded data-charset))))
             byte-size (if (list? value)
+                        ; TODO: move this behavior to the EDN-LD codec?
                         (reduce #(+ %1 (write-value %2)) 0 value)
                         (write-value value))]
         (.flush data)
@@ -92,7 +93,7 @@
           read-stream (partial edn/read opts reader)
           values (doall (take-while (partial not= ::end-stream)
                                     (repeatedly read-stream)))]
-      ; TODO: not sure I like this behavior - it's not simple.
+      ; TODO: move this behavior to the EDN-LD codec?
       (if (> 2 (count values))
         (first values)
         (seq values)))))
