@@ -4,7 +4,9 @@
   (:require
     [blocks.core :as block]
     [multicodec.core :as codec]
-    [multicodec.codecs.mux :as mux])
+    (multicodec.codecs
+      [filter :refer [filter-codec]]
+      [mux :as mux]))
   (:import
     java.io.PushbackInputStream))
 
@@ -15,15 +17,11 @@
   to the result in the `:data` key, otherwise the `:encoding` is added to the
   map returned by the codec."
   [codec ^PushbackInputStream input]
-  (let [first-byte (.read content)]
-    (if (= \/ (char first-byte))
+  (let [first-byte (.read input)]
+    (if (<= 0 first-byte 127)
       ; Possible multicodec header.
-      (do (.unread first-byte content)
-          (binding [mux/*dispatched-codec* nil]
-            (let [data (codec/decode! codec content)]
-              (assoc (if (map? data) data {:data data})
-                     :encoding (or mux/*dispatched-codec*
-                                   (:header codec))))))
+      (do (.unread first-byte input)
+          (codec/decode! codec input))
       ; Unknown encoding.
       {:encoding nil})))
 
@@ -50,22 +48,29 @@
   map."
   [codec data]
   (when data
-    ; - If value is binary, serialize as binary and return block with :data set
-    ;   to a PersistentBytes value.
-    ; - If value is a string, serialize as UTF-8 and return block with :data set
-    ;   to the string value.
-    ; - If value is a map, assume it's meant to be a node, warn if :links or
-    ;   :data not present. Serialize as merkledag via EDN or CBOR, return block
-    ;   with :links and :data keys merged.
-    ))
+    (binding [mux/*dispatched-codec*]
+      (let [content (codec/encode codec data)
+            encoding (get-in codec [:codecs mux/*dispatched-codec*])
+            block (assoc (block/read! content)
+                         :encoding encoding)]
+        (if (and (map? data) (:data data))
+          (into block data)
+          (assoc block :data data))))))
+
+
+(defn- lift-codec
+  "Lifts a codec into a block format by wrapping the decoded value in a map with
+  `:encoding` and `:data` entries."
+  [codec]
+  (filter-codec codec
+    :decoding (fn wrap-data
+                [data]
+                {:encoding (:header codec)
+                 :data data})))
 
 
 (comment
   (mux-codec
-    :bin  (filter-codec
-            (bin-codec)
-            :decoder #(array-map :data %))
-    :text (filter-codec
-            (text-codec)
-            :decoder #(array-map :data %))
+    :bin  (bin-codec)
+    :text (lift-codec (text-codec))
     :node (node-codec :edn (edn-codec types))))
