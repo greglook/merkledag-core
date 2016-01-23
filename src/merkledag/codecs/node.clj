@@ -4,17 +4,19 @@
     [merkledag.codecs.edn :refer [edn-codec]]
     [multicodec.core :as codec]
     (multicodec.codecs
-      [mux :refer [mux-codec]])))
+      [mux :as mux])))
 
 
 (defrecord NodeCodec
-  [header codec]
+  [header mux]
 
   codec/Encoder
 
   (encodable?
     [this value]
-    (and (map? value) (or (:links value) (:data value))))
+    (and (map? value)
+         (or (seq (:links value))
+             (:data value))))
 
 
   (encode!
@@ -30,7 +32,7 @@
                     (assoc :links links')
                   data'
                     (assoc :data data'))]
-      (codec/encode! codec output value)))
+      (codec/encode! mux output value)))
 
 
   codec/Decoder
@@ -42,14 +44,21 @@
 
   (decode!
     [this input]
-    '...))
+    (binding [mux/*dispatched-codec* nil]
+      (let [value (codec/decode! mux input)
+            encoding (get-in mux [:codecs mux/*dispatched-codec*])]
+        (when-not (codec/encodable? this value)
+          (throw (ex-info "Decoded bad node value with missing links and data")
+                 {:encoding encoding
+                  :value value}))
+        (assoc value :encoding encoding)))))
 
 
 (defn node-codec
   [types]
   (NodeCodec.
     "/merkledag/v1"
-    (mux-codec
+    (mux/mux-codec
       :edn (edn-codec types))))
 
 

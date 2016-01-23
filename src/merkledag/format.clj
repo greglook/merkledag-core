@@ -25,7 +25,7 @@
   (let [first-byte (.read input)]
     (if (<= 0 first-byte 127)
       ; Possible multicodec header.
-      (do (.unread first-byte input)
+      (do (.unread input first-byte)
           (codec/decode! codec input))
       ; Unknown encoding.
       {:encoding nil})))

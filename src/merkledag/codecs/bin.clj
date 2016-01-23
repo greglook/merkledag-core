@@ -6,7 +6,7 @@
     [clojure.java.io :as io]
     (multicodec.codecs
       [bin :as bin]
-      [filter :as filter]))
+      [filter :refer [filter-codec]]))
   (:import
     blocks.data.PersistentBytes
     java.nio.ByteBuffer))
@@ -40,9 +40,6 @@
   "Constructs a new enhanced binary codec. Decodes into a map with an
   `:encoding` entry and a `:data` entry with a persistent bytes value."
   []
-  (let [bin (bin/bin-codec)]
-    (filter/filter-codec bin
-      :decoding (fn wrap-data
-                  [^bytes data]
-                  {:encoding (:header bin)
-                   :data (PersistentBytes/wrap data)}))))
+  (filter-codec
+    (bin/bin-codec)
+    :decoding #(PersistentBytes/wrap ^bytes %)))
