@@ -3,10 +3,15 @@
   and later decoding back into data."
   (:require
     [blocks.core :as block]
+    (merkledag.codecs
+      [bin :refer [bin-codec]]
+      [edn :refer [edn-codec]]
+      [node :refer [node-codec]])
     [multicodec.core :as codec]
     (multicodec.codecs
       [filter :refer [filter-codec]]
-      [mux :as mux]))
+      [mux :as mux :refer [mux-codec]]
+      [text :refer [text-codec]]))
   (:import
     java.io.PushbackInputStream))
 
@@ -48,7 +53,7 @@
   map."
   [codec data]
   (when data
-    (binding [mux/*dispatched-codec*]
+    (binding [mux/*dispatched-codec* nil]
       (let [content (codec/encode codec data)
             encoding (get-in codec [:codecs mux/*dispatched-codec*])
             block (assoc (block/read! content)
@@ -69,7 +74,8 @@
                  :data data})))
 
 
-(comment
+(defn standard-format
+  [types]
   (mux-codec
     :bin  (bin-codec)
     :text (lift-codec (text-codec))

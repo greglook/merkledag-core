@@ -39,20 +39,22 @@
 
 ;; ## Global Node Formatter
 
-(def block-format
+(def node-codec
   "The standard format used to convert between structured node data and block
   values."
-  (format/protobuf-format (data/data-codec)))
+  nil
+  #_(format/protobuf-format (data/data-codec)))
 
 
-(defn set-format!
+(defn set-codec!
   "Sets the global node format to the given formatter."
   [formatter]
+  #_
   (when-not (satisfies? format/BlockFormat format)
     (throw (IllegalArgumentException.
              (str "Cannot set MerkleDAG block format to type which does not "
                   "satisfy the BlockFormat protocol: " (class formatter)))))
-  (alter-var-root #'block-format (constantly formatter)))
+  (alter-var-root #'node-codec (constantly formatter)))
 
 
 
@@ -93,7 +95,7 @@
   ([data]
    (node* nil data))
   ([links data]
-   (format/format-node block-format links data)))
+   (format/format-block node-codec links data)))
 
 
 (defmacro node
@@ -106,7 +108,7 @@
    `(let [links# (binding [*link-table* nil] ~extra-links)]
       (binding [*link-table* (vec links#)]
         (let [data# ~data]
-          (format/format-node block-format *link-table* data#))))))
+          (format/format-block node-codec *link-table* data#))))))
 
 
 
@@ -140,7 +142,7 @@
   "Retrieves and parses the block identified by the given multihash."
   [store id]
   (when-let [block (block/get store id)]
-    (format/parse-node block-format block)))
+    (format/parse-block node-codec block)))
 
 
 (defn get-link
@@ -178,7 +180,7 @@
     (if id
       (block/put! store node)
       (when (or links data)
-        (block/put! store (format/format-node block-format links data))))))
+        (block/put! store (format/format-block node-codec links data))))))
 
 
 (defn update-path

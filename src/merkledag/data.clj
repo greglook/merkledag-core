@@ -1,11 +1,7 @@
 (ns merkledag.data
   "Support for core types and data segment codecs."
   (:require
-    (merkledag.codec
-      [bin :as bin]
-      [edn :as edn])
     [merkledag.link :as link]
-    [multicodec.codecs :as codecs]
     [multihash.core :as multihash])
   (:import
     merkledag.link.MerkleLink
@@ -55,35 +51,3 @@
   "Resets the `data-types` var to its initial state."
   []
   (alter-var-root #'data-types (constantly core-types)))
-
-
-
-;; ## Standard Data Codec
-
-(defn- encoding-selector
-  "Constructs a function which returns `:text` for strings, `:bin` for raw byte
-  types, and the given value for everything else."
-  [default]
-  (fn select
-    [_ value]
-    (cond
-      (string? value)
-        :text
-      (bin/binary? value)
-        :bin
-      :else
-        default)))
-
-
-(defn data-codec
-  "Creates a new multiplexing codec to select among binary, text, and EDN
-  encodings based on the value type."
-  ([]
-   (data-codec #'data-types))
-  ([types]
-   (assoc
-     (codecs/mux-codec
-       :edn  (edn/edn-codec types)
-       :bin  (bin/bin-codec)
-       :text (codecs/text-codec))
-     :select-encoder (encoding-selector :edn))))

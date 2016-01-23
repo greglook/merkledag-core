@@ -15,12 +15,13 @@
     (merkledag
       [core :as merkle]
       [data :as data]
-      [format :as format :refer [protobuf-format]]
+      [format :as format]
       [graph :as graph]
       [viz :as viz])
-    (multicodec
-      [core :as multicodec]
-      [codecs :as codecs])
+    [multicodec.core :as multicodec]
+    (multicodec.codecs
+      [mux :as mux]
+      [text :as text])
     [multihash.core :as multihash]
     [puget.printer :as puget])
   (:import
