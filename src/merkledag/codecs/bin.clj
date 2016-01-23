@@ -1,4 +1,4 @@
-(ns merkledag.codec.bin
+(ns merkledag.codecs.bin
   "Enhanced binary multicodec which accepts a variety of raw bytes for encoding
   and always produces `PersistentBytes` values on decode."
   (:require
