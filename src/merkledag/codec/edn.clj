@@ -60,48 +60,51 @@
 
 
 (defrecord EDNCodec
-  [header types]
+  [header types eof]
 
   multicodec/Encoder
 
+  (encodable?
+    [this value]
+    ; In reality, some values will fail without proper type handlers.
+    true)
+
+
   (encode!
     [this output value]
-    (when (some? value)
-      (let [printer (puget/canonical-printer (types->print-handlers types))
-            data (OutputStreamWriter. ^OutputStream output data-charset)
-            write-value #(let [encoded (puget/render-str printer %)]
-                           (.write data encoded)
-                           (.write data "\n")
-                           (inc (count (.getBytes encoded data-charset))))
-            byte-size (if (list? value)
-                        ; TODO: move this behavior to the EDN-LD codec?
-                        (reduce #(+ %1 (write-value %2)) 0 value)
-                        (write-value value))]
-        (.flush data)
-        byte-size)))
+    (let [printer (puget/canonical-printer (types->print-handlers types))
+          data (OutputStreamWriter. ^OutputStream output data-charset)
+          encoded (puget/render-str printer value)]
+      (.write data encoded)
+      (.write data "\n")
+      (.flush data)
+      (inc (count (.getBytes encoded data-charset)))))
 
 
   multicodec/Decoder
 
+  (decodable?
+    [this header']
+    (= header header'))
+
+
   (decode!
     [this input]
-    (let [opts {:readers (types->data-readers types)
-                :eof ::end-stream}
-          reader (-> ^InputStream input
-                     (InputStreamReader. data-charset)
-                     (PushbackReader.))
-          read-stream (partial edn/read opts reader)
-          values (doall (take-while (partial not= ::end-stream)
-                                    (repeatedly read-stream)))]
-      ; TODO: move this behavior to the EDN-LD codec?
-      (if (> 2 (count values))
-        (first values)
-        (seq values)))))
+    (edn/read
+      {:readers (types->data-readers types)
+       :eof eof}
+      (-> ^InputStream input
+          (InputStreamReader. data-charset)
+          (PushbackReader.)))))
 
 
 (defn edn-codec
-  [types]
-  (EDNCodec. "/edn/" types))
+  "Constructs a new EDN codec. Opts may include:
+
+  - `:eof` a value to be returned from the codec when the end of the stream is
+    reached instead of throwing an exception. "
+  [types & {:as opts}]
+  (EDNCodec. "/edn" types (:eof opts)))
 
 
 ;; Remove automatic constructor functions.

@@ -13,7 +13,7 @@
   [[byte-streams "0.2.0"]
    [clj-time "0.11.0"]
    [mvxcvi/blocks "0.5.0"]
-   [mvxcvi/multicodec "0.4.0"]
+   [mvxcvi/multicodec "0.5.0"]
    [mvxcvi/multihash "1.1.0"]
    [mvxcvi/puget "1.0.0"]
    [org.clojure/clojure "1.7.0"]
