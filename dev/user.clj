@@ -16,40 +16,23 @@
       [core :as merkle]
       [data :as data]
       [format :as format]
-      [graph :as graph]
+      [test-utils :refer [dprint-opts random-bytes]]
       [viz :as viz])
-    [multicodec.core :as multicodec]
-    (multicodec.codecs
-      [mux :as mux]
-      [text :as text])
+    [multicodec.core :as codec]
     [multihash.core :as multihash]
-    [puget.printer :as puget])
-  (:import
-    merkledag.link.MerkleLink
-    multihash.core.Multihash))
+    [puget.printer :as puget]))
 
 
 (try (require '[clojure.stacktrace :refer [print-cause-trace]]) (catch Exception e nil))
 (try (require '[clojure.tools.namespace.repl :refer [refresh]]) (catch Exception e nil))
 
 
-(def print-options
-  {:print-color true
-   :print-handlers
-   (puget.dispatch/chained-lookup
-     {Multihash (puget/tagged-handler 'data/hash multihash/base58)
-      MerkleLink (puget/tagged-handler 'data/link (juxt :name :target :tsize))}
-     puget/common-handlers)})
-
-
 (defn dprint
   [value]
-  (puget/pprint value print-options))
+  (puget/pprint value dprint-opts))
 
 
-(def graph (graph/block-graph))
-
-
+#_
 (defn init!
   []
   (graph/with-context graph

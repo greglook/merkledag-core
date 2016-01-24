@@ -5,7 +5,6 @@
     [blocks.core :as block]
     (merkledag.codecs
       [bin :refer [bin-codec]]
-      [edn :refer [edn-codec]]
       [node :refer [node-codec]])
     [multicodec.core :as codec]
     (multicodec.codecs
@@ -14,21 +13,6 @@
       [text :refer [text-codec]]))
   (:import
     java.io.PushbackInputStream))
-
-
-(defn- parse-input
-  "Helper for parsing the input stream from a block. Returns a map with at least
-  an `:encoding` key. If the codec returns a non-map value, it is added directly
-  to the result in the `:data` key, otherwise the `:encoding` is added to the
-  map returned by the codec."
-  [codec ^PushbackInputStream input]
-  (let [first-byte (.read input)]
-    (if (<= 0 first-byte 127)
-      ; Possible multicodec header.
-      (do (.unread input first-byte)
-          (codec/decode! codec input))
-      ; Unknown encoding.
-      {:encoding nil})))
 
 
 (defn parse-block
@@ -41,9 +25,16 @@
   codecs should also return a `:links` vector."
   [codec block]
   (when block
-    (into block
-          (with-open [content (PushbackInputStream. (block/open block))]
-            (parse-input content)))))
+    (->>
+      (with-open [content (PushbackInputStream. (block/open block))]
+        (let [first-byte (.read content)]
+          (if (<= 0 first-byte 127)
+            ; Possible multicodec header.
+            (do (.unread content first-byte)
+                (codec/decode! codec content))
+            ; Unknown encoding.
+            {:encoding nil})))
+      (into block))))
 
 
 (defn format-block
@@ -53,14 +44,15 @@
   map."
   [codec data]
   (when data
-    (binding [mux/*dispatched-codec* nil]
-      (let [content (codec/encode codec data)
-            encoding (get-in codec [:codecs mux/*dispatched-codec*])
-            block (assoc (block/read! content)
-                         :encoding encoding)]
-        (if (and (map? data) (:data data))
-          (into block data)
-          (assoc block :data data))))))
+    (let [content (codec/encode codec data)
+          block (block/read! content)
+          decoded (codec/decode codec content)]
+      (when (or (and (map? data) (not= data (dissoc decoded :encoding)))
+                (not= data (:data decoded)))
+        (throw (ex-info (str "Decoded data does not match input data " (class data))
+                        {:input data
+                         :decoded decoded})))
+      (into block decoded))))
 
 
 (defn- lift-codec
@@ -77,6 +69,6 @@
 (defn standard-format
   [types]
   (mux-codec
-    :bin  (bin-codec)
+    :bin  (lift-codec (bin-codec))
     :text (lift-codec (text-codec))
-    :node (node-codec :edn (edn-codec types))))
+    :node (node-codec types)))
