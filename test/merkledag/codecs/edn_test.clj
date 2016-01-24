@@ -1,7 +1,7 @@
-(ns merkledag.codec.edn-test
+(ns merkledag.codecs.edn-test
   (:require
     [clojure.test :refer :all]
-    [merkledag.codec.edn :as edn]
+    [merkledag.codecs.edn :as edn]
     [multicodec.core :as codec])
   (:import
     (java.io

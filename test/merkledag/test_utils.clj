@@ -1,11 +1,13 @@
 (ns merkledag.test-utils
   (:require
-    [merkledag.codec.edn :as edn]
+    [merkledag.codecs.edn :as edn]
     [merkledag.data :as data]
+    [multihash.core :as multihash]
     [puget.dispatch :as dispatch]
     [puget.printer :as puget])
   (:import
-    merkledag.link.MerkleLink))
+    merkledag.link.MerkleLink
+    multihash.core.Multihash))
 
 
 (defn random-bytes
@@ -15,10 +17,12 @@
     data))
 
 
-(def print-opts
-  {:print-handlers
+(def dprint-opts
+  {:print-color true
+   :print-handlers
    (dispatch/chained-lookup
-     {MerkleLink (puget/tagged-handler 'data/link (juxt :name :target :tsize))}
+     {MerkleLink (puget/tagged-handler 'data/link (juxt :name :target :tsize))
+      Multihash (puget/tagged-handler 'data/hash multihash/base58)}
      (edn/types->print-handlers data/data-types)
      puget/common-handlers)})
 
@@ -27,5 +31,5 @@
   [v]
   `(do
      (print "DEBUG: ")
-     (puget/cprint (quote ~v) print-opts)
-     (puget/cprint ~v print-opts)))
+     (puget/pprint (quote ~v) dprint-opts)
+     (puget/pprint ~v dprint-opts)))

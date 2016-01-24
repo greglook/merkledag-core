@@ -1,8 +1,8 @@
-(ns merkledag.codec.bin-test
+(ns merkledag.codecs.bin-test
   (:require
     [byte-streams :refer [bytes=]]
     [clojure.test :refer :all]
-    [merkledag.codec.bin :as bin]
+    [merkledag.codecs.bin :as bin]
     [merkledag.test-utils :refer [random-bytes]]
     [multicodec.core :as codec])
   (:import
@@ -13,12 +13,13 @@
     java.nio.ByteBuffer))
 
 
-(deftest binary-data
-  (is (true? (bin/binary? (byte-array 10))))
-  (is (true? (bin/binary? (ByteBuffer/wrap (random-bytes 5)))))
-  (is (true? (bin/binary? (PersistentBytes/wrap (random-bytes 5)))))
-  (is (false? (bin/binary? "string")))
-  (is (false? (bin/binary? :keyword))))
+(deftest encodable-data
+  (let [bin (bin/bin-codec)]
+    (is (true? (codec/encodable? bin (byte-array 10))))
+    (is (true? (codec/encodable? bin (ByteBuffer/wrap (random-bytes 5)))))
+    (is (true? (codec/encodable? bin (PersistentBytes/wrap (random-bytes 5)))))
+    (is (false? (codec/encodable? bin "string")))
+    (is (false? (codec/encodable? bin :keyword)))))
 
 
 (deftest bin-codec

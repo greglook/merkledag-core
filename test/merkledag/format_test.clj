@@ -6,14 +6,16 @@
       [format :as format]
       [link :as link])
     [multicodec.core :as codec]
-    [multicodec.codecs :refer [text-codec]]
+    [multicodec.codecs.text :refer [text-codec]]
     [multihash.core :as multihash]))
 
 
+#_
 (def test-format
   (format/protobuf-format (text-codec)))
 
 
+#_
 (deftest format-construction
   (is (thrown? IllegalArgumentException
                (format/protobuf-format
@@ -29,6 +31,7 @@
                      nil))))))
 
 
+#_
 (deftest node-construction
   (is (nil? (format/format-node test-format nil nil)))
   (let [data "foo bar baz"
@@ -51,6 +54,7 @@
     (is (nil? (:data node)))))
 
 
+#_
 (deftest node-parsing
   (testing "raw block"
     (let [block (block/read! "this is not valid protobuf")
