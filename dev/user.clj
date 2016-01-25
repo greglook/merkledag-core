@@ -32,6 +32,10 @@
   (puget/pprint value dprint-opts))
 
 
+(def block-codec
+  (format/standard-format data/data-types))
+
+
 #_
 (defn init!
   []

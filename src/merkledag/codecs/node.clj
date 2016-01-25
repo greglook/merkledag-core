@@ -46,12 +46,12 @@
     [this input]
     (binding [mux/*dispatched-codec* nil]
       (let [value (codec/decode! mux input)
-            encoding (get-in mux [:codecs mux/*dispatched-codec*])]
+            encoding (get-in mux [:codecs mux/*dispatched-codec* :header])]
         (when-not (codec/encodable? this value)
           (throw (ex-info "Decoded bad node value with missing links and data")
                  {:encoding encoding
                   :value value}))
-        (assoc value :encoding encoding)))))
+        (assoc value :encoding [header encoding])))))
 
 
 (defn node-codec

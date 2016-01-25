@@ -3,11 +3,13 @@
   and later decoding back into data."
   (:require
     [blocks.core :as block]
+    [byte-streams :refer [bytes=]]
     (merkledag.codecs
       [bin :refer [bin-codec]]
       [node :refer [node-codec]])
     [multicodec.core :as codec]
     (multicodec.codecs
+      [bin :refer [BinaryData]]
       [filter :refer [filter-codec]]
       [mux :as mux :refer [mux-codec]]
       [text :refer [text-codec]]))
@@ -47,8 +49,12 @@
     (let [content (codec/encode codec data)
           block (block/read! content)
           decoded (codec/decode codec content)]
-      (when (or (and (map? data) (not= data (dissoc decoded :encoding)))
-                (not= data (:data decoded)))
+      (when-not (if (map? data)
+                  (and (= (:links data) (:links decoded))
+                       (= (:data  data) (:data  decoded)))
+                  (or (= data (:data decoded))
+                      (and (satisfies? BinaryData data)
+                           (bytes= data (:data decoded)))))
         (throw (ex-info (str "Decoded data does not match input data " (class data))
                         {:input data
                          :decoded decoded})))
