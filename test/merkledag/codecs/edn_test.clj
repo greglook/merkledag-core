@@ -27,10 +27,11 @@
                        (String. (.toByteArray baos)))
         test-decode #(codec/decode edn (.getBytes %))]
     (testing "encoding"
-      (is (= "" (test-encode nil))
-          "nil value should encode to nil")
+      (is (= "nil\n" (test-encode nil))
+          "nil value should encode to nil string")
       (is (= "false\n" (test-encode false)))
-      (is (= "123\nfoo\n:bar\n" (test-encode '(123 foo :bar)))))
+      (is (= "(123 foo :bar)\n" (test-encode '(123 foo :bar)))))
     (testing "decoding"
       (is (= {:alpha true, :beta 'bar, "foo" 123} (test-decode "{:alpha true :beta bar \"foo\" 123}")))
-      (is (= [:foo 'bar 456] (test-decode ":foo\nbar\n456\n"))))))
+      (is (= :foo (test-decode ":foo\nbar\n456\n"))
+          "should only decode first value"))))
