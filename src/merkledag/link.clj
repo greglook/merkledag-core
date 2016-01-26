@@ -2,6 +2,7 @@
   (:refer-clojure :exclude [resolve])
   (:require
     [blocks.core :as block]
+    [clojure.walk :as walk]
     [multihash.core :as multihash])
   (:import
     blocks.data.Block
@@ -75,10 +76,6 @@
     (.valAt this k nil)))
 
 
-;; Remove automatic constructor function.
-(ns-unmap *ns* '->MerkleLink)
-
-
 (defn create
   "Constructs a `MerkleLink` value, validating the inputs."
   [name target tsize]
@@ -97,6 +94,19 @@
   (MerkleLink. name target tsize nil))
 
 
+(defn write-link
+  "Returns a vector representing the given link, suitable for serialization as
+  part of a tagged literal value."
+  [link]
+  [(:name link) (:target link) (:tsize link)])
+
+
+(defn read-link
+  "Reader for link vectors produced by `write-link`."
+  [v]
+  (apply create v))
+
+
 
 ;; ## Link Table
 
@@ -106,9 +116,90 @@
   nil)
 
 
+;; This type represents a simple indexed pointer into the link table. It is used
+;; to replace actual links before values are encoded, and replaced with real
+;; links from the table when decoding.
+(deftype LinkIndex
+  [index]
+
+  Object
+
+  (toString
+    [this]
+    (format "link-index:%d" index))
+
+  (equals
+    [this that]
+    (or (identical? this that) true
+        (and (instance? LinkIndex that)
+             (= index (.index ^LinkIndex that)))))
+
+  (hashCode
+    [this]
+    (hash-combine (hash (class this)) (hash index)))
+
+
+  clojure.lang.ILookup
+
+  (valAt
+    [this k not-found]
+    (if (= :index k) index not-found))
+
+  (valAt
+    [this k]
+    (.valAt this k nil)))
+
+
+(defn link-index
+  "Return a `LinkIndex` value pointing to the given link in the table."
+  [table link]
+  (some->>
+    table
+    (keep-indexed #(when (= link %2) %1))
+    (first)
+    (LinkIndex.)))
+
+
+(defn replace-links
+  "Replaces all the links in a data structure with indexes into the given
+  table. Throws an exception if any links are 'broken' because they were not
+  found in the table."
+  [table data]
+  (walk/postwalk
+    (fn replacer [x]
+      (if (instance? MerkleLink x)
+        (or (link-index table x)
+            (throw (ex-info (str "No link in table matching " x)
+                            {:table table, :link x})))
+        x))
+    data))
+
+
+(defn resolve-links
+  "Replaces all the link indexes in a data structure with link values resolved
+  against the given table. Throws an exception if any links are 'broken' because
+  the index is outside the table."
+  [table data]
+  (walk/postwalk
+    (fn resolver [x]
+      (if (instance? LinkIndex x)
+        (or (nth table (:index x))
+            (throw (ex-info (str "No index in table for " x)
+                            {:table table, :index x})))
+        x))
+    data))
+
+
+#_
+(defn read-index
+  "Looks up a link in the current `*link-table*`, or returns nil."
+  [index]
+  (nth *link-table* index))
+
+
 (defn resolve
-  "Resolves a link against the current `*link-table*`, if any. Returns nil if
-  no matching link is found."
+  "Resolves a link name against the current `*link-table*`, if any. Returns nil
+  if no matching link is found."
   ([name]
    (resolve *link-table* name))
   ([link-table name]
@@ -116,15 +207,8 @@
      (first (filter #(= (str name) (:name %)) link-table)))))
 
 
-(defn read-link
-  "Resolves a link against the current `*link-table*`, or returns a new broken
-  link with a nil target."
-  [name]
-  ; TODO: should this also support positional link references?
-  (when name
-    (or (resolve name)
-        (MerkleLink. (str name) nil nil nil))))
 
+;; ## Utility Functions
 
 (defn update-links
   "Returns an updated vector of links with the given link added, replacing any
@@ -135,9 +219,6 @@
       (vec (concat before [new-link] (rest after))))
     links))
 
-
-
-;; ## Utility Functions
 
 (defn total-size
   "Calculates the total size of data reachable from the given node. Expects a
@@ -177,3 +258,8 @@
   (link-to
     [block name]
     (create name (:id block) (total-size block))))
+
+
+;; Remove automatic constructor functions.
+(ns-unmap *ns* '->MerkleLink)
+(ns-unmap *ns* '->LinkIndex)

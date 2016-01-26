@@ -15,6 +15,7 @@
     [multihash.core :as multihash])
   (:import
     java.io.PushbackInputStream
+    merkledag.link.LinkIndex
     merkledag.link.MerkleLink
     multihash.core.Multihash))
 
@@ -37,9 +38,14 @@
     :writers {Multihash multihash/base58}}
 
    'data/link
-   {:description "Merkle links within an object"
+   {:description "Merkle link values"
     :reader link/read-link
-    :writers {MerkleLink :name}}}) ; TODO: replace this with indexing?
+    :writers {MerkleLink link/write-link}}
+
+   'data/link-index
+   {:description "Indexes to the link table within a node"
+    :reader #(LinkIndex. %)
+    :writers {LinkIndex :index}}})
 
 
 
@@ -78,8 +84,8 @@
           block (block/read! content)
           decoded (codec/decode codec content)]
       (when-not (if (map? data)
-                  (and (= (:links data) (:links decoded))
-                       (= (:data  data) (:data  decoded)))
+                  (and (= (seq (:links data)) (seq (:links decoded)))
+                       (= (:data data) (:data decoded)))
                   (= (:data decoded) data))
         (throw (ex-info (str "Decoded data does not match input data " (class data))
                         {:input data

@@ -70,25 +70,21 @@
 
 
 (defn link
-  "Constructs a new merkle link. The name should be a string. If no target is
-  given, the name is looked up in the dynamic link table. Otherwise, this
-  constructs a link to the target and adds it to the link table."
-  ([name]
-   (link/read-link name))
-  ([name target]
-   (let [new-link (link* name target)]
-     (if-let [extant (link/resolve name)]
-       ; Check if existing link matches.
-       (if (= (:target new-link) (:target extant))
-         extant
-         (throw (IllegalStateException.
-                  (str "Can't link " name " to " (:target new-link)
-                       ", already points to " (:target extant)))))
-       ; No existing link, use new one.
-       (do
-         (when *link-table*
-           (set! *link-table* (conj *link-table* new-link)))
-         new-link)))))
+  "Constructs a new merkle link to the target and adds it to the link table if
+  it is not already present."
+  [name target]
+  (let [new-link (link* name target)]
+    (if-let [extant (link/resolve name)]
+      ; Check if existing link matches.
+      (if (= (:target new-link) (:target extant))
+        extant
+        (throw (IllegalStateException.
+                 (str "Can't link " name " to " (:target new-link)
+                      ", already points to " (:target extant)))))
+      ; No existing link, use new one.
+      (do (when *link-table*
+            (set! *link-table* (conj *link-table* new-link)))
+          new-link))))
 
 
 (defn node*
@@ -97,7 +93,7 @@
   ([data]
    (node* nil data))
   ([links data]
-   (format/format-block block-codec links data)))
+   (format/format-block block-codec {:links links, :data data})))
 
 
 (defmacro node
@@ -110,7 +106,7 @@
    `(let [links# (binding [*link-table* nil] ~extra-links)]
       (binding [*link-table* (vec links#)]
         (let [data# ~data]
-          (format/format-block block-codec *link-table* data#))))))
+          (node* *link-table* data#))))))
 
 
 

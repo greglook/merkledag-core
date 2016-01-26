@@ -1,11 +1,17 @@
 (ns merkledag.codecs.node
   "Functions to handle merkledag nodes serialized using a separate subcodec."
   (:require
+    [clojure.walk :as walk]
     [merkledag.codecs.edn :refer [edn-codec]]
+    [merkledag.link :as link]
     [multicodec.core :as codec]
     (multicodec.codecs
-      [mux :as mux])))
+      [mux :as mux]))
+  (:import
+    merkledag.link.MerkleLink))
 
+
+;; ## Node Codec
 
 (defrecord NodeCodec
   [header mux]
@@ -25,17 +31,15 @@
     (when-not (or (seq (:links node)) (:data node))
       (throw (IllegalArgumentException.
                "Cannot encode a node with no links or data!")))
-    (let [links' (when (seq (:links node))
-                   ; TODO: canonical link table
-                   (vec (:links node)))
-          ; TODO: data should be rendered with links replaced with numeric indexes into link table
-          data' (:data node)
+    (let [links' (when-let [links (seq (:links node))]
+                   ; TODO: dedupe link table?
+                   (vec links))
+          data' (link/replace-links links' (:data node))
           value (cond-> {}
                   links'
                     (assoc :links links')
                   data'
                     (assoc :data data'))]
-      ; TODO: bind link table?
       (codec/encode! mux output value)))
 
 
@@ -55,7 +59,9 @@
           (throw (ex-info "Decoded bad node value with missing links and data")
                  {:encoding encoding
                   :value value}))
-        (assoc value :encoding [header encoding])))))
+        (assoc value
+               :encoding [header encoding]
+               :data (link/resolve-links (:links value) (:data value)))))))
 
 
 (defn node-codec
