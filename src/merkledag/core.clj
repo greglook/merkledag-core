@@ -22,9 +22,9 @@
     [blocks.core :as block]
     [clojure.string :as str]
     (merkledag
-      [data :as data]
       [format :as format]
-      [link :as link :refer [*link-table*]]))
+      [link :as link :refer [*link-table*]])
+    [multicodec.core :as codec])
   (:import
     merkledag.link.MerkleLink))
 
@@ -37,24 +37,26 @@
 ;; - 'Flush' the buffer by writing all the blocks to the backing store.
 
 
+
 ;; ## Global Node Formatter
 
-(def node-codec
-  "The standard format used to convert between structured node data and block
-  values."
-  nil
-  #_(format/protobuf-format (data/data-codec)))
+(def block-codec
+  "The standard format used to read and write data blocks."
+  (format/standard-format))
 
 
 (defn set-codec!
   "Sets the global node format to the given formatter."
-  [formatter]
-  #_
-  (when-not (satisfies? format/BlockFormat format)
+  [codec]
+  (when-not (satisfies? codec/Encoder codec)
     (throw (IllegalArgumentException.
-             (str "Cannot set MerkleDAG block format to type which does not "
-                  "satisfy the BlockFormat protocol: " (class formatter)))))
-  (alter-var-root #'node-codec (constantly formatter)))
+             (str "Cannot set MerkleDAG block codec to type which does not "
+                  "satisfy the Encoder protocol: " (class codec)))))
+  (when-not (satisfies? codec/Decoder codec)
+    (throw (IllegalArgumentException.
+             (str "Cannot set MerkleDAG block codec to type which does not "
+                  "satisfy the Decoder protocol: " (class codec)))))
+  (alter-var-root #'block-codec (constantly codec)))
 
 
 
@@ -95,7 +97,7 @@
   ([data]
    (node* nil data))
   ([links data]
-   (format/format-block node-codec links data)))
+   (format/format-block block-codec links data)))
 
 
 (defmacro node
@@ -108,7 +110,7 @@
    `(let [links# (binding [*link-table* nil] ~extra-links)]
       (binding [*link-table* (vec links#)]
         (let [data# ~data]
-          (format/format-block node-codec *link-table* data#))))))
+          (format/format-block block-codec *link-table* data#))))))
 
 
 
@@ -142,7 +144,7 @@
   "Retrieves and parses the block identified by the given multihash."
   [store id]
   (when-let [block (block/get store id)]
-    (format/parse-block node-codec block)))
+    (format/parse-block block-codec block)))
 
 
 (defn get-link
@@ -180,7 +182,7 @@
     (if id
       (block/put! store node)
       (when (or links data)
-        (block/put! store (format/format-block node-codec links data))))))
+        (block/put! store (format/format-block block-codec links data))))))
 
 
 (defn update-path
