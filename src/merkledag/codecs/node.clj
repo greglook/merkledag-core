@@ -14,9 +14,10 @@
 
   (encodable?
     [this value]
-    (and (map? value)
-         (or (seq (:links value))
-             (:data value))))
+    (boolean
+      (and (map? value)
+           (or (seq (:links value))
+               (:data value)))))
 
 
   (encode!
@@ -25,13 +26,16 @@
       (throw (IllegalArgumentException.
                "Cannot encode a node with no links or data!")))
     (let [links' (when (seq (:links node))
+                   ; TODO: canonical link table
                    (vec (:links node)))
+          ; TODO: data should be rendered with links replaced with numeric indexes into link table
           data' (:data node)
           value (cond-> {}
                   links'
                     (assoc :links links')
                   data'
                     (assoc :data data'))]
+      ; TODO: bind link table?
       (codec/encode! mux output value)))
 
 
