@@ -14,7 +14,6 @@
     [clojure.string :as str]
     (merkledag
       [core :as merkle]
-      [data :as data]
       [format :as format]
       [test-utils :refer [dprint-opts random-bytes]]
       [viz :as viz])
@@ -30,10 +29,6 @@
 (defn dprint
   [value]
   (puget/pprint value dprint-opts))
-
-
-(def block-codec
-  (format/standard-format data/data-types))
 
 
 #_

@@ -3,19 +3,47 @@
   and later decoding back into data."
   (:require
     [blocks.core :as block]
-    [byte-streams :refer [bytes=]]
     (merkledag.codecs
       [bin :refer [bin-codec]]
       [node :refer [node-codec]])
+    [merkledag.link :as link]
     [multicodec.core :as codec]
     (multicodec.codecs
-      [bin :refer [BinaryData]]
       [filter :refer [filter-codec]]
       [mux :as mux :refer [mux-codec]]
-      [text :refer [text-codec]]))
+      [text :refer [text-codec]])
+    [multihash.core :as multihash])
   (:import
-    java.io.PushbackInputStream))
+    java.io.PushbackInputStream
+    merkledag.link.MerkleLink
+    multihash.core.Multihash))
 
+
+;; ## Type Handlers
+
+; TODO: implement type plugin system
+; Should load namespaces under merkledag.data:
+; - merkledag.data.time
+; - merkledag.data.bytes
+; - merkledag.data.units
+; ...
+
+
+(def core-types
+  ; TODO: is data/hash necessary? Multihashes shouldn't show up in data segments...
+  {'data/hash
+   {:description "Content-addressed multihash references"
+    :reader multihash/decode
+    :writers {Multihash multihash/base58}}
+
+   'data/link
+   {:description "Merkle links within an object"
+    :reader link/read-link
+    :writers {MerkleLink :name}}}) ; TODO: replace this with indexing?
+
+
+
+;; ## Format Functions
 
 (defn parse-block
   "Attempts to parse the contents of a block with the given codec. Returns an
@@ -52,14 +80,15 @@
       (when-not (if (map? data)
                   (and (= (:links data) (:links decoded))
                        (= (:data  data) (:data  decoded)))
-                  (or (= data (:data decoded))
-                      (and (satisfies? BinaryData data)
-                           (bytes= data (:data decoded)))))
+                  (= (:data decoded) data))
         (throw (ex-info (str "Decoded data does not match input data " (class data))
                         {:input data
                          :decoded decoded})))
       (into block decoded))))
 
+
+
+;; ## Codec Construction
 
 (defn- lift-codec
   "Lifts a codec into a block format by wrapping the decoded value in a map with
@@ -73,8 +102,10 @@
 
 
 (defn standard-format
-  [types]
-  (mux-codec
-    :bin  (lift-codec (bin-codec))
-    :text (lift-codec (text-codec))
-    :node (node-codec types)))
+  ([]
+   (standard-format core-types))
+  ([types]
+   (mux-codec
+     :bin  (lift-codec (bin-codec))
+     :text (lift-codec (text-codec))
+     :node (node-codec types))))
