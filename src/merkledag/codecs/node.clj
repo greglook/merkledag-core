@@ -56,9 +56,9 @@
       (let [value (codec/decode! mux input)
             encoding (get-in mux [:codecs mux/*dispatched-codec* :header])]
         (when-not (codec/encodable? this value)
-          (throw (ex-info "Decoded bad node value with missing links and data")
-                 {:encoding encoding
-                  :value value}))
+          (throw (ex-info "Decoded bad node value with missing links and data"
+                          {:encoding encoding
+                           :value value})))
         (assoc value
                :encoding [header encoding]
                :data (link/resolve-indexes (:links value) (:data value)))))))
