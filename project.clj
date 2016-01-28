@@ -13,7 +13,7 @@
    [mvxcvi/multicodec "0.5.0"]
    [mvxcvi/multihash "1.1.0"]
    [mvxcvi/puget "1.0.0"]
-   [org.clojure/clojure "1.7.0"]
+   [org.clojure/clojure "1.8.0"]
    [org.clojure/tools.logging "0.3.1"]
    [rhizome "0.2.5"]]
 
