@@ -116,7 +116,50 @@
 
 
 
-;; ## Link Table
+;; ## Link Utilities
+
+(defn total-size
+  "Calculates the total size of data reachable from the given node. Expects a
+  block with `:size` and `:links` entries.
+
+  Raw blocks and nodes with no links have a total size equal to their `:size`.
+  Each link in the node's link table adds its `:tsize` to the total. Returns
+  `nil` if no node is given."
+  [node]
+  (when-let [size (:size node)]
+    (->> (:links node)
+         (map :tsize)
+         (reduce (fnil + 0 0) size))))
+
+
+(defprotocol Target
+  "Protocol for values which can be targeted by a merkle link."
+
+  (link-to
+    [target name]
+    "Constructs a new named merkle link to the given target."))
+
+
+(extend-protocol Target
+
+  Multihash
+  (link-to
+    [mhash name]
+    (create name mhash nil))
+
+  MerkleLink
+  (link-to
+    [link name]
+    (create name (:target link) (:tsize link)))
+
+  Block
+  (link-to
+    [block name]
+    (create name (:id block) (total-size block))))
+
+
+
+;; ## Link Indexes
 
 ;; This type represents a simple indexed pointer into the link table. It is used
 ;; to replace actual links before values are encoded, and replaced with real
@@ -160,9 +203,9 @@
   "Return a `LinkIndex` value pointing to the given link in the table."
   ([i]
    (LinkIndex. i))
-  ([table link]
+  ([link-table link]
    (some->>
-     table
+     link-table
      (keep-indexed #(when (= link %2) %1))
      (first)
      (LinkIndex.))))
@@ -172,13 +215,13 @@
   "Replaces all the links in a data structure with indexes into the given
   table. Throws an exception if any links are 'broken' because they were not
   found in the table."
-  [table data]
+  [link-table data]
   (walk/postwalk
     (fn replacer [x]
       (if (instance? MerkleLink x)
-        (or (link-index table x)
+        (or (link-index link-table x)
             (throw (ex-info (str "No link in table matching " x)
-                            {:table table, :link x})))
+                            {:link-table link-table, :link x})))
         x))
     data))
 
@@ -187,78 +230,33 @@
   "Replaces all the link indexes in a data structure with link values resolved
   against the given table. Throws an exception if any links are 'broken' because
   the index is outside the table."
-  [table data]
+  [link-table data]
   (walk/postwalk
     (fn resolver [x]
       (if (instance? LinkIndex x)
-        (or (nth table (:index x))
+        (or (nth link-table (:index x))
             (throw (ex-info (str "No index in table for " x)
-                            {:table table, :index x})))
+                            {:link-table link-table, :index x})))
         x))
     data))
 
 
+
+;; ## Link Table Functions
+
 (defn resolve-name
   "Resolves a link name against the given table. Returns nil if no matching
   link is found."
-  [table name]
+  [link-table name]
   (when name
-    (first (filter #(= (str name) (:name %)) table))))
+    (first (filter #(= (str name) (:name %)) link-table))))
 
-
-
-;; ## Utility Functions
 
 (defn update-links
   "Returns an updated vector of links with the given link added, replacing any
   existing link with the same name."
-  [links new-link]
+  [link-table new-link]
   (if new-link
-    (let [[before after] (split-with #(not= (:name new-link) (:name %)) links)]
+    (let [[before after] (split-with #(not= (:name new-link) (:name %)) link-table)]
       (vec (concat before [new-link] (rest after))))
-    links))
-
-
-(defn total-size
-  "Calculates the total size of data reachable from the given node. Expects a
-  block with `:size` and `:links` entries.
-
-  Raw blocks and nodes with no links have a total size equal to their `:size`.
-  Each link in the node's link table adds its `:tsize` to the total. Returns
-  `nil` if no node is given."
-  [node]
-  (when-let [size (:size node)]
-    (->> (:links node)
-         (map :tsize)
-         (reduce (fnil + 0 0) size))))
-
-
-(defprotocol Target
-  "Protocol for values which can be targeted by a merkle link."
-
-  (link-to
-    [target name]
-    "Constructs a new named merkle link to the given target."))
-
-
-(extend-protocol Target
-
-  Multihash
-  (link-to
-    [mhash name]
-    (create name mhash nil))
-
-  MerkleLink
-  (link-to
-    [link name]
-    (create name (:target link) (:tsize link)))
-
-  Block
-  (link-to
-    [block name]
-    (create name (:id block) (total-size block))))
-
-
-;; Remove automatic constructor functions.
-(ns-unmap *ns* '->MerkleLink)
-(ns-unmap *ns* '->LinkIndex)
+    link-table))
