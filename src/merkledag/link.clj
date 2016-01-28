@@ -107,7 +107,12 @@
 (defn read-link
   "Reader for link vectors produced by `write-link`."
   [v]
-  (apply create v))
+  (when v
+    (when-not (and (sequential? v) (= 3 (count v)))
+      (throw (IllegalArgumentException.
+               (str "Link form must be a sequential collection with three "
+                    "elements: " (pr-str v)))))
+    (apply create v)))
 
 
 
