@@ -109,12 +109,6 @@
 
 ;; ## Link Table
 
-(def ^:dynamic *link-table*
-  "Contextual link table used to collect links when defining nodes, and to
-  assign links when parsing nodes."
-  nil)
-
-
 ;; This type represents a simple indexed pointer into the link table. It is used
 ;; to replace actual links before values are encoded, and replaced with real
 ;; links from the table when decoding.

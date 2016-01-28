@@ -23,7 +23,7 @@
     [clojure.string :as str]
     (merkledag
       [format :as format]
-      [link :as link :refer [*link-table*]])
+      [link :as link])
     [multicodec.core :as codec])
   (:import
     merkledag.link.MerkleLink))
@@ -61,6 +61,12 @@
 
 
 ;; ## Value Constructors
+
+(def ^:private ^:dynamic *link-table*
+  "Contextual link table used to collect links when defining nodes, and to
+  assign links when parsing nodes."
+  nil)
+
 
 (defn link*
   "Non-magical link constructor which uses the `link/Target` protocol to build
