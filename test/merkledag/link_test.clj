@@ -63,24 +63,14 @@
         b (link/create "b" (multihash/sha1 "bar") 87)
         c (link/create "c" (multihash/sha1 "baz") 11)
         table [a b c]]
-    (testing "resolve"
+    (testing "resolve-name"
       (testing "with nil name"
-        (is (nil? (link/resolve [(link/create "" (:target a) nil)] nil))))
+        (is (nil? (link/resolve-name [(link/create "" (:target a) nil)] nil))))
       (testing "with explicit table"
-        (is (= a (link/resolve table "a")))
-        (is (nil? (link/resolve table "d"))))
-      (testing "with dynamic table"
-        (is (nil? (link/resolve "b")))
-        (binding [link/*link-table* table]
-          (is (= c (link/resolve "c"))))))
+        (is (= a (link/resolve-name table "a")))
+        (is (nil? (link/resolve-name table "d")))))
     (testing "read-link"
-      (is (nil? (link/read-link nil)))
-      (let [x (link/read-link "x")]
-        (is (= "x" (:name x)))
-        (is (nil? (:target x)))
-        (is (nil? (:tsize x))))
-      (binding [link/*link-table* table]
-        (is (= b (link/read-link "b")))))
+      (is (nil? (link/read-link nil))))
     (testing "update-links"
       (is (= table (link/update-links table nil))
           "nil link should not change table")

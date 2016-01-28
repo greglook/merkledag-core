@@ -75,6 +75,10 @@
     (.valAt this k nil)))
 
 
+;; Remove automatic constructor function.
+(ns-unmap *ns* '->MerkleLink)
+
+
 (defn create
   "Constructs a `MerkleLink` value, validating the inputs."
   [name target tsize]
@@ -113,7 +117,7 @@
 ;; to replace actual links before values are encoded, and replaced with real
 ;; links from the table when decoding.
 (deftype LinkIndex
-  [index]
+  [^long index]
 
   Object
 
@@ -143,14 +147,20 @@
     (.valAt this k nil)))
 
 
+;; Remove automatic constructor function.
+(ns-unmap *ns* '->LinkIndex)
+
+
 (defn link-index
   "Return a `LinkIndex` value pointing to the given link in the table."
-  [table link]
-  (some->>
-    table
-    (keep-indexed #(when (= link %2) %1))
-    (first)
-    (LinkIndex.)))
+  ([i]
+   (LinkIndex. i))
+  ([table link]
+   (some->>
+     table
+     (keep-indexed #(when (= link %2) %1))
+     (first)
+     (LinkIndex.))))
 
 
 (defn replace-links
