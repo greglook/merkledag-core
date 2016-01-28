@@ -61,7 +61,7 @@
                   :value value}))
         (assoc value
                :encoding [header encoding]
-               :data (link/resolve-links (:links value) (:data value)))))))
+               :data (link/resolve-indexes (:links value) (:data value)))))))
 
 
 (defn node-codec

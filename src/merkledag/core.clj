@@ -74,7 +74,7 @@
   it is not already present."
   [name target]
   (let [new-link (link* name target)]
-    (if-let [extant (link/resolve name)]
+    (if-let [extant (link/resolve-name name)]
       ; Check if existing link matches.
       (if (= (:target new-link) (:target extant))
         extant
@@ -160,7 +160,7 @@
           path (if (string? path) (str/split #"/" path) (seq path))]
      (if node
        (if (seq path)
-         (if-let [link (link/resolve (str (first path)) (:links node))]
+         (if-let [link (link/resolve-name (:links node) (str (first path)))]
            (if-let [child (get-link store link)]
              (recur child (rest path))
              (throw (ex-info (str "Linked node " (:target link) " is not available")
@@ -189,7 +189,7 @@
     [(apply f root args)]
     ; Recursive Case: first path segment
     (let [link-name (str (first path))
-          child (when-let [link (and root (link/resolve link-name (:links root)))]
+          child (when-let [link (and root (link/resolve-name (:links root) link-name))]
                   (get-link store link))]
       (when-let [children (apply update-path store child (rest path) f args)]
         (cons (if root

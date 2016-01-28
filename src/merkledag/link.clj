@@ -1,5 +1,4 @@
 (ns merkledag.link
-  (:refer-clojure :exclude [resolve])
   (:require
     [blocks.core :as block]
     [clojure.walk :as walk]
@@ -175,7 +174,7 @@
     data))
 
 
-(defn resolve-links
+(defn resolve-indexes
   "Replaces all the link indexes in a data structure with link values resolved
   against the given table. Throws an exception if any links are 'broken' because
   the index is outside the table."
@@ -190,21 +189,12 @@
     data))
 
 
-#_
-(defn read-index
-  "Looks up a link in the current `*link-table*`, or returns nil."
-  [index]
-  (nth *link-table* index))
-
-
-(defn resolve
-  "Resolves a link name against the current `*link-table*`, if any. Returns nil
-  if no matching link is found."
-  ([name]
-   (resolve *link-table* name))
-  ([link-table name]
-   (when name
-     (first (filter #(= (str name) (:name %)) link-table)))))
+(defn resolve-name
+  "Resolves a link name against the given table. Returns nil if no matching
+  link is found."
+  [table name]
+  (when name
+    (first (filter #(= (str name) (:name %)) table))))
 
 
 
