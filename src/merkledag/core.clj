@@ -62,7 +62,7 @@
 
 ;; ## Value Constructors
 
-(def ^:private ^:dynamic *link-table*
+(def ^:no-doc ^:dynamic *link-table*
   "Contextual link table used to collect links when defining nodes, and to
   assign links when parsing nodes."
   nil)
