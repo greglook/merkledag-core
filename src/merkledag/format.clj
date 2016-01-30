@@ -41,22 +41,39 @@
     :writers {LinkIndex :index}}})
 
 
+(defn- load-plugin-ns!
+  [types ns-sym]
+  (try
+    (when-not (find-ns ns-sym)
+      (require ns-sym))
+    (if-let [plugin-var (ns-resolve ns-sym 'data-types)]
+      (do
+        (println "DEBUG: Loading data types from" plugin-var)
+        (-> types
+            (merge @plugin-var)
+            (vary-meta update :merkledag.data/types conj plugin-var)))
+      (do
+        ; TODO: log warning that `data-types` var was not found?
+        (println "WARN: No data-types var found in namespace" ns-sym)
+        types))
+    (catch Exception e
+      ; TODO: log something
+      (println "ERROR: Exception while loading data-types for namespace" ns-sym "-" e)
+      types)))
+
+
 (defn load-types!
   "Scans the namespaces under `merkledag.data` for vars named `data-types`.
   Returns a merged map of all loaded type definitions. Types are merged in
-  lexical order, with the `core-types` from this namespace merged in last."
+  lexical order, with the `core-types` from this namespace merged in last.
+
+  The returned map will have attached metadata under the
+  `:merkledag.data/types` key with a list of "
   []
   (merge
-    (reduce
-      (fn load-plugin
-        [types ns-sym]
-        (when-not (find-ns ns-sym)
-          (require ns-sym))
-        (if-let [plugin-types (ns-resolve ns-sym 'data-types)]
-          (merge types @plugin-types)
-          types))
-      {}
-      (bult/namespaces-on-classpath :prefix "merkledag.data"))
+    (->>
+      (bult/namespaces-on-classpath :prefix "merkledag.data")
+      (reduce load-plugin-ns! {}))
     core-types))
 
 
