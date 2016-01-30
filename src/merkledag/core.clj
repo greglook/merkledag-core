@@ -112,7 +112,8 @@
    `(let [links# (binding [*link-table* nil] ~extra-links)]
       (binding [*link-table* (vec links#)]
         (let [data# ~data]
-          (node* *link-table* data#))))))
+          (when (or (seq *link-table*) (some? data#))
+            (node* *link-table* data#)))))))
 
 
 
