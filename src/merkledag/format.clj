@@ -3,6 +3,7 @@
   and later decoding back into data."
   (:require
     [blocks.core :as block]
+    [bultitude.core :as bult]
     (merkledag.codecs
       [bin :refer [bin-codec]]
       [node :refer [node-codec]])
@@ -22,14 +23,6 @@
 
 ;; ## Type Handlers
 
-; TODO: implement type plugin system
-; Should load namespaces under merkledag.data:
-; - merkledag.data.time
-; - merkledag.data.bytes
-; - merkledag.data.units
-; ...
-
-
 (def core-types
   ; TODO: is data/hash necessary? Multihashes shouldn't show up in data segments...
   {'data/hash
@@ -46,6 +39,25 @@
    {:description "Indexes to the link table within a node"
     :reader #(LinkIndex. %)
     :writers {LinkIndex :index}}})
+
+
+(defn load-types!
+  "Scans the namespaces under `merkledag.data` for vars named `data-types`.
+  Returns a merged map of all loaded type definitions. Types are merged in
+  lexical order, with the `core-types` from this namespace merged in last."
+  []
+  (merge
+    (reduce
+      (fn load-plugin
+        [types ns-sym]
+        (when-not (find-ns ns-sym)
+          (require ns-sym))
+        (if-let [plugin-types (ns-resolve ns-sym 'data-types)]
+          (merge types @plugin-types)
+          types))
+      {}
+      (bult/namespaces-on-classpath :prefix "merkledag.data"))
+    core-types))
 
 
 
@@ -109,7 +121,7 @@
 
 (defn standard-format
   ([]
-   (standard-format core-types))
+   (standard-format (load-types!)))
   ([types]
    (mux-codec
      :bin  (lift-codec (bin-codec))

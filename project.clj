@@ -7,7 +7,8 @@
   :deploy-branches ["master"]
 
   :dependencies
-  [[byte-streams "0.2.0"]
+  [[bultitude "0.2.8"]
+   [byte-streams "0.2.0"]
    [clj-time "0.11.0"]
    [mvxcvi/blocks "0.6.1"]
    [mvxcvi/multicodec "0.5.0"]

@@ -36,7 +36,7 @@
   (tformat/parse inst-format literal))
 
 
-(def types
+(def data-types
   {'inst
    {:description "Instants in time"
     :reader parse-inst
