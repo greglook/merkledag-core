@@ -4,6 +4,7 @@
   (:require
     [blocks.core :as block]
     [bultitude.core :as bult]
+    [clojure.string :as str]
     (merkledag.codecs
       [bin :refer [bin-codec]]
       [node :refer [node-codec]])
@@ -73,6 +74,9 @@
   (merge
     (->>
       (bult/namespaces-on-classpath :prefix "merkledag.data")
+      (filter #(= 3 (count (str/split (str %) #"\."))))
+      (set)
+      (sort)
       (reduce load-plugin-ns! {}))
     core-types))
 
