@@ -42,6 +42,7 @@
 
 (def block-codec
   "The standard format used to read and write data blocks."
+  ; TODO: import-time loads are problematic
   (format/standard-format))
 
 
