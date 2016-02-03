@@ -37,8 +37,8 @@
 ;; ## Binary Codec
 
 (defn bin-codec
-  "Constructs a new enhanced binary codec. Decodes into a map with an
-  `:encoding` entry and a `:data` entry with a persistent bytes value."
+  "Constructs a new enhanced binary codec. Decodes data into `PersistentBytes`
+  values rather than byte arrays."
   []
   (filter-codec
     (bin/bin-codec)

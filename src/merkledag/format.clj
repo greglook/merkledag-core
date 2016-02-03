@@ -25,7 +25,6 @@
 ;; ## Type Handlers
 
 (def core-types
-  ; TODO: is data/hash necessary? Multihashes shouldn't show up in data segments...
   {'data/hash
    {:description "Content-addressed multihash references"
     :reader multihash/decode
@@ -107,8 +106,8 @@
 
 
 (defn format-block
-  "Serializes the given data value into a block using the given codec. Returns
-  a block containing both the formatted content, an `:encoding` key for the
+  "Serializes the given data value into a block using the codec. Returns a
+  block containing both the formatted content, an `:encoding` key for the
   actual codec used (if any), and additional data merged in if the value was a
   map."
   [codec data]
@@ -136,7 +135,7 @@
   (filter-codec codec
     :decoding (fn wrap-data
                 [data]
-                {:encoding (:header codec)
+                {:encoding [(:header codec)]
                  :data data})))
 
 

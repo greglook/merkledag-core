@@ -1,7 +1,6 @@
 (ns merkledag.codecs.node
   "Functions to handle merkledag nodes serialized using a separate subcodec."
   (:require
-    [clojure.walk :as walk]
     [merkledag.codecs.edn :refer [edn-codec]]
     [merkledag.link :as link]
     [multicodec.core :as codec]
@@ -56,7 +55,7 @@
       (let [value (codec/decode! mux input)
             encoding (get-in mux [:codecs mux/*dispatched-codec* :header])]
         (when-not (codec/encodable? this value)
-          (throw (ex-info "Decoded bad node value with missing links and data"
+          (throw (ex-info "Decoded bad node value missing links and data"
                           {:encoding encoding
                            :value value})))
         (assoc value
