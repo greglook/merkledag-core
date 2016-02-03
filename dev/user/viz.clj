@@ -1,8 +1,7 @@
-(ns merkledag.viz
+(ns user.viz
   "Utilities for visualizing merkledag data webs."
   (:require
-    (merkledag
-      [core :as merkle])
+    [merkledag.core :as merkle]
     [multihash.core :as multihash]
     [rhizome.viz :as rhizome]))
 

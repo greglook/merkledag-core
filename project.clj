@@ -15,8 +15,7 @@
    [mvxcvi/multihash "1.1.0"]
    [mvxcvi/puget "1.0.0"]
    [org.clojure/clojure "1.8.0"]
-   [org.clojure/tools.logging "0.3.1"]
-   [rhizome "0.2.5"]]
+   [org.clojure/tools.logging "0.3.1"]]
 
   :hiera
   {:vertical false
@@ -33,4 +32,5 @@
 
   :profiles
   {:repl {:source-paths ["dev"]
-          :dependencies [[org.clojure/tools.namespace "0.2.11"]]}})
+          :dependencies [[org.clojure/tools.namespace "0.2.11"]
+                         [rhizome "0.2.5"]]}})
