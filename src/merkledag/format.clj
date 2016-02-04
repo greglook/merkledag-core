@@ -5,6 +5,7 @@
     [blocks.core :as block]
     [bultitude.core :as bult]
     [clojure.string :as str]
+    [clojure.tools.logging :as log]
     (merkledag.codecs
       [bin :refer [bin-codec]]
       [node :refer [node-codec]])
@@ -25,6 +26,8 @@
 ;; ## Type Handlers
 
 (def core-types
+  "The core type definitions for hashes and links which are used in the base
+  merkledag data structure."
   {'data/hash
    {:description "Content-addressed multihash references"
     :reader multihash/decode
@@ -42,23 +45,23 @@
 
 
 (defn- load-plugin-ns!
+  "Attempts to load data types from the given namespace. Returns a a type map
+  updated with the loaded types, if any."
   [types ns-sym]
   (try
     (when-not (find-ns ns-sym)
       (require ns-sym))
     (if-let [plugin-var (ns-resolve ns-sym 'data-types)]
       (do
-        (println "DEBUG: Loading data types from" plugin-var)
+        (log/info "Loading data types from" plugin-var)
         (-> types
             (merge @plugin-var)
             (vary-meta update :merkledag.data/types conj plugin-var)))
       (do
-        ; TODO: log warning that `data-types` var was not found?
-        (println "WARN: No data-types var found in namespace" ns-sym)
+        (log/warn "No data-types var found in namespace" ns-sym)
         types))
     (catch Exception e
-      ; TODO: log something
-      (println "ERROR: Exception while loading data-types for namespace" ns-sym "-" e)
+      (log/error e "Exception while loading data-types for namespace" ns-sym)
       types)))
 
 
@@ -68,7 +71,7 @@
   lexical order, with the `core-types` from this namespace merged in last.
 
   The returned map will have attached metadata under the
-  `:merkledag.data/types` key with a list of "
+  `:merkledag.data/types` key with a list of the loaded vars."
   []
   (merge
     (->>
