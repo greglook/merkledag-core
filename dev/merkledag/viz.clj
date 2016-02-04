@@ -1,4 +1,4 @@
-(ns user.viz
+(ns merkledag.viz
   "Utilities for visualizing merkledag data webs."
   (:require
     [merkledag.core :as merkle]
