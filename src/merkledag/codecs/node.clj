@@ -35,10 +35,8 @@
                    (vec links))
           data' (link/replace-links links' (:data node))
           value (cond-> {}
-                  links'
-                    (assoc :links links')
-                  data'
-                    (assoc :data data'))]
+                  links' (assoc :links links')
+                  data'  (assoc :data  data'))]
       (codec/encode! mux output value)))
 
 
@@ -51,16 +49,11 @@
 
   (decode!
     [this input]
-    (binding [mux/*dispatched-codec* nil]
-      (let [value (codec/decode! mux input)
-            encoding (get-in mux [:codecs mux/*dispatched-codec* :header])]
-        (when-not (codec/encodable? this value)
-          (throw (ex-info "Decoded bad node value missing links and data"
-                          {:encoding encoding
-                           :value value})))
-        (assoc value
-               :encoding [header encoding]
-               :data (link/resolve-indexes (:links value) (:data value)))))))
+    (let [value (codec/decode! mux input)]
+      (when-not (codec/encodable? this value)
+        (throw (ex-info "Decoded bad node value missing links and data"
+                        {:value value})))
+      (assoc value :data (link/resolve-indexes (:links value) (:data value))))))
 
 
 (defn node-codec

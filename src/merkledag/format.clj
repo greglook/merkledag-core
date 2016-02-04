@@ -11,6 +11,7 @@
       [node :refer [node-codec]])
     [merkledag.link :as link]
     [multicodec.core :as codec]
+    [multicodec.header :as header]
     (multicodec.codecs
       [filter :refer [filter-codec]]
       [mux :as mux :refer [mux-codec]]
@@ -101,8 +102,14 @@
         (let [first-byte (.read content)]
           (if (<= 0 first-byte 127)
             ; Possible multicodec header.
-            (do (.unread content first-byte)
-                (codec/decode! codec content))
+            (binding [header/*headers* []]
+              (.unread content first-byte)
+              (let [decoded (codec/decode! codec content)]
+                (assoc
+                  (if (map? decoded)
+                    decoded
+                    {:data decoded})
+                  :encoding header/*headers*)))
             ; Unknown encoding.
             {:encoding nil})))
       (into block))))
@@ -131,22 +138,11 @@
 
 ;; ## Codec Construction
 
-(defn- lift-codec
-  "Lifts a codec into a block format by wrapping the decoded value in a map with
-  `:encoding` and `:data` entries."
-  [codec]
-  (filter-codec codec
-    :decoding (fn wrap-data
-                [data]
-                {:encoding [(:header codec)]
-                 :data data})))
-
-
 (defn standard-format
   ([]
    (standard-format (load-types!)))
   ([types]
    (mux-codec
-     :bin  (lift-codec (bin-codec))
-     :text (lift-codec (text-codec))
+     :bin  (bin-codec)
+     :text (text-codec)
      :node (node-codec types))))
