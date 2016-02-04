@@ -42,4 +42,5 @@
   []
   (filter-codec
     (bin/bin-codec)
-    :decoding #(PersistentBytes/wrap ^bytes %)))
+    :decoding (fn wrap-bytes [data]
+                (PersistentBytes/wrap ^bytes data))))
