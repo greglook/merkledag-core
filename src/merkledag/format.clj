@@ -35,12 +35,12 @@
 
    'data/link
    {:description "Merkle link values"
-    :reader link/read-link
-    :writers {MerkleLink link/write-link}}
+    :reader link/form->link
+    :writers {MerkleLink link/link->form}}
 
    'data/link-index
    {:description "Indexes to the link table within a node"
-    :reader #(LinkIndex. %)
+    :reader link/link-index
     :writers {LinkIndex :index}}})
 
 

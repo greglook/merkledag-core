@@ -97,15 +97,16 @@
   (MerkleLink. name target tsize nil))
 
 
-(defn write-link
+(defn link->form
   "Returns a vector representing the given link, suitable for serialization as
   part of a tagged literal value."
   [link]
-  [(:name link) (:target link) (:tsize link)])
+  (when link
+    [(:name link) (:target link) (:tsize link)]))
 
 
-(defn read-link
-  "Reader for link vectors produced by `write-link`."
+(defn form->link
+  "Reader for link vectors produced by `link->form`."
   [v]
   (when v
     (when-not (and (sequential? v) (= 3 (count v)))

@@ -25,6 +25,16 @@
         "should create valid link")))
 
 
+(deftest link-translation
+  (is (nil? (link/link->form nil)))
+  (is (nil? (link/form->link nil)))
+  (is (thrown? Exception (link/form->link #{:a "b"})))
+  (let [target (multihash/sha2-256 "foo")
+        link (link/create "foo" target 123)]
+    (is (= ["foo" target 123] (link/link->form link)))
+    (is (= link (link/form->link ["foo" target 123])))))
+
+
 (deftest link-properties
   (let [mhash (multihash/sha2-256 "foo bar baz")
         a (link/create "foo" mhash 123)
@@ -69,8 +79,6 @@
       (testing "with explicit table"
         (is (= a (link/resolve-name table "a")))
         (is (nil? (link/resolve-name table "d")))))
-    (testing "read-link"
-      (is (nil? (link/read-link nil))))
     (testing "update-links"
       (is (= table (link/update-links table nil))
           "nil link should not change table")
