@@ -26,6 +26,12 @@
                        (codec/encode! edn baos %)
                        (String. (.toByteArray baos)))
         test-decode #(codec/decode edn (.getBytes %))]
+    (testing "predicates"
+      (is (true? (codec/encodable? edn "foo")))
+      (is (true? (codec/encodable? edn :bar)))
+      (is (true? (codec/encodable? edn 'qux)))
+      (is (true? (codec/decodable? edn (:header edn))))
+      (is (false? (codec/decodable? edn "/bin"))))
     (testing "encoding"
       (is (= "nil\n" (test-encode nil))
           "nil value should encode to nil string")
