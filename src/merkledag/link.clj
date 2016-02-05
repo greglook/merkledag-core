@@ -176,7 +176,7 @@
 
   (equals
     [this that]
-    (or (identical? this that) true
+    (or (identical? this that)
         (and (instance? LinkIndex that)
              (= index (.index ^LinkIndex that)))))
 
@@ -235,7 +235,7 @@
   (walk/postwalk
     (fn resolver [x]
       (if (instance? LinkIndex x)
-        (or (nth link-table (:index x))
+        (or (nth link-table (:index x) nil)
             (throw (ex-info (str "No index in table for " x)
                             {:link-table link-table, :index x})))
         x))

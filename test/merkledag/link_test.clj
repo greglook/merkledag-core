@@ -5,7 +5,9 @@
     [merkledag.link :as link]
     [multihash.core :as multihash])
   (:import
-    merkledag.link.MerkleLink))
+    (merkledag.link
+      LinkIndex
+      MerkleLink)))
 
 
 (deftest link-construction
@@ -68,29 +70,6 @@
         (is (= "bar" (::foo (meta a'))))))))
 
 
-(deftest link-table
-  (let [a (link/create "a" (multihash/sha1 "foo") 20)
-        b (link/create "b" (multihash/sha1 "bar") 87)
-        c (link/create "c" (multihash/sha1 "baz") 11)
-        table [a b c]]
-    (testing "resolve-name"
-      (testing "with nil name"
-        (is (nil? (link/resolve-name [(link/create "" (:target a) nil)] nil))))
-      (testing "with explicit table"
-        (is (= a (link/resolve-name table "a")))
-        (is (nil? (link/resolve-name table "d")))))
-    (testing "update-links"
-      (is (= table (link/update-links table nil))
-          "nil link should not change table")
-      (is (= [a] (link/update-links nil a))
-          "nil table should update to one link vector")
-      (is (= [b c a] (link/update-links [b c] a))
-          "new link should append to table")
-      (let [b' (link/create "b" (multihash/sha1 "qux") 32)]
-        (is (= [a b' c] (link/update-links table b'))
-            "new link should replace existing link position")))))
-
-
 (deftest link-targeting
   (testing "multihashes"
     (let [mh (multihash/sha1 "foo")
@@ -119,3 +98,51 @@
           (is (= "g" (:name link)))
           (is (= (:id block) (:target link)))
           (is (= (+ (:size block) 20) (:tsize link))))))))
+
+
+(deftest link-table
+  (let [a (link/create "a" (multihash/sha1 "foo") 20)
+        b (link/create "b" (multihash/sha1 "bar") 87)
+        c (link/create "c" (multihash/sha1 "baz") 11)
+        table [a b c]]
+    (testing "resolve-name"
+      (testing "with nil name"
+        (is (nil? (link/resolve-name [(link/create "" (:target a) nil)] nil))))
+      (testing "with explicit table"
+        (is (= a (link/resolve-name table "a")))
+        (is (nil? (link/resolve-name table "d")))))
+    (testing "update-links"
+      (is (= table (link/update-links table nil))
+          "nil link should not change table")
+      (is (= [a] (link/update-links nil a))
+          "nil table should update to one link vector")
+      (is (= [b c a] (link/update-links [b c] a))
+          "new link should append to table")
+      (let [b' (link/create "b" (multihash/sha1 "qux") 32)]
+        (is (= [a b' c] (link/update-links table b'))
+            "new link should replace existing link position")))))
+
+
+(deftest link-indices
+  (let [table [(link/create "foo" (multihash/sha1 "foo") nil)
+               (link/create "bar" (multihash/sha1 "bar") 384)
+               (link/create "baz" (multihash/sha2-256 "baz") 123)]]
+    (testing "construction and lookup"
+      (is (instance? LinkIndex (link/link-index 0)))
+      (is (= (link/link-index 0) (link/link-index table (first table))))
+      (is (= (link/link-index 2) (link/link-index table (last table))))
+      (is (nil? (link/link-index nil (first table))))
+      (is (nil? (link/link-index table (link/create "qux" (multihash/sha1 "foo") nil)))))
+    (testing "walk replacement"
+      (let [data-with-links
+            {:foo #{(nth table 0) (nth table 1)}
+             :baz {(nth table 1) :bad
+                   (nth table 2) :ok}}
+            data-with-indexes
+            {:foo #{(link/link-index 0) (link/link-index 1)}
+             :baz {(link/link-index 1) :bad
+                   (link/link-index 2) :ok}}]
+        (is (= data-with-indexes (link/replace-links table data-with-links)))
+        (is (= data-with-links (link/resolve-indexes table data-with-indexes))))
+      (is (thrown? Exception (link/replace-links table [(link/create "qux" (multihash/sha1 "qux") nil)])))
+      (is (thrown? Exception (link/resolve-indexes table [(link/link-index 5)]))))))
