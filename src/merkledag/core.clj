@@ -81,7 +81,7 @@
   it is not already present."
   [name target]
   (let [new-link (link* name target)]
-    (if-let [extant (link/resolve-name name)]
+    (if-let [extant (link/resolve-name *link-table* name)]
       ; Check if existing link matches.
       (if (= (:target new-link) (:target extant))
         extant
