@@ -13,12 +13,13 @@
     [multicodec.core :as codec]
     [multicodec.header :as header]
     (multicodec.codecs
-      [filter :refer [filter-codec]]
       [mux :as mux :refer [mux-codec]]
       [text :refer [text-codec]])
     [multihash.core :as multihash])
   (:import
-    java.io.PushbackInputStream
+    (java.io
+      ByteArrayInputStream
+      PushbackInputStream)
     merkledag.link.LinkIndex
     merkledag.link.MerkleLink
     multihash.core.Multihash))
@@ -87,6 +88,17 @@
 
 ;; ## Format Functions
 
+(defn- decode-info!
+  [codec input]
+  (binding [header/*headers* []]
+    (let [decoded (codec/decode! codec input)]
+      (assoc
+        (if (map? decoded)
+          decoded
+          {:data decoded})
+        :encoding header/*headers*))))
+
+
 (defn parse-block
   "Attempts to parse the contents of a block with the given codec. Returns an
   updated version of the block with additional keys set. At a minimum, this
@@ -102,14 +114,8 @@
         (let [first-byte (.read content)]
           (if (<= 0 first-byte 127)
             ; Possible multicodec header.
-            (binding [header/*headers* []]
-              (.unread content first-byte)
-              (let [decoded (codec/decode! codec content)]
-                (assoc
-                  (if (map? decoded)
-                    decoded
-                    {:data decoded})
-                  :encoding header/*headers*)))
+            (do (.unread content first-byte)
+                (decode-info! codec content))
             ; Unknown encoding.
             {:encoding nil})))
       (into block))))
@@ -120,19 +126,21 @@
   block containing both the formatted content, an `:encoding` key for the
   actual codec used (if any), and additional data merged in if the value was a
   map."
-  [codec data]
-  (when data
-    (let [content (codec/encode codec data)
-          block (block/read! content)
-          decoded (codec/decode codec content)]
-      (when-not (if (map? data)
-                  (and (= (seq (:links data)) (seq (:links decoded)))
-                       (= (:data data) (:data decoded)))
-                  (= (:data decoded) data))
-        (throw (ex-info (str "Decoded data does not match input data " (class data))
-                        {:input data
-                         :decoded decoded})))
-      (into block decoded))))
+  ([codec value]
+   (when value
+     (let [content (codec/encode codec value)
+           block (block/read! content)
+           info (decode-info! codec (ByteArrayInputStream. content))]
+       (when-not (if (map? value)
+                   (and (= (seq (:links value)) (seq (:links info)))
+                        (= (:data value) (:data info)))
+                   (= (:data info) value))
+         (throw (ex-info "Decoded  does not match input value"
+                         {:input value
+                          :decoded info})))
+       (into block info))))
+  ([codec links data]
+   (format-block codec {:links links, :data data})))
 
 
 
