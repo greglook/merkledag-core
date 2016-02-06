@@ -109,16 +109,21 @@
   codecs should also return a `:links` vector."
   [codec block]
   (when block
-    (->>
-      (with-open [content (PushbackInputStream. (block/open block))]
-        (let [first-byte (.read content)]
-          (if (<= 0 first-byte 127)
-            ; Possible multicodec header.
-            (do (.unread content first-byte)
-                (decode-info! codec content))
-            ; Unknown encoding.
-            {:encoding nil})))
-      (into block))))
+    (with-open [content (PushbackInputStream. (block/open block))]
+      (let [first-byte (.read content)]
+        (if (<= 0 first-byte 127)
+          ; Possible multicodec header.
+          (try
+            (.unread content first-byte)
+            (into block (decode-info! codec content))
+            (catch clojure.lang.ExceptionInfo e
+              (if (= :multicodec/bad-header (:type (ex-data e)))
+                (-> block
+                    (assoc :encoding nil)
+                    (vary-meta assoc ::error e))
+                (throw e))))
+          ; Unknown encoding.
+          (assoc block :encoding nil))))))
 
 
 (defn format-block
@@ -126,21 +131,18 @@
   block containing both the formatted content, an `:encoding` key for the
   actual codec used (if any), and additional data merged in if the value was a
   map."
-  ([codec value]
-   (when value
-     (let [content (codec/encode codec value)
-           block (block/read! content)
-           info (decode-info! codec (ByteArrayInputStream. content))]
-       (when-not (if (map? value)
-                   (and (= (seq (:links value)) (seq (:links info)))
-                        (= (:data value) (:data info)))
-                   (= (:data info) value))
-         (throw (ex-info "Decoded  does not match input value"
-                         {:input value
-                          :decoded info})))
-       (into block info))))
-  ([codec links data]
-   (format-block codec {:links links, :data data})))
+  [codec value]
+  (when value
+    (binding [header/*headers* []]
+      (let [content (codec/encode codec value)
+            encoded-headers header/*headers*
+            block (block/read! content)
+            info (decode-info! codec (ByteArrayInputStream. content))]
+        (when-not (= encoded-headers (:encoding info))
+          (throw (ex-info "Decoded headers do not match written encoding"
+                          {:encoded encoded-headers
+                           :decoded (:encoding info)})))
+        (into block info)))))
 
 
 
