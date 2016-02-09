@@ -26,7 +26,7 @@
   :whidbey
   {:tag-types {'blocks.data.Block {'blocks.data.Block (partial into {})}
                'merkledag.link.LinkIndex {'data/link-index :index}
-               'merkledag.link.MerkleLink {'data/link 'merkledag.link/write-link}
+               'merkledag.link.MerkleLink {'data/link 'merkledag.link/link->form}
                'multihash.core.Multihash {'data/hash 'multihash.core/base58}
                'org.joda.time.DateTime {'inst str}}}
 
