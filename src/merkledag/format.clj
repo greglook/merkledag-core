@@ -17,9 +17,7 @@
       [text :refer [text-codec]])
     [multihash.core :as multihash])
   (:import
-    (java.io
-      ByteArrayInputStream
-      PushbackInputStream)
+    java.io.ByteArrayInputStream
     merkledag.link.LinkIndex
     merkledag.link.MerkleLink
     multihash.core.Multihash))
@@ -99,33 +97,6 @@
         :encoding header/*headers*))))
 
 
-(defn parse-block
-  "Attempts to parse the contents of a block with the given codec. Returns an
-  updated version of the block with additional keys set. At a minimum, this
-  will add an `:encoding` key with the detected codec, or `nil` for raw blocks.
-
-  The dispatched codec should return a map of attributes to merge into the
-  block; typically including a `:data` field with the decoded block value. Node
-  codecs should also return a `:links` vector."
-  [codec block]
-  (when block
-    (with-open [content (PushbackInputStream. (block/open block))]
-      (let [first-byte (.read content)]
-        (if (<= 0 first-byte 127)
-          ; Possible multicodec header.
-          (try
-            (.unread content first-byte)
-            (into block (decode-info! codec content))
-            (catch clojure.lang.ExceptionInfo e
-              (if (= :multicodec/bad-header (:type (ex-data e)))
-                (-> block
-                    (assoc :encoding nil)
-                    (vary-meta assoc ::error e))
-                (throw e))))
-          ; Unknown encoding.
-          (assoc block :encoding nil))))))
-
-
 (defn format-block
   "Serializes the given data value into a block using the codec. Returns a
   block containing both the formatted content, an `:encoding` key for the
@@ -143,6 +114,31 @@
                           {:encoded encoded-headers
                            :decoded (:encoding info)})))
         (into block info)))))
+
+
+(defn parse-block
+  "Attempts to parse the contents of a block with the given codec. Returns an
+  updated version of the block with additional keys set. At a minimum, this
+  will add an `:encoding` key with the detected codec, or `nil` for raw blocks.
+
+  The dispatched codec should return a map of attributes to merge into the
+  block; typically including a `:data` field with the decoded block value. Node
+  codecs should also return a `:links` vector."
+  [codec block]
+  (when block
+    (with-open [content (block/open block)]
+      (try
+        (into block (decode-info! codec content))
+        (catch clojure.lang.ExceptionInfo e
+          (-> block
+              (assoc :encoding nil)
+              (vary-meta assoc ::error e)))))))
+
+
+(defn parser-error
+  "Returns the exception raised while trying to parse the given block, if any."
+  [block]
+  (::error (meta block)))
 
 
 
