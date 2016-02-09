@@ -6,10 +6,11 @@
     [bultitude.core :as bult]
     [clojure.string :as str]
     [clojure.tools.logging :as log]
-    (merkledag.codecs
-      [bin :refer [bin-codec]]
+    (merkledag
+      [link :as link]
       [node :refer [node-codec]])
-    [merkledag.link :as link]
+    (merkledag.codecs
+      [bin :refer [bin-codec]])
     [multicodec.core :as codec]
     [multicodec.header :as header]
     (multicodec.codecs

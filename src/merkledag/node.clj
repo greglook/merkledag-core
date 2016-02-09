@@ -1,11 +1,10 @@
-(ns merkledag.codecs.node
-  "Functions to handle merkledag nodes serialized using a separate subcodec."
+(ns merkledag.node
+  "Functions to serialize and operate on merkledag nodes."
   (:require
     [merkledag.codecs.edn :refer [edn-codec]]
     [merkledag.link :as link]
     [multicodec.core :as codec]
-    (multicodec.codecs
-      [mux :as mux]))
+    [multicodec.codecs.mux :as mux])
   (:import
     merkledag.link.MerkleLink))
 
