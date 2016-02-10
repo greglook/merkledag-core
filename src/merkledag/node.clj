@@ -8,6 +8,18 @@
   (:import
     merkledag.link.MerkleLink))
 
+;; ## Helper Functions
+
+(defn node-value
+  "Returns the data parsed from a node block. The node's links and block id are
+  added as metadata."
+  [node]
+  (when-let [data (:data node)]
+    (vary-meta data assoc
+               ::id (:id node)
+               ::links (:links node))))
+
+
 
 ;; ## Node Codec
 
