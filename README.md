@@ -7,8 +7,7 @@ This library implements a simplified version of the
 codecs](//github.com/greglook/clj-multicodec) to translate between the
 Merkle-DAG data structure and serialized blocks.
 
-This is currently **work in progress**, as indicated by the version number. Stay
-tuned for progress!
+This is currently **work in progress**. Stay tuned for updates!
 
 ## Concepts
 
@@ -18,12 +17,13 @@ tuned for progress!
   a multihash of its content.
 - Blocks can be referenced by _merkle links_, which have a multihash target and
   an optional name and reference size.
-- A _data block_ is serialized with a [multicodec](//github.com/greglook/clj-multicodec)
-  header to make the encoding discoverable and upgradable. All other blocks are
-  considered 'raw' blocks with opaque binary content.
+- A _data block_ is serialized with a self-describing
+  [multicodec](//github.com/greglook/clj-multicodec) header to make the encoding
+  discoverable and upgradable. All other blocks are considered 'raw' blocks with
+  opaque binary content.
 - A _node_ is a data block encoded with a specific format which records a table
-  of merkle links and a data value as structured data. Some potential formats
-  are EDN and CBOR.
+  of merkle links and a value as structured data. Some potential encodings for
+  this are EDN and CBOR.
 
 Using these concepts, we can build a directed acyclic graph of nodes referencing
 each other through merkle links. The data-web structure formed from a given root
@@ -35,7 +35,7 @@ unchanged data with the old version.
 
 This library needs to support:
 
-- Extensible plugin system to support new block data types, e.g. `bin`, `text`,
+- Extensible codec system to support new block encodings, e.g. `bin`, `text`,
   `json`, `edn`, `cbor`, etc.
 - Type plugin system to support new data type extensions in nodes. This is
   generally going to be codec-dependent, for example optimal CBOR
