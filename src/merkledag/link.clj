@@ -212,6 +212,19 @@
      (LinkIndex.))))
 
 
+(defn find-links
+  "Walks the given data structure looking for links. Returns a set of the links
+  discovered."
+  [data]
+  (let [links (atom #{})]
+    (walk/postwalk
+      (fn link-detector [x]
+        (when (instance? MerkleLink x)
+          (swap! links conj x))
+        x))
+    @links))
+
+
 (defn replace-links
   "Replaces all the links in a data structure with indexes into the given
   table. Throws an exception if any links are 'broken' because they were not
