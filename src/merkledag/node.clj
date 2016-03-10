@@ -72,6 +72,8 @@
 
 ;; ## Helper Functions
 
+; TODO: are these useful?
+
 (defn node-value
   "Returns the data parsed from a node block. The node's links and block id are
   added as metadata."

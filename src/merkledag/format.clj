@@ -32,7 +32,9 @@
   {'data/hash
    {:description "Content-addressed multihash references"
     :reader multihash/decode
-    :writers {Multihash multihash/base58}}
+    :writers {Multihash multihash/base58}
+    :cbor {:tag 27
+           :writers {Multihash multihash/encode}}}
 
    'data/link
    {:description "Merkle link values"
@@ -92,6 +94,7 @@
   (binding [header/*headers* []]
     (let [decoded (codec/decode! codec input)]
       (assoc
+        ; TODO: this really needs to be more explicit somewhere
         (if (map? decoded)
           decoded
           {:data decoded})
