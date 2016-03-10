@@ -42,8 +42,7 @@
 
 (def block-codec
   "The standard format used to read and write data blocks."
-  ; TODO: import-time loads are problematic
-  (format/standard-format))
+  (delay (format/standard-format)))
 
 
 (defn set-codec!
@@ -57,7 +56,7 @@
     (throw (IllegalArgumentException.
              (str "Cannot set MerkleDAG block codec to type which does not "
                   "satisfy the Decoder protocol: " (class codec)))))
-  (alter-var-root #'block-codec (constantly codec)))
+  (alter-var-root #'block-codec (constantly (delay codec))))
 
 
 
@@ -100,7 +99,7 @@
   ([data]
    (node* nil data))
   ([links data]
-   (format/format-block block-codec {:links links, :data data})))
+   (format/format-block @block-codec {:links links, :data data})))
 
 
 (defmacro node
@@ -148,7 +147,7 @@
   "Retrieves and parses the block identified by the given multihash."
   [store id]
   (when-let [block (block/get store id)]
-    (format/parse-block block-codec block)))
+    (format/parse-block @block-codec block)))
 
 
 (defn get-link
@@ -183,7 +182,7 @@
   encodable by the block format, or a map with `:links` and `:data` entries."
   [store value]
   (when value
-    (block/put! store (format/format-block block-codec value))))
+    (block/put! store (format/format-block @block-codec value))))
 
 
 (defn update-path
