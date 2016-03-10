@@ -179,14 +179,11 @@
 
 
 (defn put-node!
-  "Stores a node in the graph for later retrieval. Accepts a pre-built node
-  block or a map with `:links` and `:data` entries."
-  [store node]
-  (when-let [{:keys [id links data]} node]
-    (if id
-      (block/put! store node)
-      (when (or links data)
-        (block/put! store (format/format-block block-codec links data))))))
+  "Stores a value in the graph as a data block. Accepts any value that is
+  encodable by the block format, or a map with `:links` and `:data` entries."
+  [store value]
+  (when value
+    (block/put! store (format/format-block block-codec value))))
 
 
 (defn update-path
