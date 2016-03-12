@@ -14,6 +14,9 @@
   (testing "non-string name"
     (is (thrown? IllegalArgumentException
                  (link/create :foo nil nil))))
+  (testing "illegal name character"
+    (is (thrown? IllegalArgumentException
+                 (link/create "foo/bar" nil nil))))
   (testing "non-multihash target"
     (is (thrown? IllegalArgumentException
                  (link/create "foo" :bar nil))))

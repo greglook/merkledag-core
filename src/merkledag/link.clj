@@ -87,6 +87,10 @@
     (throw (IllegalArgumentException.
              (str "Link name must be a string, got: "
                   (pr-str name)))))
+  (when (str/index-of name "/")
+    (throw (IllegalArgumentException.
+             (str "Link name must not contain slashes: "
+                  (pr-str name)))))
   (when (and target (not (instance? Multihash target)))
     (throw (IllegalArgumentException.
              (str "Link target must be a multihash, got: "
