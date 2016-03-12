@@ -131,6 +131,23 @@
   (update-node node [(link link-name target)]))
 
 
+(defn update-path
+  "Returns a sequence of nodes, the first of which is the updated root node."
+  [store root path f & args]
+  (if (empty? path)
+    ; Base Case: empty path segment
+    [(apply f root args)]
+    ; Recursive Case: first path segment
+    (let [link-name (str (first path))
+          child (when-let [link' (and root (link/resolve-name (:links root) link-name))]
+                  (get-link store link'))]
+      (when-let [children (apply update-path store child (rest path) f args)]
+        (cons (if root
+                (update-node-link root link-name (first children))
+                (node [(link link-name (first children))] nil))
+              children)))))
+
+
 
 ;; ## Graph Operations
 
@@ -174,23 +191,6 @@
   [store value]
   (when value
     (block/put! store (format/format-block @block-codec value))))
-
-
-(defn update-path
-  "Returns a sequence of nodes, the first of which is the updated root node."
-  [store root path f & args]
-  (if (empty? path)
-    ; Base Case: empty path segment
-    [(apply f root args)]
-    ; Recursive Case: first path segment
-    (let [link-name (str (first path))
-          child (when-let [link' (and root (link/resolve-name (:links root) link-name))]
-                  (get-link store link'))]
-      (when-let [children (apply update-path store child (rest path) f args)]
-        (cons (if root
-                (update-node-link root link-name (first children))
-                (node [(link link-name (first children))] nil))
-              children)))))
 
 
 
