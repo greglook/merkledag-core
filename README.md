@@ -52,60 +52,68 @@ This library needs to support:
 - Data-web structure helpers like `assoc`, `assoc-in`, `update`, `update-in`,
   etc.
 
-## Usage
+### Notes
 
-```clojure
-(require
-  '[merkledag.core :as merkle]
-  '[merkledag.graph :as graph])
+Question: what does storing an image look like?
 
-(def graph (graph/block-graph))
+**Option A**
 
-(graph/with-context graph
-  (let [hash-1 (multihash/decode "Qmb2TGZBNWDuWsJVxX7MBQjvtB3cUc4aFQqrST32iASnEh")
-        node-1 (merkle/node
-                 {:type :finance/posting
-                  :uuid "foo-bar"})
-        node-2 (merkle/node
-                 {:type :finance/posting
-                  :uuid "frobblenitz omnibus"})
-        node-3 (merkle/node
-                 [(merkle/link "@context" hash-1)]
-                 {:type :finance/transaction
-                  :uuid #uuid "31f7dd72-c7f7-4a15-a98b-0f9248d3aaa6"
-                  :title "Gas Station"
-                  :description "Bought a pack of gum."
-                  :time #inst "2013-10-08T00:00:00"
-                  :entries [(merkle/link "posting-1" node-1)
-                            (merkle/link "posting-2" node-2)]})]
-    (merkle/put-node! graph node-1)
-    (merkle/put-node! graph node-2)
-    (merkle/put-node! graph node-3))
-```
+Put the image file content directly into the store as a single block.
 
-Now that the graph has some data, we can ask the graph for nodes back:
+Pros:
 
-```clojure
-; Nodes are Block values with :links and :data entries:
-=> (merkle/get-node graph (:id node-3))
-#blocks.data.Block
-{:data {:description "Bought a pack of gum.",
-        :entries [#data/link ["posting-1" #data/hash "QmYUJXaPqsreTj8wfxxeYfbi1cPAh7j434LxVSFB2ucPUQ" 49]
-                  #data/link ["posting-2" #data/hash "QmTJaJRFW45X6JfJPDoXbjRHuRKuJN5YPEq3PG4XHvcZoS" 61]],
-        :time #inst "2013-10-08T00:00:00.000Z",
-        :title "Gas Station",
-        :type :finance/transaction,
-        :uuid #uuid "31f7dd72-c7f7-4a15-a98b-0f9248d3aaa6"},
- :id #data/hash "QmbbRoCQAzvZFjJGupbzKfqWRkLR6HxfxEZmDpw2Kjkqc7",
- :links [#data/link ["@context" #data/hash "Qmb2TGZBNWDuWsJVxX7MBQjvtB3cUc4aFQqrST32iASnEh" nil]
-         #data/link ["posting-1" #data/hash "QmYUJXaPqsreTj8wfxxeYfbi1cPAh7j434LxVSFB2ucPUQ" 49]
-         #data/link ["posting-2" #data/hash "QmTJaJRFW45X6JfJPDoXbjRHuRKuJN5YPEq3PG4XHvcZoS" 61]],
- :size 397}
+- simplest option to replicate
+- can determine whether a file is stored by hashing its contents directly
 
-; We can create a new link to this in turn, automatically calculating the total size:
-=> (merkle/link *1)
-#data/link ["tx" #data/hash "QmbbRoCQAzvZFjJGupbzKfqWRkLR6HxfxEZmDpw2Kjkqc7" 507]
-```
+Cons:
+
+- need magic to figure out that the block has an image in it; magic is different
+  for each image type
+- no generic way to represent metadata
+- inefficient for very large images (several megabytes)
+
+**Option B**
+
+Write a multicodec header (`/image/jpeg` etc) before writing the image content.
+
+Pros:
+
+- self-describing format
+
+Cons:
+
+- need to know image type before writing
+- still no generic metadata
+- still inefficient
+
+**Option C**
+
+Store two nodes - the raw image block and a metadata 'file' block linking to it.
+
+Pros:
+
+- support for generic metadata
+- format can be described in metadata block
+- supports more complex content sources like chunk trees
+
+Cons:
+
+- image block is still not self describing
+
+**Option D**
+
+Store two nodes - the header-labeled image block and a metadata block linking to
+it.
+
+Pros:
+
+- image block is self-describing
+- generic metadata stored in separate block
+
+Cons:
+
+- not clear how this works with complex sources
+
 
 ## License
 
