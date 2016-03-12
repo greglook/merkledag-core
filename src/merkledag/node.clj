@@ -10,6 +10,16 @@
     merkledag.link.MerkleLink))
 
 
+#_
+(defschema NodeSchema
+  "Schema for a Node value."
+  {:id Multihash
+   :size s/Long
+   :encoding [s/Str]
+   :links [MerkleLink]
+   :data s/Any})
+
+
 ;; ## Node Codec
 
 (defrecord NodeCodec
@@ -30,9 +40,7 @@
     (when-not (or (seq (:links node)) (:data node))
       (throw (IllegalArgumentException.
                "Cannot encode a node with no links or data!")))
-    (let [links' (when-let [links (seq (:links node))]
-                   ; TODO: dedupe link table?
-                   (vec links))
+    (let [links' (when (seq (:links node)) (vec (:links node)))
           data' (link/replace-links links' (:data node))
           value (cond-> {}
                   links' (assoc :links links')
@@ -67,27 +75,3 @@
 ;; Remove automatic constructor functions.
 (ns-unmap *ns* '->NodeCodec)
 (ns-unmap *ns* 'map->NodeCodec)
-
-
-
-;; ## Helper Functions
-
-; TODO: are these useful?
-
-(defn node-value
-  "Returns the data parsed from a node block. The node's links and block id are
-  added as metadata."
-  [node]
-  (when-let [data (:data node)]
-    (vary-meta data assoc
-               ::id (:id node)
-               ::links (:links node))))
-
-
-(defn node-links
-  "Returns the links associated with a given value. May be a block or a value
-  returned from `node-value`."
-  [value]
-  (if (instance? Block value)
-    (:links value)
-    (::links (meta value))))
