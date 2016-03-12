@@ -73,22 +73,13 @@
 
 
 
+;; ## Value Constructors
+
 (defn link
-  "Constructs a new merkle link to the target and adds it to the link table if
-  it is not already present."
+  "Non-magical link constructor which uses the `link/Target` protocol to build
+  a link to the target value."
   [name target]
-  (let [new-link (link* name target)]
-    (if-let [extant (link/resolve-name *link-table* name)]
-      ; Check if existing link matches.
-      (if (= (:target new-link) (:target extant))
-        extant
-        (throw (IllegalStateException.
-                 (str "Can't link " name " to " (:target new-link)
-                      ", already points to " (:target extant)))))
-      ; No existing link, use new one.
-      (do (when *link-table*
-            (set! *link-table* (conj *link-table* new-link)))
-          new-link))))
+  (link/link-to target name))
 
 
 (defn node*
@@ -97,21 +88,23 @@
   ([data]
    (node* nil data))
   ([links data]
+   (link/validate-links! links)
    (format/format-block @block-codec {:links links, :data data})))
 
 
-(defmacro node
+(defn node
   "Constructs a new merkle node. Handles binding of the link table to capture
   links declared as part of the data. Any links passed as an argument will be
   placed at the beginning of the link segment."
   ([data]
-   `(node nil ~data))
-  ([extra-links data]
-   `(let [links# (binding [*link-table* nil] ~extra-links)]
-      (binding [*link-table* (vec links#)]
-        (let [data# ~data]
-          (when (or (seq *link-table*) (some? data#))
-            (node* *link-table* data#)))))))
+   (node nil data))
+  ([ordered-links data]
+   (let [links (->> (link/find-links data)
+                    (concat ordered-links)
+                    (link/compact-links)
+                    (remove (set ordered-links))
+                    (concat ordered-links))]
+     (node* links data))))
 
 
 
@@ -135,7 +128,7 @@
   "Helper function for updating a single link in a node to point to a new node.
   Returns the updated node."
   [node link-name target]
-  (update-node node [(link* link-name target)]))
+  (update-node node [(link link-name target)]))
 
 
 
@@ -191,12 +184,12 @@
     [(apply f root args)]
     ; Recursive Case: first path segment
     (let [link-name (str (first path))
-          child (when-let [link (and root (link/resolve-name (:links root) link-name))]
-                  (get-link store link))]
+          child (when-let [link' (and root (link/resolve-name (:links root) link-name))]
+                  (get-link store link'))]
       (when-let [children (apply update-path store child (rest path) f args)]
         (cons (if root
                 (update-node-link root link-name (first children))
-                (node [(link* link-name (first children))] nil))
+                (node [(link link-name (first children))] nil))
               children)))))
 
 
