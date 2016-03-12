@@ -1,6 +1,7 @@
 (ns merkledag.link
   (:require
     [blocks.core :as block]
+    [clojure.string :as str]
     [clojure.walk :as walk]
     [multihash.core :as multihash])
   (:import
@@ -117,46 +118,51 @@
 
 
 
-;; ## Link Utilities
+;; ## Link Tables
 
-(defn total-size
-  "Calculates the total size of data reachable from the given node. Expects a
-  block with `:size` and `:links` entries.
-
-  Raw blocks and nodes with no links have a total size equal to their `:size`.
-  Each link in the node's link table adds its `:tsize` to the total. Returns
-  `nil` if no node is given."
-  [node]
-  (when-let [size (:size node)]
-    (->> (:links node)
-         (map :tsize)
-         (reduce (fnil + 0 0) size))))
-
-
-(defprotocol Target
-  "Protocol for values which can be targeted by a merkle link."
-
-  (link-to
-    [target name]
-    "Constructs a new named merkle link to the given target."))
+(defn validate-links!
+  "Validates certain invariants about link tables. Throws an exception on error,
+  or returns the table if it is valid."
+  [link-table]
+  (let [by-name (group-by :name link-table)]
+    ; throw exception if any links have the same name and different targets
+    (when-let [bad-names (seq (filter #(< 1 (count (val %))) by-name))]
+      (throw (ex-info (str "Cannot compact links with multiple targets for the "
+                           "same name: " (str/join ", " (map first bad-names)))
+                      {:bad-links (into {} bad-names)})))
+    ; throw exception if any link name contains '/'
+    (when-let [bad-names (seq (filter #(str/index-of % "/") (keys by-name)))]
+      (throw (ex-info (str "Some links in table have illegal names: "
+                           (str/join ", " (map pr-str bad-names)))
+                      {:bad-links bad-names}))))
+  link-table)
 
 
-(extend-protocol Target
+(defn compact-links
+  "Attempts to convert a sequence of links into a compact, canonical form."
+  [link-table]
+  (->> link-table
+       (remove (comp nil? :target))
+       (set)
+       (sort-by (juxt :target :name))))
 
-  Multihash
-  (link-to
-    [mhash name]
-    (create name mhash nil))
 
-  MerkleLink
-  (link-to
-    [link name]
-    (create name (:target link) (:tsize link)))
+(defn resolve-name
+  "Resolves a link name against the given table. Returns nil if no matching
+  link is found."
+  [link-table name]
+  (when name
+    (first (filter #(= (str name) (:name %)) link-table))))
 
-  Block
-  (link-to
-    [block name]
-    (create name (:id block) (total-size block))))
+
+(defn update-links
+  "Returns an updated vector of links with the given link added, replacing any
+  existing link with the same name."
+  [link-table new-link]
+  (if new-link
+    (let [[before after] (split-with #(not= (:name new-link) (:name %)) link-table)]
+      (vec (concat before [new-link] (rest after))))
+    link-table))
 
 
 
@@ -256,21 +262,55 @@
 
 
 
-;; ## Link Table Functions
+;; ## Link Utilities
 
-(defn resolve-name
-  "Resolves a link name against the given table. Returns nil if no matching
-  link is found."
-  [link-table name]
-  (when name
-    (first (filter #(= (str name) (:name %)) link-table))))
+(defn with-links
+  "Adds a sequence of links to the given value as metadata."
+  [value links]
+  (vary-meta value assoc :merkledag/links (vec links)))
 
 
-(defn update-links
-  "Returns an updated vector of links with the given link added, replacing any
-  existing link with the same name."
-  [link-table new-link]
-  (if new-link
-    (let [[before after] (split-with #(not= (:name new-link) (:name %)) link-table)]
-      (vec (concat before [new-link] (rest after))))
-    link-table))
+(defn meta-links
+  "Returns link information from the value's metadata, if present."
+  [value]
+  (:merkledag/links (meta value)))
+
+
+(defn total-size
+  "Calculates the total size of data reachable from the given node. Expects a
+  block with `:size` and `:links` entries.
+
+  Raw blocks and nodes with no links have a total size equal to their `:size`.
+  Each link in the node's link table adds its `:tsize` to the total. Returns
+  `nil` if no node is given."
+  [node]
+  (when-let [size (:size node)]
+    (->> (:links node)
+         (keep :tsize)
+         (reduce + size))))
+
+
+(defprotocol Target
+  "Protocol for values which can be targeted by a merkle link."
+
+  (link-to
+    [target name]
+    "Constructs a new named merkle link to the given target."))
+
+
+(extend-protocol Target
+
+  Multihash
+  (link-to
+    [mhash name]
+    (create name mhash nil))
+
+  MerkleLink
+  (link-to
+    [link name]
+    (create name (:target link) (:tsize link)))
+
+  Block
+  (link-to
+    [block name]
+    (create name (:id block) (total-size block))))
