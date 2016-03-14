@@ -40,13 +40,15 @@
 
   (get-ref
     [this ref-name]
-    (first (get @memory ref-name)))
+    (refs/get-ref this ref-name nil))
 
 
   (get-ref
     [this ref-name version]
-    (some #(when (= version (:version %)) %)
-          (get @memory ref-name)))
+    (if version
+      (some #(when (= version (:version %)) %)
+            (get @memory ref-name))
+      (first (get @memory ref-name))))
 
 
   (list-ref-history
