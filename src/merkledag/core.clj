@@ -61,7 +61,7 @@
 
 
 
-;; ## ...
+;; ## Graph Repository
 
 (defrecord GraphRepo
   [codec store refs])
@@ -70,6 +70,50 @@
 (defn graph-repo
   [& {:keys [codec store refs]}]
   (GraphRepo. codec store refs))
+
+
+(defn get-node
+  "Retrieves and parses the block identified by the given multihash."
+  [repo id]
+  (when-let [block (block/get (:store repo) id)]
+    (format/parse-block (:codec repo) block)))
+
+
+(defn get-link
+  "Convenience function which retrieves a link target as a node."
+  [repo link]
+  (when-let [target (:target link)]
+    (get-node repo target)))
+
+
+(defn get-path
+  "Retrieve a node by recursively resolving a path through a sequence of nodes.
+  The `path` should be a slash-separated string or a vector of path segments."
+  ([repo root path]
+   (get-path repo root path nil))
+  ([repo root path not-found]
+   (loop [node root
+          path (if (string? path) (str/split #"/" path) (seq path))]
+     (if node
+       (if (seq path)
+         (if-let [link (link/resolve-name (:links node) (str (first path)))]
+           (if-let [child (get-link repo link)]
+             (recur child (rest path))
+             (throw (ex-info (str "Linked node " (:target link) " is not available")
+                             {:node (:id node)})))
+           not-found)
+         node)
+       not-found))))
+
+
+(defn put-node!
+  "Stores a value in the graph as a data block. Accepts any value that is
+  encodable by the block format, or a map with `:links` and `:data` entries."
+  [repo value]
+  (when value
+    (->> value
+         (format/format-block (or (:codec repo) @block-codec))
+         (block/put! (:store repo)))))
 
 
 
@@ -93,9 +137,9 @@
 
 
 (defn node
-  "Constructs a new merkle node. Handles binding of the link table to capture
-  links declared as part of the data. Any links passed as an argument will be
-  placed at the beginning of the link segment."
+  "Constructs a new merkle node. Any links passed as an argument will be
+  placed at the beginning of the link segment, in order. Additional links
+  walked from the data value will be appended in a canonical order."
   ([data]
    (node nil data))
   ([ordered-links data]
@@ -150,48 +194,6 @@
 
 
 ;; ## Graph Operations
-
-(defn get-node
-  "Retrieves and parses the block identified by the given multihash."
-  [store id]
-  (when-let [block (block/get store id)]
-    (format/parse-block @block-codec block)))
-
-
-(defn get-link
-  "Convenience function which retrieves a link target as a node."
-  [store link]
-  (when-let [target (:target link)]
-    (get-node store target)))
-
-
-(defn get-path
-  "Retrieve a node by recursively resolving a path through a sequence of nodes.
-  The `path` should be a slash-separated string or a vector of path segments."
-  ([store root path]
-   (get-path store root path nil))
-  ([store root path not-found]
-   (loop [node root
-          path (if (string? path) (str/split #"/" path) (seq path))]
-     (if node
-       (if (seq path)
-         (if-let [link (link/resolve-name (:links node) (str (first path)))]
-           (if-let [child (get-link store link)]
-             (recur child (rest path))
-             (throw (ex-info (str "Linked node " (:target link) " is not available")
-                             {:node (:id node)})))
-           not-found)
-         node)
-       not-found))))
-
-
-(defn put-node!
-  "Stores a value in the graph as a data block. Accepts any value that is
-  encodable by the block format, or a map with `:links` and `:data` entries."
-  [store value]
-  (when value
-    (block/put! store (format/format-block @block-codec value))))
-
 
 
 ;; ## Garbage Collection
