@@ -193,9 +193,6 @@
 
 
 
-;; ## Graph Operations
-
-
 ;; ## Garbage Collection
 
 ; TODO: (reachable-blocks graph root) -> #{multihashes}

@@ -1,9 +1,5 @@
 (ns merkledag.refs.memory
-  "Block storage backed by a map in an atom. Blocks put into this store will be
-  passed to `load!` to ensure the content resides in memory.
-
-  This store is most suitable for testing, caches, and other situations which
-  call for a non-persistent block store."
+  "Ref storage backed by a map in an atom."
   (:require
     [clj-time.core :as time]
     [merkledag.refs :as refs])
