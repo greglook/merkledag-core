@@ -24,6 +24,7 @@ This is currently **work in progress**. Stay tuned for updates!
 - A _node_ is a data block encoded with a specific format which records a table
   of merkle links and a value as structured data. Some potential encodings for
   this are EDN and CBOR.
+- A _ref_ is a named mutable pointer to a node.
 
 Using these concepts, we can build a directed acyclic graph of nodes referencing
 each other through merkle links. The data-web structure formed from a given root
@@ -51,69 +52,6 @@ This library needs to support:
 - Path resolution from a root node using link names.
 - Data-web structure helpers like `assoc`, `assoc-in`, `update`, `update-in`,
   etc.
-
-### Notes
-
-Question: what does storing an image look like?
-
-**Option A**
-
-Put the image file content directly into the store as a single block.
-
-Pros:
-
-- simplest option to replicate
-- can determine whether a file is stored by hashing its contents directly
-
-Cons:
-
-- need magic to figure out that the block has an image in it; magic is different
-  for each image type
-- no generic way to represent metadata
-- inefficient for very large images (several megabytes)
-
-**Option B**
-
-Write a multicodec header (`/image/jpeg` etc) before writing the image content.
-
-Pros:
-
-- self-describing format
-
-Cons:
-
-- need to know image type before writing
-- still no generic metadata
-- still inefficient
-
-**Option C**
-
-Store two nodes - the raw image block and a metadata 'file' block linking to it.
-
-Pros:
-
-- support for generic metadata
-- format can be described in metadata block
-- supports more complex content sources like chunk trees
-
-Cons:
-
-- image block is still not self describing
-
-**Option D**
-
-Store two nodes - the header-labeled image block and a metadata block linking to
-it.
-
-Pros:
-
-- image block is self-describing
-- generic metadata stored in separate block
-
-Cons:
-
-- not clear how this works with complex sources
-
 
 ## License
 
