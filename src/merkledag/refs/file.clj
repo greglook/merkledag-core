@@ -14,13 +14,19 @@
 
 ;; ## File IO
 
+(def ^:private time-format
+  "Joda-time formatter/parser for timestamps."
+  (ftime/formatter "yyyy-MM-dd'T'HH:mm:ss.SSSZ" time/utc))
+
+
 (defn- version->line
   "Converts a ref version map into a line of text."
+  ^String
   [version]
-  (str/join "\t" [(ftime/unparse time-format (:time ref-version))
-                  (multihash/base58 (:value ref-version))
-                  (:name ref-version)
-                  (:version ref-version)]))
+  (str/join "\t" [(ftime/unparse time-format (:time version))
+                  (multihash/base58 (:value version))
+                  (:name version)
+                  (:version version)]))
 
 
 (defn- line->version
