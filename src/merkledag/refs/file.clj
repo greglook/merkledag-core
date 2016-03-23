@@ -76,7 +76,8 @@
     (.write history (str/join "\t" [(ftime/unparse time-format (:time ref-version))
                                     (multihash/base58 (:value ref-version))
                                     (:name ref-version)
-                                    (:version ref-version)])))
+                                    (:version ref-version)]))
+    (.write history "\n"))
   file)
 
 
