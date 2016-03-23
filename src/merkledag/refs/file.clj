@@ -12,33 +12,67 @@
     multihash.core.Multihash))
 
 
-(defn load-history!
+;; ## File IO
+
+(defn- version->line
+  "Converts a ref version map into a line of text."
+  [version]
+  (str/join "\t" [(ftime/unparse time-format (:time ref-version))
+                  (multihash/base58 (:value ref-version))
+                  (:name ref-version)
+                  (:version ref-version)]))
+
+
+(defn- line->version
+  "Converts a line of text into a ref version map."
+  [line]
+  (let [[time value ref-name version] (str/split line #"\t")]
+    {:name ref-name
+     :value (multihash/decode value)
+     :version (Long/parseLong version)
+     :time (ftime/parse time-format time)}))
+
+
+(defn- read-history
   "Loads the history for the given tracker from the file and adds it to the
   ref agent."
   [file]
   (with-open [history (jio/reader file)]
     (reduce
       (fn [refs line]
-        (let [[time value ref-name version] (str/split line #"\t")]
+        (let [version (line->version (str/trim-newline line))]
           ; TODO: sort lists by version?
-          (update refs ref-name conj
-                  {:name ref-name
-                   :value (multihash/decode value)
-                   :version (Long/parseLong version)
-                   :time (ftime/parse time-format time)})))
+          (update refs (:name version) conj version)))
       {}
       (line-seq history))))
 
 
-(defn write-version!
-  "Writes a ref version line to the end of a history file."
+(defn- write-history!
+  "Writes out the complete history from a map of refs to versions. Returns the
+  file reference."
+  [file refs]
+  (let [versions (->> (vals refs) (apply concat) (sort-by :time))]
+    (with-open [history (jio/writer file)]
+      (doseq [version versions]
+        (.write history (version->line version))
+        (.write history "\n"))))
+  file)
+
+
+(defn- append-version!
+  "Writes a ref version line to the end of a history file. Returns the file
+  reference so it can be sent to an agent."
   [file ref-version]
   (with-open [history (jio/writer file :append true)]
     (.write history (str/join "\t" [(ftime/unparse time-format (:time ref-version))
                                     (multihash/base58 (:value ref-version))
                                     (:name ref-version)
-                                    (:version ref-version)]))))
+                                    (:version ref-version)])))
+  file)
 
+
+
+;; ## File Tracker
 
 ;; Multihash references in a file tracker are held in a map in a ref. An agent
 ;; guards writes to the file.
@@ -49,7 +83,7 @@
 
   (list-refs
     [this opts]
-    (->> (vals @ref-agent)
+    (->> (vals @refs)
          (map first)
          (filter #(or (:value %) (:include-nil opts)))))
 
@@ -61,7 +95,7 @@
 
   (get-ref
     [this ref-name version]
-    (let [history (get @ref-agent ref-name)]
+    (let [history (get @refs ref-name)]
       (if version
         (some #(when (= version (:version %)) %) history)
         (first history))))
@@ -69,37 +103,33 @@
 
   (list-ref-history
     [this ref-name]
-    (get @ref-agent ref-name))
+    (get @refs ref-name))
 
 
   (set-ref!
     [this ref-name value]
     ; TODO: assert value is a multihash?
-    (send-off)
-    ; FIXME:
-    #_
-    (-> memory
-        (swap!
-          (fn record-ref
-            [db]
-            (let [versions (get db ref-name [])
-                  current (first versions)]
-              (if (= value (:value current))
-                db
-                (let [new-version {:name ref-name
-                                   :value value
-                                   :version (inc (:version current 0))
-                                   :time (time/now)}]
-                  (assoc db ref-name (list* new-version versions)))))))
-        (get ref-name)
-        (first)))
+    (dosync
+      (let [versions (get @refs ref-name [])
+            current (first versions)]
+        (if (= value (:value current))
+          current
+          (let [new-version {:name ref-name
+                             :value value
+                             :version (inc (:version current 0))
+                             :time (time/now)}]
+            (alter refs assoc ref-name (list* new-version versions))
+            (send-off data-file append-version! new-version)
+            new-version)))))
 
 
   (delete-ref!
     [this ref-name]
-    (let [existed? (contains? @ref-agent ref-name)]
-      ; FIXME: re-write file without old ref?
-      existed?)))
+    (dosync
+      (when (contains? @refs ref-name)
+        (alter refs dissoc ref-name)
+        (send-off data-file write-history! @refs)
+        true))))
 
 
 (defn file-tracker
@@ -109,7 +139,16 @@
   ; TODO: error handling?
   ; TODO: load file data?
   (let [file (jio/file path)]
-    (FileTracker. (agent (jio/file path)) (ref {}))))
+    (FileTracker. (agent file) (ref {}))))
+
+
+(defn load-history!
+  "Loads the history file into the file tracker's memory."
+  [tracker]
+  (dosync
+    (let [history (read-history @(:data-file tracker))]
+      (alter (:refs tracker) (constantly history))
+      history)))
 
 
 ;; Remove automatic constructor functions.
