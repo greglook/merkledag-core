@@ -43,14 +43,17 @@
   "Loads the history for the given tracker from the file and adds it to the
   ref agent."
   [file]
-  (with-open [history (jio/reader file)]
-    (reduce
-      (fn [refs line]
-        (let [version (line->version (str/trim-newline line))]
-          ; TODO: sort lists by version?
-          (update refs (:name version) conj version)))
-      {}
-      (line-seq history))))
+  (try
+    (with-open [history (jio/reader file)]
+      (reduce
+        (fn [refs line]
+          (let [version (line->version (str/trim-newline line))]
+            ; TODO: sort lists by version?
+            (update refs (:name version) conj version)))
+        {}
+        (line-seq history)))
+    (catch java.io.FileNotFoundException ex
+      {})))
 
 
 (defn- write-history!
