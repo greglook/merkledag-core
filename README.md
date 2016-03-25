@@ -2,23 +2,30 @@ Clojure MerkleDAG
 =================
 
 This library implements a simplified version of the
-[IPFS](//github.com/ipfs/ipfs) merkle-dag data layer. This combines
-[content-addressable block storage](//github.com/greglook/blocks) with a [set of
-codecs](//github.com/greglook/clj-multicodec) to translate between the
-Merkle-DAG data structure and serialized blocks.
+[IPFS](https://github.com/ipfs/ipfs) MerkleDAG data layer. This combines
+[content-addressable block storage](https://github.com/greglook/blocks) with a
+[set of codecs](https://github.com/greglook/clj-multicodec) to translate between
+the graph data structure and serialized blocks.
+
+The name comes from the observation that a collection of blocks where some
+blocks contain links to other blocks forms a [directed acyclic
+graph](https://en.wikipedia.org/wiki/Directed_acyclic_graph) (DAG). Nodes are
+labeled by the hash of their contents, forming an expanded version of a [Merkle
+tree](https://en.wikipedia.org/wiki/Merkle_tree). Hence the combined name,
+merkledag.
 
 This is currently **work in progress**. Stay tuned for updates!
 
 ## Concepts
 
-- A [multihash](//github.com/greglook/clj-multihash) is a self-describing
+- A [multihash](https://github.com/greglook/clj-multihash) is a self-describing
   value specifying a cryptographic hashing algorithm and a digest.
-- A [block](//github.com/greglook/blocks) is a sequence of bytes, identified by
+- A [block](https://github.com/greglook/blocks) is a sequence of bytes, identified by
   a multihash of its content.
 - Blocks can be referenced by _merkle links_, which have a multihash target and
   an optional name and reference size.
 - A _data block_ is serialized with a self-describing
-  [multicodec](//github.com/greglook/clj-multicodec) header to make the encoding
+  [multicodec](https://github.com/greglook/clj-multicodec) header to make the encoding
   discoverable and upgradable. All other blocks are considered 'raw' blocks with
   opaque binary content.
 - A _node_ is a data block encoded with a specific format which records a table
