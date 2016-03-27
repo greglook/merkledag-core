@@ -6,7 +6,8 @@
     [clojure.java.io :as jio]
     [clojure.string :as str]
     [merkledag.refs :as refs]
-    [multihash.core :as multihash])
+    [multihash.core :as multihash]
+    [schema.core :as s])
   (:import
     java.util.Date
     multihash.core.Multihash))
@@ -50,7 +51,7 @@
           (let [version (line->version (str/trim-newline line))]
             ; TODO: sort lists by version?
             (update refs (:name version) conj version)))
-        {}
+        (sorted-map)
         (line-seq history)))
     (catch java.io.FileNotFoundException ex
       {})))
@@ -145,11 +146,9 @@
 (defn file-tracker
   "Creates a new simple file-backed ref tracker."
   [path]
-  ; TODO: actually validate schema?
-  ; TODO: error handling?
-  ; TODO: load file data?
+  ; TODO: agent error handling?
   (let [file (jio/file path)]
-    (FileTracker. (agent file) (ref {}))))
+    (FileTracker. (agent file) (ref (sorted-map) :validator (partial s/validate refs/RefsMap)))))
 
 
 (defn load-history!
