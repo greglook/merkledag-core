@@ -1,14 +1,41 @@
 (ns merkledag.refs
-  "Mutable references stored with a repository.")
+  "Mutable references stored with a repository."
+  (:require
+    [multihash.core :as multihash]
+    [schema.core :as s :refer [defschema]])
+  (:import
+    multihash.core.Multihash
+    org.joda.time.DateTime))
 
 
-#_
+;; ## Ref Schemas
+
+(defschema RefName
+  (s/constrained s/Str (partial re-matches #"[a-zA-Z][a-zA-Z0-9-]*")))
+
+
 (defschema RefVersion
-  {:name String
+  {:name RefName
    :value Multihash
-   :version Long
+   :version s/Int
    :time DateTime})
 
+
+(defschema RefHistory
+  (s/constrained
+    [RefVersion]
+    #(every? (fn [[a b]]
+               (and (pos? (compare (:version a) (:version b)))
+                    (= (:name a) (:name b))))
+             (partition 2 1 %))))
+
+
+(defschema RefsMap
+  {RefName RefHistory})
+
+
+
+;; ## Tracker Protocol
 
 (defprotocol RefTracker
   "Protocol for a mutable tracker for reference pointers."

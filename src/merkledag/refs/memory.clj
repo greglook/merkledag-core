@@ -2,21 +2,11 @@
   "Ref storage backed by a map in an atom."
   (:require
     [clj-time.core :as time]
-    [merkledag.refs :as refs])
+    [merkledag.refs :as refs]
+    [schema.core :as s])
   (:import
     java.util.Date
     multihash.core.Multihash))
-
-
-(comment
-  (defschema RefHistory
-    (s/constrained
-      [RefVersion]
-      #(every? (fn [[a b]] (pos? (compare (:version a) (:version b))))
-               (partition 2 1 %))))
-
-  (defschema RefDB
-    {String RefHistory}))
 
 
 ;; Multihash references in a memory tracker are held in a map in an atom.
@@ -82,8 +72,7 @@
 (defn memory-tracker
   "Creates a new in-memory ref tracker."
   []
-  ; TODO: actually validate schema?
-  (MemoryTracker. (atom (sorted-map) :validator map?)))
+  (MemoryTracker. (atom (sorted-map) :validator (partial s/validate refs/RefsMap))))
 
 
 ;; Remove automatic constructor functions.
