@@ -9,8 +9,6 @@
     (merkledag
       [link :as link]
       [node :refer [node-codec]])
-    (merkledag.codecs
-      [bin :refer [bin-codec]])
     [multicodec.core :as codec]
     [multicodec.header :as header]
     (multicodec.codecs
@@ -153,6 +151,5 @@
    (standard-format (load-types!)))
   ([types]
    (mux-codec
-     :bin  (bin-codec)
-     :text (text-codec)
-     :node (node-codec types))))
+     :text    (text-codec)
+     :node/v1 (node-codec types))))
