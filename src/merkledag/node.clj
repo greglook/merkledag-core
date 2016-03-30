@@ -4,20 +4,22 @@
     [merkledag.codecs.edn :refer [edn-codec]]
     [merkledag.link :as link]
     [multicodec.core :as codec]
-    [multicodec.codecs.mux :as mux])
+    [multicodec.codecs.mux :as mux]
+    [schema.core :as s :refer [defschema]])
   (:import
     blocks.data.Block
-    merkledag.link.MerkleLink))
+    merkledag.link.MerkleLink
+    multihash.core.Multihash))
 
 
-#_
 (defschema NodeSchema
   "Schema for a Node value."
   {:id Multihash
-   :size s/Long
+   :size s/Int
    :encoding [s/Str]
-   :links [MerkleLink]
-   :data s/Any})
+   (s/optional-key :links) [MerkleLink]
+   (s/optional-key :data) s/Any})
+
 
 
 ;; ## Node Codec
