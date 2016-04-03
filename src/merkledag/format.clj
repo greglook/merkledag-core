@@ -78,6 +78,7 @@
     (->>
       (bult/namespaces-on-classpath :prefix "merkledag.data")
       (filter #(= 3 (count (str/split (str %) #"\."))))
+      (remove #{(str *ns*)})  ; TODO: exclude this namespace
       (set)
       (sort)
       (reduce load-plugin-ns! {}))
