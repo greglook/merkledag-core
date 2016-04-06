@@ -58,6 +58,11 @@ This library needs to support:
 - Data-web structure helpers like `assoc`, `assoc-in`, `update`, `update-in`,
   etc.
 
+The _general_ semantics of the API are around creating refs and then updating
+paths from those refs into the data web. This lets applications treat the data
+like an immutable filesystem without needing to directly care about hashes and
+links unless they want to.
+
 ## License
 
 This is free and unencumbered software released into the public domain.
