@@ -61,7 +61,7 @@
   placed at the beginning of the link segment, in order. Additional links
   walked from the data value will be appended in a canonical order."
   ([codec data]
-   (node codec nil data))
+   (node* codec nil data))
   ([codec ordered-links data]
    (let [links (->> (link/find-links data)
                     (concat ordered-links)
@@ -73,12 +73,14 @@
 
 
 
-;; ## Data Manipulation
+;; ## Graph Traversal
 
 (defn get-node
   "Retrieves and parses the block identified by the given multihash."
+  ; TODO: id should accept multihash or ref name
   [repo id]
   (when-let [block (block/get (:store repo) id)]
+    ; TODO: cache parsed values
     (node/parse-block (:codec repo) block)))
 
 
@@ -92,6 +94,7 @@
 (defn get-path
   "Retrieve a node by recursively resolving a path through a sequence of nodes.
   The `path` should be a slash-separated string or a vector of path segments."
+  ; TODO: root-id should accept multihash or ref name
   ([repo root-id path]
    (get-path repo root-id path nil))
   ([repo root-id path not-found]
@@ -102,6 +105,7 @@
          (if-let [link (link/resolve-name (:links node) (str (first path)))]
            (if-let [child (get-link repo link)]
              (recur child (rest path))
+             ; TODO: is an exception right here? could return `not-found`
              (throw (ex-info (str "Linked node " (:target link) " is not available")
                              {:node (:id node)})))
            not-found)
@@ -109,39 +113,43 @@
        not-found))))
 
 
-(defn put-node!
+
+;; ## Graph Manipulation
+
+(defn create-node!
   "Stores a value in the graph as a data block. Accepts any value that is
   encodable by the block format, or a map with `:links` and `:data` entries."
   [repo value]
   (when value
-    (->> value
-         (node/format-block (:codec repo))
+    (->> (node/format-block (:codec repo) value)
          (block/put! (:store repo)))))
 
 
-(defn update-node
+(defn- update-node
   "Updates the given node by substituting in the given links and potentially
   running a function to update the body.
 
   If the given links have names, and links with matching names exist in the
   current node, they will be replaced with the new links. Otherwise, the links
   will be appended to the table."
-  ([node links]
+  ([codec node links]
    (update-node node links identity))
-  ([node- links f & args]
-   (let [links' (reduce link/update-links (:links node-) links)]
-     (node links' (apply f (:data node-) args)))))
+  ([codec node links f & args]
+   (node* codec
+          (reduce link/update-links (:links node) links)
+          (apply f (:data node) args))))
 
 
-(defn update-node-link
+(defn- update-node-link
   "Helper function for updating a single link in a node to point to a new node.
   Returns the updated node."
-  [node link-name target]
-  (update-node node [(link link-name target)]))
+  [codec node link-name target]
+  (update-node codec node [(link link-name target)]))
 
 
 (defn update-path
   "Returns a sequence of nodes, the first of which is the updated root node."
+  ; TODO: root-id should accept multihash or ref name
   [repo root path f & args]
   (if (empty? path)
     ; Base Case: empty path segment
@@ -152,8 +160,8 @@
                   (get-link repo link'))]
       (when-let [children (apply update-path repo child (rest path) f args)]
         (cons (if root
-                (update-node-link root link-name (first children))
-                (node [(link link-name (first children))] nil))
+                (update-node-link (:codec repo) root link-name (first children))
+                (node* (:codec repo) [(link link-name (first children))] nil))
               children)))))
 
 
