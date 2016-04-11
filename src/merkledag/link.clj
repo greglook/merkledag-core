@@ -231,7 +231,8 @@
       (fn link-detector [x]
         (when (instance? MerkleLink x)
           (swap! links conj x))
-        x))
+        x)
+      data)
     @links))
 
 
