@@ -92,8 +92,8 @@
   ([repo root path]
    (get-path repo root path nil))
   ([repo root path not-found]
-   (loop [node root
-          path (if (string? path) (str/split #"/" path) (seq path))]
+   (loop [node (get-node repo root)
+          path (if (string? path) (str/split path #"/") (seq path))]
      (if node
        (if (seq path)
          (if-let [link (link/resolve-name (:links node) (str (first path)))]
