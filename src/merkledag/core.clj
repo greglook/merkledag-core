@@ -29,7 +29,8 @@
     [multicodec.core :as codec]
     [multicodec.codecs.mux :refer [mux-codec]])
   (:import
-    merkledag.link.MerkleLink))
+    merkledag.link.MerkleLink
+    multihash.core.Multihash))
 
 
 ;; ## Graph Repository
@@ -75,13 +76,25 @@
 
 ;; ## Graph Traversal
 
+(defn- resolve-ident
+  "Resolves a string as either a valid multihash or a ref name. Returns the
+  multihash pointed to by the value, or nil if the identifier"
+  [tracker ident]
+  (if (instance? Multihash ident)
+    ident
+    (:value (refs/get-ref tracker ident))))
+
+
 (defn get-node
-  "Retrieves and parses the block identified by the given multihash."
-  ; TODO: id should accept multihash or ref name
-  [repo id]
-  (when-let [block (block/get (:store repo) id)]
-    ; TODO: cache parsed values
-    (node/parse-block (:codec repo) block)))
+  "Retrieves and parses the block identified. The identifier may be a multihash
+  or a string ref name."
+  [repo ident]
+  ; TODO: cache parsed values
+  (some->>
+    ident
+    (resolve-ident (:refs repo))
+    (block/get (:store repo))
+    (node/parse-block (:codec repo))))
 
 
 (defn get-link
@@ -98,7 +111,7 @@
   ([repo root-id path]
    (get-path repo root-id path nil))
   ([repo root-id path not-found]
-   (loop [node (get-node repo root-id)
+   (loop [node (get-node repo (resolve-ident (:refs repo) root-id))
           path (if (string? path) (str/split path #"/") (seq path))]
      (if node
        (if (seq path)
@@ -144,13 +157,12 @@
   "Helper function for updating a single link in a node to point to a new node.
   Returns the updated node."
   [codec node link-name target]
-  (update-node codec node [(link link-name target)]))
+  (update-node codec node [(link* link-name target)]))
 
 
-(defn update-path
+(defn- path-updates
   "Returns a sequence of nodes, the first of which is the updated root node."
-  ; TODO: root-id should accept multihash or ref name
-  [repo root path f & args]
+  [repo root path f args]
   (if (empty? path)
     ; Base Case: empty path segment
     [(apply f root args)]
@@ -158,11 +170,28 @@
     (let [link-name (str (first path))
           child (when-let [link' (and root (link/resolve-name (:links root) link-name))]
                   (get-link repo link'))]
-      (when-let [children (apply update-path repo child (rest path) f args)]
+      (when-let [children (path-updates repo child (rest path) f args)]
         (cons (if root
                 (update-node-link (:codec repo) root link-name (first children))
-                (node* (:codec repo) [(link link-name (first children))] nil))
+                (node* (:codec repo) [(link* link-name (first children))] nil))
               children)))))
+
+
+(defn update-path!
+  "Updates the node at the given path from the root ref by applying a function
+  to it. Creates a new version for the ref, which must already exist. Returns
+  the updated ref."
+  [repo root-id path f & args]
+  (if-let [ref-val (refs/get-ref (:refs repo) root-id)]
+    (let [old-root (get-node repo (:value ref-val))]
+      ; Update the ref to point at the new root.
+      (->> (path-updates repo old-root path f args)
+           (doall (map (partial block/put! (:store repo))))
+           (first)
+           (:id)
+           (refs/set-ref! (:refs repo) (:name ref-val))))
+    (throw (ex-info (str "Cannot update path rooted at " root-id " which is not a ref")
+                    {:id root-id}))))
 
 
 
