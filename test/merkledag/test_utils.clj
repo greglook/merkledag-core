@@ -1,7 +1,7 @@
 (ns merkledag.test-utils
   (:require
     [merkledag.codecs.edn :as edn]
-    [merkledag.format :as format]
+    [merkledag.data :as data]
     [multihash.core :as multihash]
     [puget.dispatch :as dispatch]
     [puget.printer :as puget])
@@ -23,7 +23,7 @@
    (dispatch/chained-lookup
      {MerkleLink (puget/tagged-handler 'data/link (juxt :name :target :tsize))
       Multihash (puget/tagged-handler 'data/hash multihash/base58)}
-     (edn/types->print-handlers format/core-types)
+     (edn/types->print-handlers data/core-types)
      puget/common-handlers)})
 
 

@@ -14,8 +14,9 @@
     [clojure.string :as str]
     (merkledag
       [core :as merkle]
-      [format :as format]
+      [data :as data]
       [link :as link]
+      [node :as node]
       [test-utils :refer [dprint-opts random-bytes]]
       [viz :as viz])
     [multicodec.core :as codec]
@@ -32,6 +33,7 @@
   (puget/pprint value dprint-opts))
 
 
+#_
 (defn init!
   []
   (let [context-hash (multihash/decode "Qmb2TGZBNWDuWsJVxX7MBQjvtB3cUc4aFQqrST32iASnEh")
