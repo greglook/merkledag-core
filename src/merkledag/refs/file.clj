@@ -112,7 +112,7 @@
         (first history))))
 
 
-  (list-ref-history
+  (get-ref-history
     [this ref-name]
     (get @refs ref-name))
 

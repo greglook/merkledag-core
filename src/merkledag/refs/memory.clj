@@ -37,7 +37,7 @@
       (first (get @memory ref-name))))
 
 
-  (list-ref-history
+  (get-ref-history
     [this ref-name]
     (get @memory ref-name))
 

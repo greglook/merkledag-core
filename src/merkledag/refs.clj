@@ -54,7 +54,7 @@
     "Retrieve the given reference. If version is not given, the latest version
     is returned. Returns a `RefVersion`.")
 
-  (list-ref-history
+  (get-ref-history
     [tracker ref-name]
     "Returns the known versions of a ref. Returns a sequence of `RefVersion`
     values.")
