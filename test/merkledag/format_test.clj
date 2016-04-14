@@ -3,7 +3,7 @@
     [blocks.core :as block]
     [clojure.test :refer :all]
     (merkledag
-      [format :as format]
+      [node :as node]
       [link :as link])
     [multicodec.core :as codec]
     [multicodec.codecs.text :refer [text-codec]]

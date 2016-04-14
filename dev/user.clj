@@ -17,8 +17,12 @@
       [data :as data]
       [link :as link]
       [node :as node]
+      [refs :as refs]
       [test-utils :refer [dprint-opts random-bytes]]
       [viz :as viz])
+    (merkledag.refs
+      [file :refer [file-tracker]]
+      [memory :refer [memory-tracker]])
     [multicodec.core :as codec]
     [multihash.core :as multihash]
     [puget.printer :as puget]))
@@ -31,6 +35,12 @@
 (defn dprint
   [value]
   (puget/pprint value dprint-opts))
+
+
+(def repo
+  (merkle/graph-repo
+    :store (memory-store)
+    :refs (memory-tracker)))
 
 
 #_
