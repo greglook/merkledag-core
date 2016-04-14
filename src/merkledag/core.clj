@@ -180,13 +180,16 @@
 (defn update-path!
   "Updates the node at the given path from the root ref by applying a function
   to it. Creates a new version for the ref, which must already exist. Returns
-  the updated ref."
+  the updated ref. Path must be a string or sequence of strings."
   [repo root-id path f & args]
   (if-let [ref-val (refs/get-ref (:refs repo) root-id)]
-    (let [old-root (get-node repo (:value ref-val))]
+    (let [old-root (get-node repo (:value ref-val))
+          path (-> (if (string? path) path (str/join "/" path))
+                   (str/split #"/"))]
       ; Update the ref to point at the new root.
       (->> (path-updates repo old-root path f args)
-           (doall (map (partial block/put! (:store repo))))
+           (map (partial block/put! (:store repo)))
+           (doall)
            (first)
            (:id)
            (refs/set-ref! (:refs repo) (:name ref-val))))
