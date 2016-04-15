@@ -10,8 +10,10 @@
 
   A _node_ is a block which follows the merkledag format. Nodes in the
   merkledag may have links to other nodes as well as some internal data. In
-  addition to the block properties, nodes have two additional attributes:
+  addition to the block properties, nodes have one mandatory and two optional
+  attributes:
 
+  - `:encoding` the multicodec headers the content is actually encoded with.
   - `:links` a sequence of `MerkleLink`s to other nodes in the merkledag.
   - `:data` the data segment, which may be a parsed value or a raw byte
     sequence.
