@@ -89,10 +89,9 @@
   [codec input]
   (binding [header/*headers* []]
     (try
-      (let [decoded (codec/decode! codec input)]
-        (-> decoded
-            (select-keys [:links :data])
-            (assoc :encoding header/*headers*)))
+      (-> (codec/decode! codec input)
+          (select-keys [:links :data])
+          (assoc :encoding header/*headers*))
       (catch clojure.lang.ExceptionInfo ex
         (case (:type (ex-data ex))
           :multicodec/bad-header
