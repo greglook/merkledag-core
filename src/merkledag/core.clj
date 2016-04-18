@@ -99,13 +99,6 @@
     (node/parse-block (:codec repo))))
 
 
-(defn get-link
-  "Convenience function which retrieves a link target as a node."
-  [repo link]
-  (when-let [target (:target link)]
-    (get-node repo target)))
-
-
 (defn get-path
   "Retrieve a node by recursively resolving a path through a sequence of nodes.
   The `path` should be a slash-separated string or a vector of path segments."
@@ -118,7 +111,7 @@
      (if node
        (if (seq path)
          (if-let [link (link/resolve-name (:links node) (str (first path)))]
-           (if-let [child (get-link repo link)]
+           (if-let [child (get-node repo (:target link))]
              (recur child (rest path))
              ; TODO: is an exception right here? could return `not-found`
              (throw (ex-info (str "Linked node " (:target link) " is not available")
@@ -171,7 +164,7 @@
     ; Recursive Case: first path segment
     (let [link-name (str (first path))
           child (when-let [link' (and root (link/resolve-name (:links root) link-name))]
-                  (get-link repo link'))]
+                  (get-node repo (:target link')))]
       (when-let [children (path-updates repo child (rest path) f args)]
         (cons (if root
                 (update-node-link (:codec repo) root link-name (first children))
