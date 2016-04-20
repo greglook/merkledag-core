@@ -13,6 +13,10 @@
       LocalDate)))
 
 
+(def inst-schema
+  DateTime)
+
+
 (def inst-format
   "Joda-time formatter/parser for timestamps."
   (tformat/formatter
@@ -52,3 +56,9 @@
    {:description "Interval between two instants in time"
     :reader '???
     :writers {Interval #(vector (time/start %) (time/end %))}}})
+
+
+(def data-attributes
+  {:time/at
+   {:schema inst-schema
+    :description "An instant in time at which an event occurs."}})
