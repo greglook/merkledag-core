@@ -80,7 +80,7 @@
 
 (defn- resolve-ident
   "Resolves a string as either a valid multihash or a ref name. Returns the
-  multihash pointed to by the value, or nil if the identifier"
+  multihash pointed to by the value, or nil if the identifier is not found."
   [tracker ident]
   (if (instance? Multihash ident)
     ident
@@ -102,7 +102,6 @@
 (defn get-path
   "Retrieve a node by recursively resolving a path through a sequence of nodes.
   The `path` should be a slash-separated string or a vector of path segments."
-  ; TODO: root-id should accept multihash or ref name
   ([repo root-id path]
    (get-path repo root-id path nil))
   ([repo root-id path not-found]

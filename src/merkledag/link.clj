@@ -22,6 +22,8 @@
 (deftype MerkleLink
   [_name _target _tsize _meta]
 
+  :load-ns true
+
   Object
 
   (toString
@@ -268,18 +270,6 @@
 
 
 ;; ## Link Utilities
-
-(defn with-links
-  "Adds a sequence of links to the given value as metadata."
-  [value links]
-  (vary-meta value assoc :merkledag/links (vec links)))
-
-
-(defn meta-links
-  "Returns link information from the value's metadata, if present."
-  [value]
-  (:merkledag/links (meta value)))
-
 
 (defn total-size
   "Calculates the total size of data reachable from the given node. Expects a

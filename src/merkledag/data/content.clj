@@ -6,8 +6,7 @@
     [byte-streams :as bytes]
     [schema.core :as s])
   (:import
-    blocks.data.PersistentBytes
-    merkledag.link.MerkleLink))
+    blocks.data.PersistentBytes))
 
 
 (defprotocol ContentSource

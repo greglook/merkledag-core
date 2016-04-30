@@ -1,10 +1,9 @@
 (ns merkledag.data.file
   "Support for common data attributes."
   (:require
-    (merkledag.data
-      [common :as common]
-      [content :as content]
-      [time :as time])
+    [merkledag.data.common :as common]
+    [merkledag.data.content :as content]
+    [merkledag.data.time :as time]
     [schema.core :as s])
   (:import
     merkledag.link.MerkleLink
