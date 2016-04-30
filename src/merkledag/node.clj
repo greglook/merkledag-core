@@ -19,7 +19,7 @@
   "Schema for a Node value."
   {:id Multihash
    :size s/Int
-   :encoding [s/Str]
+   :encoding (s/maybe [s/Str])
    (s/optional-key :links) [MerkleLink]
    (s/optional-key :data) s/Any})
 

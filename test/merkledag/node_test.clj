@@ -50,8 +50,7 @@
       (is (= 28 (:size node)))
       (is (= "foo bar baz" (:data node)))
       (is (nil? (:links node)))
-      (is (= ["/edn"] (:encoding node)))
-      ))
+      (is (= ["/edn"] (:encoding node)))))
   (testing "node with links"
     (let [node (node/format-block test-codec {:links [(link/create "foo" (digest/sha1 "foo") 3)]})]
       (is (nil? (:data node)))
