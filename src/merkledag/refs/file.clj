@@ -137,10 +137,11 @@
   (delete-ref!
     [this ref-name]
     (dosync
-      (when (contains? @refs ref-name)
-        (alter refs dissoc ref-name)
-        (send-off data-file write-history! @refs)
-        true))))
+      (if (contains? @refs ref-name)
+        (do (alter refs dissoc ref-name)
+            (send-off data-file write-history! @refs)
+            true)
+        false))))
 
 
 (defn file-tracker
@@ -148,6 +149,7 @@
   [path]
   ; TODO: agent error handling?
   (let [file (jio/file path)]
+    (jio/make-parents file)
     (FileTracker. (agent file) (ref (sorted-map) :validator (partial s/validate refs/RefsMap)))))
 
 

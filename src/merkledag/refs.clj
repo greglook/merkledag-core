@@ -16,7 +16,7 @@
 
 (defschema RefVersion
   {:name RefName
-   :value Multihash
+   :value (s/maybe Multihash)
    :version s/Int
    :time DateTime})
 

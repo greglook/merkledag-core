@@ -44,7 +44,7 @@
 
   (set-ref!
     [this ref-name value]
-    ; TODO: assert value is a multihash?
+    {:pre [(instance? Multihash value)]}
     (-> memory
         (swap!
           (fn record-ref
