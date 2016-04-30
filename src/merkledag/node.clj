@@ -42,7 +42,7 @@
 
   (encode!
     [this output node]
-    (when-not (or (seq (:links node)) (:data node))
+    (when-not (codec/encodable? this node)
       (throw (IllegalArgumentException.
                "Cannot encode a node with no links or data!")))
     (let [links' (when (seq (:links node)) (vec (:links node)))
