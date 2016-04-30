@@ -10,7 +10,7 @@
   [[bultitude "0.2.8"]
    [byte-streams "0.2.2"]
    [clj-time "0.11.0"]
-   [mvxcvi/blocks "0.6.1"]
+   [mvxcvi/blocks "0.7.0"]
    [mvxcvi/multicodec "0.5.1"]
    [mvxcvi/multihash "2.0.0"]
    [mvxcvi/puget "1.0.0"]
