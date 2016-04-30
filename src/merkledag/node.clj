@@ -119,8 +119,13 @@
                             {:encoded encoded-headers
                              :decoded (:encoding info)})))
           (into block info)))
-      (assoc (block/read! value)
-             :encoding nil))))
+      (try
+        (assoc (block/read! value)
+               :encoding nil)
+        (catch Exception ex
+          (throw (ex-info "Value is not valid node data and can't be read as raw bytes"
+                          {:value value}
+                          ex)))))))
 
 
 (defn parse-block

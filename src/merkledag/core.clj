@@ -66,13 +66,14 @@
   ([codec data]
    (node* codec nil data))
   ([codec ordered-links data]
-   (let [links (->> (link/find-links data)
-                    (concat ordered-links)
-                    (link/compact-links)
-                    (remove (set ordered-links))
-                    (concat ordered-links))]
-     (link/validate-links! links)
-     (node/format-block codec {:links links, :data data}))))
+   (when (or (seq ordered-links) data)
+     (let [links (->> (link/find-links data)
+                      (concat ordered-links)
+                      (link/compact-links)
+                      (remove (set ordered-links))
+                      (concat ordered-links))]
+       (link/validate-links! links)
+       (node/format-block codec {:links links, :data data})))))
 
 
 
