@@ -6,8 +6,10 @@
     [merkledag.codecs.edn :as edn]
     [merkledag.core :as merkle]
     [merkledag.data :as data]
+    [merkledag.refs :as refs]
     [merkledag.refs.memory :refer [memory-tracker]]
     [multihash.core :as multihash]
+    [multihash.digest :as digest]
     [puget.dispatch :as dispatch]
     [puget.printer :as puget])
   (:import
@@ -101,3 +103,19 @@
         (is (= ["qux" "foo"] (map :name (:links node))))
         (is (= [hash-1 (:id foo-block)] (map :target (:links node))))
         (is (= (second (:links node)) (get-in node [:data :thing])))))))
+
+
+(deftest repo-queries
+  (let [repo (make-test-repo)
+        node-1 (merkle/node* (:codec repo) {:foo 123})
+        node-2 (merkle/node* (:codec repo) [(merkle/link* "xyz" (digest/sha2-256 "xyz"))] [:bar 123 'abc])
+        node-3 (merkle/node* (:codec repo) {:foo (merkle/link* "foo" node-1), :bar (merkle/link* "bar" node-2)})]
+    (block/put-batch! (:store repo) [node-1 node-2 node-3])
+    (is (nil? (merkle/get-node repo nil)))
+    (is (= node-1 (merkle/get-node repo (:id node-1))))
+    (refs/set-ref! (:refs repo) "abc" (:id node-3))
+    (is (= node-2 (merkle/get-path repo "abc" "bar")))
+    (is (= ::not-found (merkle/get-path repo "abc" "bar/xyz" ::not-found)))
+    (is (= ::not-found (merkle/get-path repo "abc" ["bar" "qux"] ::not-found)))
+    ; ...
+    ))

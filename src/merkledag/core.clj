@@ -113,9 +113,7 @@
          (if-let [link (link/resolve-name (:links node) (str (first path)))]
            (if-let [child (get-node repo (:target link))]
              (recur child (rest path))
-             ; TODO: is an exception right here? could return `not-found`
-             (throw (ex-info (str "Linked node " (:target link) " is not available")
-                             {:node (:id node)})))
+             not-found)
            not-found)
          node)
        not-found))))
