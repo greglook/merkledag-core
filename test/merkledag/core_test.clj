@@ -48,17 +48,17 @@
 
 
 (deftest node-construction
-  (let [codec (:codec (make-test-repo))]
+  (let [repo (make-test-repo)]
     (testing "with no data"
-      (is (nil? (merkle/node* codec nil))))
+      (is (nil? (merkle/create-node repo nil))))
     (testing "with only data"
-      (let [node (merkle/node* codec
+      (let [node (merkle/create-node repo
                    {:data/type :bar})]
         (is (instance? Block node))
         (is (nil? (:links node)))
         (is (= {:data/type :bar} (:data node)))))
     (testing "with only links"
-      (let [node (merkle/node* codec
+      (let [node (merkle/create-node repo
                    [(merkle/link* "@context" hash-1)]
                    nil)]
         (is (instance? Block node))
@@ -68,7 +68,7 @@
         (is (= "@context" (get-in node [:links 0 :name])))
         (is (nil? (:data node)))))
     (testing "with data and table-only links"
-      (let [node (merkle/node* codec
+      (let [node (merkle/create-node repo
                    [(merkle/link* "@context" hash-1)]
                    {:data/type :abc/xyz
                     :data/ident "foo-bar"})]
@@ -80,7 +80,7 @@
         (is (= :abc/xyz (get-in node [:data :data/type])))))
     (testing "with links in data"
       (let [foo-block (block/read! "foo thing")
-            node (merkle/node* codec
+            node (merkle/create-node repo
                    nil
                    {:data/type :abc/xyz
                     :thing (merkle/link* "foo" foo-block)})]
@@ -92,7 +92,7 @@
         (is (= :abc/xyz (get-in node [:data :data/type])))))
     (testing "with data and links"
       (let [foo-block (block/read! "foo thing")
-            node (merkle/node* codec
+            node (merkle/create-node repo
                    [(merkle/link* "qux" hash-1)
                     (merkle/link* "foo" foo-block)]
                    {:data/type :abc/xyz
@@ -107,10 +107,9 @@
 
 (deftest repo-queries
   (let [repo (make-test-repo)
-        node-1 (merkle/node* (:codec repo) {:foo 123})
-        node-2 (merkle/node* (:codec repo) [(merkle/link* "xyz" (digest/sha2-256 "xyz"))] [:bar 123 'abc])
-        node-3 (merkle/node* (:codec repo) {:foo (merkle/link* "foo" node-1), :bar (merkle/link* "bar" node-2)})]
-    (block/put-batch! (:store repo) [node-1 node-2 node-3])
+        node-1 (merkle/create-node! repo {:foo 123})
+        node-2 (merkle/create-node! repo [(merkle/link* "xyz" (digest/sha2-256 "xyz"))] [:bar 123 'abc])
+        node-3 (merkle/create-node! repo {:foo (merkle/link* "foo" node-1), :bar (merkle/link* "bar" node-2)})]
     (is (nil? (merkle/get-node repo nil)))
     (is (= node-1 (merkle/get-node repo (:id node-1))))
     (refs/set-ref! (:refs repo) "abc" (:id node-3))

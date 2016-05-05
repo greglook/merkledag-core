@@ -63,17 +63,15 @@
   "Constructs a new merkle node. Any links passed as an argument will be
   placed at the beginning of the link segment, in order. Additional links
   walked from the data value will be appended in a canonical order."
-  ([codec data]
-   (node* codec nil data))
-  ([codec ordered-links data]
-   (when (or (seq ordered-links) data)
-     (let [links (->> (link/find-links data)
-                      (concat ordered-links)
-                      (link/compact-links)
-                      (remove (set ordered-links))
-                      (concat ordered-links))]
-       (link/validate-links! links)
-       (node/format-block codec {:links links, :data data})))))
+  [codec ordered-links data]
+  (when (or (seq ordered-links) data)
+    (let [links (->> (link/find-links data)
+                     (concat ordered-links)
+                     (link/compact-links)
+                     (remove (set ordered-links))
+                     (concat ordered-links))]
+      (link/validate-links! links)
+      (node/format-block codec {:links links, :data data}))))
 
 
 
@@ -106,7 +104,7 @@
   ([repo root-id path]
    (get-path repo root-id path nil))
   ([repo root-id path not-found]
-   (loop [node (get-node repo (resolve-ident (:refs repo) root-id))
+   (loop [node (get-node repo root-id)
           path (if (string? path) (str/split path #"/") (seq path))]
      (if node
        (if (seq path)
@@ -122,13 +120,22 @@
 
 ;; ## Graph Manipulation
 
+(defn create-node
+  "Creates a new node value using the codecs in the given repo. The node is not
+  persisted in the repo, for that use `create-node!`."
+  ([repo data]
+   (node* (:codec repo) nil data))
+  ([repo links data]
+   (node* (:codec repo) links data)))
+
+
 (defn create-node!
-  "Stores a value in the graph as a data block. Accepts any value that is
-  encodable by the block format, or a map with `:links` and `:data` entries."
-  [repo value]
-  (when value
-    (->> (node/format-block (:codec repo) value)
-         (block/put! (:store repo)))))
+  "Stores a new node value in the repository. Returns the persisted block."
+  ([repo data]
+   (create-node! repo nil data))
+  ([repo links data]
+   (when-let [node (create-node repo links data)]
+     (block/put! (:store repo) node))))
 
 
 (defn- update-node
