@@ -98,15 +98,18 @@
       (testing "with explicit table"
         (is (= a (link/resolve-name table "a")))
         (is (nil? (link/resolve-name table "d")))))
-    (testing "update-links"
-      (is (= table (link/update-links table nil))
-          "nil link should not change table")
-      (is (= [a] (link/update-links nil a))
+    (testing "update-link"
+      (is (= ::x (link/update-link ::x nil))
+          "nil link should not change argument")
+      (is (= {:links [a], :data nil}
+             (link/update-link nil a))
           "nil table should update to one link vector")
-      (is (= [b c a] (link/update-links [b c] a))
+      (is (= {:links [b c a], :data nil}
+             (link/update-link {:links [b c]} a))
           "new link should append to table")
       (let [b' (link/create "b" (digest/sha1 "qux") 32)]
-        (is (= [a b' c] (link/update-links table b'))
+        (is (= {:links [a b' c], :data #{b'}}
+               (link/update-link {:links table, :data #{b}} b'))
             "new link should replace existing link position")))))
 
 

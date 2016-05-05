@@ -118,7 +118,6 @@
       (is (= node-2 (merkle/get-path repo "abc" "bar")))
       (is (= ::not-found (merkle/get-path repo "abc" "bar/xyz" ::not-found)))
       (is (= ::not-found (merkle/get-path repo "abc" ["bar" "qux"] ::not-found))))
-    #_
     (testing "update paths"
       (let [new-version (merkle/update-path! repo "abc" "bar/xyz" (constantly (merkle/create-node repo "the xyz block")))]
         (prn new-version)

@@ -161,14 +161,22 @@
     (first (filter #(= (str name) (:name %)) link-table))))
 
 
-(defn update-links
-  "Returns an updated vector of links with the given link added, replacing any
-  existing link with the same name."
-  [link-table new-link]
+(defn update-link
+  "Returns an updated node map with the given link added, replacing any
+  existing link with the same name. Returns a map with `:links` and `:data`
+  values."
+  [node new-link]
   (if new-link
-    (let [[before after] (split-with #(not= (:name new-link) (:name %)) link-table)]
-      (vec (concat before [new-link] (rest after))))
-    link-table))
+    (let [name-match? #(= (:name new-link) (:name %))
+          [before after] (split-with (complement name-match?) (:links node))]
+      {:links (vec (concat before [new-link] (rest after)))
+       :data (walk/postwalk
+               (fn link-updater [x]
+                 (if (and (instance? MerkleLink x) (name-match? x))
+                   new-link
+                   x))
+               (:data node))})
+    node))
 
 
 

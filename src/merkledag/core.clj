@@ -84,9 +84,8 @@
   ([codec node links]
    (update-node codec node links identity))
   ([codec node links f & args]
-   (node* codec
-          (reduce link/update-links (:links node) links)
-          (apply f (:data node) args))))
+   (let [node' (reduce link/update-link node links)]
+     (node* codec (:links node') (apply f (:data node') args)))))
 
 
 
@@ -153,7 +152,6 @@
      (block/put! (:store repo) node))))
 
 
-; FIXME: this doesn't update links inside the data value
 (defn- path-updates
   "Returns a sequence of nodes, the first of which is the updated root node."
   [repo root path f args]
