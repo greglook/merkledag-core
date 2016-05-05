@@ -110,11 +110,16 @@
         node-1 (merkle/create-node! repo {:foo 123})
         node-2 (merkle/create-node! repo [(merkle/link* "xyz" (digest/sha2-256 "xyz"))] [:bar 123 'abc])
         node-3 (merkle/create-node! repo {:foo (merkle/link* "foo" node-1), :bar (merkle/link* "bar" node-2)})]
-    (is (nil? (merkle/get-node repo nil)))
-    (is (= node-1 (merkle/get-node repo (:id node-1))))
     (refs/set-ref! (:refs repo) "abc" (:id node-3))
-    (is (= node-2 (merkle/get-path repo "abc" "bar")))
-    (is (= ::not-found (merkle/get-path repo "abc" "bar/xyz" ::not-found)))
-    (is (= ::not-found (merkle/get-path repo "abc" ["bar" "qux"] ::not-found)))
-    ; ...
-    ))
+    (testing "get nodes"
+      (is (nil? (merkle/get-node repo nil)))
+      (is (= node-1 (merkle/get-node repo (:id node-1)))))
+    (testing "get paths"
+      (is (= node-2 (merkle/get-path repo "abc" "bar")))
+      (is (= ::not-found (merkle/get-path repo "abc" "bar/xyz" ::not-found)))
+      (is (= ::not-found (merkle/get-path repo "abc" ["bar" "qux"] ::not-found))))
+    #_
+    (testing "update paths"
+      (let [new-version (merkle/update-path! repo "abc" "bar/xyz" (constantly (merkle/create-node repo "the xyz block")))]
+        (prn new-version)
+        ))))

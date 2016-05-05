@@ -74,6 +74,21 @@
       (node/format-block codec {:links links, :data data}))))
 
 
+(defn update-node
+  "Updates the given node by substituting in the given links and potentially
+  running a function to update the body.
+
+  If the given links have names, and links with matching names exist in the
+  current node, they will be replaced with the new links. Otherwise, the links
+  will be appended to the table."
+  ([codec node links]
+   (update-node codec node links identity))
+  ([codec node links f & args]
+   (node* codec
+          (reduce link/update-links (:links node) links)
+          (apply f (:data node) args))))
+
+
 
 ;; ## Graph Traversal
 
@@ -138,28 +153,7 @@
      (block/put! (:store repo) node))))
 
 
-(defn- update-node
-  "Updates the given node by substituting in the given links and potentially
-  running a function to update the body.
-
-  If the given links have names, and links with matching names exist in the
-  current node, they will be replaced with the new links. Otherwise, the links
-  will be appended to the table."
-  ([codec node links]
-   (update-node node links identity))
-  ([codec node links f & args]
-   (node* codec
-          (reduce link/update-links (:links node) links)
-          (apply f (:data node) args))))
-
-
-(defn- update-node-link
-  "Helper function for updating a single link in a node to point to a new node.
-  Returns the updated node."
-  [codec node link-name target]
-  (update-node codec node [(link* link-name target)]))
-
-
+; FIXME: this doesn't update links inside the data value
 (defn- path-updates
   "Returns a sequence of nodes, the first of which is the updated root node."
   [repo root path f args]
@@ -172,7 +166,7 @@
                   (get-node repo (:target link')))]
       (when-let [children (path-updates repo child (rest path) f args)]
         (cons (if root
-                (update-node-link (:codec repo) root link-name (first children))
+                (update-node (:codec repo) root [(link* link-name (first children))])
                 (node* (:codec repo) [(link* link-name (first children))] nil))
               children)))))
 
