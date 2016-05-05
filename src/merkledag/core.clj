@@ -100,6 +100,14 @@
     (:value (refs/get-ref tracker ident))))
 
 
+(defn- split-path
+  "Cleans up a path argument and converts it into a vector of string elements."
+  [path]
+  (if (string? path)
+    (str/split path #"/")
+    (vec path)))
+
+
 (defn get-node
   "Retrieves and parses the block identified. The identifier may be a multihash
   or a string ref name."
@@ -119,7 +127,7 @@
    (get-path repo root-id path nil))
   ([repo root-id path not-found]
    (loop [node (get-node repo root-id)
-          path (if (string? path) (str/split path #"/") (seq path))]
+          path (split-path path)]
      (if node
        (if (seq path)
          (if-let [link (link/resolve-name (:links node) (str (first path)))]
@@ -176,8 +184,7 @@
   [repo root-id path f & args]
   (if-let [ref-val (refs/get-ref (:refs repo) root-id)]
     (let [old-root (get-node repo (:value ref-val))
-          path (-> (if (string? path) path (str/join "/" path))
-                   (str/split #"/"))]
+          path (split-path path)]
       ; Update the ref to point at the new root.
       (->> (path-updates repo old-root path f args)
            (map (partial block/put! (:store repo)))
@@ -185,8 +192,9 @@
            (first)
            (:id)
            (refs/set-ref! (:refs repo) (:name ref-val))))
-    (throw (ex-info (str "Cannot update path rooted at " root-id " which is not a ref")
-                    {:id root-id}))))
+    (throw (ex-info (str "Cannot update path rooted at " (pr-str root-id) " which is not a ref")
+                    {:id root-id
+                     :path path}))))
 
 
 
