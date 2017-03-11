@@ -98,15 +98,15 @@
           (PushbackReader.)))))
 
 
+;; Remove automatic constructor functions.
+(alter-meta! #'->EDNCodec assoc :private true)
+(alter-meta! #'map->EDNCodec assoc :private true)
+
+
 (defn edn-codec
   "Constructs a new EDN codec. Opts may include:
 
   - `:eof` a value to be returned from the codec when the end of the stream is
     reached instead of throwing an exception. "
   [types & {:as opts}]
-  (EDNCodec. "/edn" types (:eof opts)))
-
-
-;; Remove automatic constructor functions.
-(ns-unmap *ns* '->EDNCodec)
-(ns-unmap *ns* 'map->EDNCodec)
+  (map->EDNCodec (merge opts {:header "/edn", :types types})))

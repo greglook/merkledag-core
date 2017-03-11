@@ -78,8 +78,7 @@
     (.valAt this k nil)))
 
 
-;; Remove automatic constructor function.
-(ns-unmap *ns* '->MerkleLink)
+(alter-meta! #'->MerkleLink assoc :private true)
 
 
 (defn create
@@ -101,7 +100,7 @@
     (throw (IllegalArgumentException.
              (str "Link size must be an integer, got: "
                   (pr-str tsize)))))
-  (MerkleLink. name target tsize nil))
+  (->MerkleLink name target tsize nil))
 
 
 (defn link->form
@@ -216,8 +215,7 @@
     (.valAt this k nil)))
 
 
-;; Remove automatic constructor function.
-(ns-unmap *ns* '->LinkIndex)
+(alter-meta! #'->LinkIndex assoc :private true)
 
 
 (defn link-index
@@ -229,7 +227,7 @@
      link-table
      (keep-indexed #(when (= link %2) %1))
      (first)
-     (LinkIndex.))))
+     (->LinkIndex))))
 
 
 (defn find-links
