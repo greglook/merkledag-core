@@ -1,7 +1,7 @@
 (ns merkledag.core-test
   (:require
     [blocks.core :as block]
-    [blocks.store.memory :refer [memory-store]]
+    [blocks.store.memory :refer [memory-block-store]]
     [clojure.test :refer :all]
     [merkledag.codecs.edn :as edn]
     [merkledag.core :as merkle]
@@ -43,7 +43,7 @@
 (defn make-test-repo
   []
   (merkle/graph-repo
-    :store (memory-store)
+    :store (memory-block-store)
     :refs (memory-tracker)))
 
 
