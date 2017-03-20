@@ -122,6 +122,12 @@
     (apply create v)))
 
 
+(defn merkle-link?
+  "Predicate which returns true if the argument is a `MerkleLink` object."
+  [x]
+  (instance? MerkleLink x))
+
+
 
 ;; ## Link Tables
 
@@ -148,16 +154,16 @@
   [link-table]
   (->> link-table
        (remove (comp nil? :target))
-       (set)
-       (sort-by (juxt :target :name))))
+       (distinct)
+       (sort-by (juxt :name :target))))
 
 
 (defn resolve-name
   "Resolves a link name against the given table. Returns nil if no matching
   link is found."
-  [link-table name]
-  (when name
-    (first (filter #(= (str name) (:name %)) link-table))))
+  [link-table link-name]
+  (when link-name
+    (first (filter #(= (str link-name) (:name %)) link-table))))
 
 
 (defn update-link
@@ -171,7 +177,7 @@
       {:links (vec (concat before [new-link] (rest after)))
        :data (walk/postwalk
                (fn link-updater [x]
-                 (if (and (instance? MerkleLink x) (name-match? x))
+                 (if (and (merkle-link? x) (name-match? x))
                    new-link
                    x))
                (:data node))})
@@ -234,14 +240,14 @@
   "Walks the given data structure looking for links. Returns a set of the links
   discovered."
   [data]
-  (let [links (atom #{})]
+  (let [links (volatile! (transient #{}))]
     (walk/postwalk
       (fn link-detector [x]
-        (when (instance? MerkleLink x)
-          (swap! links conj x))
+        (when (merkle-link? x)
+          (vswap! links conj! x))
         x)
       data)
-    @links))
+    (persistent! @links)))
 
 
 (defn replace-links
@@ -251,7 +257,7 @@
   [link-table data]
   (walk/postwalk
     (fn replacer [x]
-      (if (instance? MerkleLink x)
+      (if (merkle-link? x)
         (or (link-index link-table x)
             (throw (ex-info (str "No link in table matching " x)
                             {:link-table link-table, :link x})))
