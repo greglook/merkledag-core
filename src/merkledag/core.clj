@@ -24,7 +24,6 @@
     [blocks.core :as block]
     [clojure.string :as str]
     (merkledag
-      [data :as data]
       [link :as link]
       [node :as node :refer [node-codec]]
       [refs :as refs])
@@ -44,7 +43,7 @@
 (defn graph-repo
   [& {:keys [types store refs]}]
   (GraphRepo.
-    (mux-codec :node/v1 (node-codec (or types (data/load-types!))))
+    (mux-codec :node/v1 (node-codec types))
     store
     refs))
 
