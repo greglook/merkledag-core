@@ -86,7 +86,7 @@
 
 ;; Multihash references in a file tracker are held in a map in a ref. An agent
 ;; guards writes to the file.
-(defrecord FileTracker
+(defrecord FileRefTracker
   [data-file refs]
 
   refs/RefTracker
@@ -143,17 +143,17 @@
         false))))
 
 
-(alter-meta! #'->FileTracker assoc :private true)
-(alter-meta! #'map->FileTracker assoc :private true)
+(alter-meta! #'->FileRefTracker assoc :private true)
+(alter-meta! #'map->FileRefTracker assoc :private true)
 
 
-(defn file-tracker
+(defn file-ref-tracker
   "Creates a new simple file-backed ref tracker."
   [path]
   ; TODO: agent error handling?
   (let [file (jio/file path)]
     (jio/make-parents file)
-    (->FileTracker (agent file) (ref (sorted-map)))))
+    (->FileRefTracker (agent file) (ref (sorted-map)))))
 
 
 (defn load-history!
