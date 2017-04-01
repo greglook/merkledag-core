@@ -6,8 +6,7 @@
     [clojure.java.io :as jio]
     [clojure.string :as str]
     [merkledag.refs :as refs]
-    [multihash.core :as multihash]
-    [schema.core :as s])
+    [multihash.core :as multihash])
   (:import
     java.util.Date
     multihash.core.Multihash))
@@ -144,13 +143,17 @@
         false))))
 
 
+(alter-meta! #'->FileTracker assoc :private true)
+(alter-meta! #'map->FileTracker assoc :private true)
+
+
 (defn file-tracker
   "Creates a new simple file-backed ref tracker."
   [path]
   ; TODO: agent error handling?
   (let [file (jio/file path)]
     (jio/make-parents file)
-    (FileTracker. (agent file) (ref (sorted-map) :validator (partial s/validate refs/RefsMap)))))
+    (->FileTracker (agent file) (ref (sorted-map)))))
 
 
 (defn load-history!
@@ -160,8 +163,3 @@
     (let [history (read-history @(:data-file tracker))]
       (alter (:refs tracker) (constantly history))
       history)))
-
-
-;; Remove automatic constructor functions.
-(ns-unmap *ns* '->FileTracker)
-(ns-unmap *ns* 'map->FileTracker)

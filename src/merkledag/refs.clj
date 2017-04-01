@@ -1,8 +1,7 @@
 (ns merkledag.refs
   "Mutable references stored with a repository."
   (:require
-    [multihash.core :as multihash]
-    [schema.core :as s :refer [defschema]])
+    [multihash.core :as multihash])
   (:import
     multihash.core.Multihash
     org.joda.time.DateTime))
@@ -10,10 +9,12 @@
 
 ;; ## Ref Schemas
 
+#_
 (defschema RefName
   (s/constrained s/Str (partial re-matches #"[a-zA-Z][a-zA-Z0-9-]*")))
 
 
+#_
 (defschema RefVersion
   {:name RefName
    :value (s/maybe Multihash)
@@ -21,6 +22,7 @@
    :time DateTime})
 
 
+#_
 (defschema RefHistory
   (s/constrained
     [RefVersion]
@@ -30,6 +32,7 @@
              (partition 2 1 %))))
 
 
+#_
 (defschema RefsMap
   {RefName RefHistory})
 

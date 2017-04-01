@@ -2,8 +2,7 @@
   "Ref storage backed by a map in an atom."
   (:require
     [clj-time.core :as time]
-    [merkledag.refs :as refs]
-    [schema.core :as s])
+    [merkledag.refs :as refs])
   (:import
     java.util.Date
     multihash.core.Multihash))
@@ -12,7 +11,7 @@
 ;; Multihash references in a memory tracker are held in a map in an atom.
 ;; `memory` is a map from ref name to a sequence of historical values for the
 ;; ref.
-(defrecord MemoryTracker
+(defrecord MemoryRefTracker
   [memory]
 
   refs/RefTracker
@@ -69,12 +68,11 @@
       existed?)))
 
 
-(defn memory-tracker
+(alter-meta! #'->MemoryRefTracker assoc :private true)
+(alter-meta! #'map->MemoryRefTracker assoc :private true)
+
+
+(defn memory-ref-tracker
   "Creates a new in-memory ref tracker."
   []
-  (MemoryTracker. (atom (sorted-map) :validator (partial s/validate refs/RefsMap))))
-
-
-;; Remove automatic constructor functions.
-(ns-unmap *ns* '->MemoryTracker)
-(ns-unmap *ns* 'map->MemoryTracker)
+  (->MemoryRefTracker (atom (sorted-map))))
