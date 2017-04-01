@@ -6,11 +6,10 @@
     [merkledag.link :as link]
     [merkledag.refs :as refs]
     (merkledag.refs
-      [file :refer [file-tracker]]
-      [memory :refer [memory-tracker]])
+      [file :refer [file-ref-tracker]]
+      [memory :refer [memory-ref-tracker]])
     [multihash.core :as multihash]
-    [multihash.digest :as digest]
-    [schema.core :as s]))
+    [multihash.digest :as digest]))
 
 
 (defn test-ref-tracker
@@ -25,12 +24,12 @@
       (is (nil? (refs/get-ref-history tracker "baz"))))
     (testing "set new ref"
       (let [v (refs/set-ref! tracker "foo" id-a)]
-        (is (s/validate refs/RefVersion v))
+        ;(is (s/validate refs/RefVersion v))
         (is (= id-a (:value v)))
         (is (= "foo" (:name v)))))
     (testing "read existing ref"
       (let [v (refs/get-ref tracker "foo")]
-        (is (s/validate refs/RefVersion v))
+        ;(is (s/validate refs/RefVersion v))
         (is (= id-a (:value v)))
         (is (= "foo" (:name v)))))
     (testing "set ref to same id"
@@ -40,7 +39,7 @@
     (testing "update ref with new id"
       (let [v1 (refs/get-ref tracker "bar")
             v2 (refs/set-ref! tracker "bar" id-b)]
-        (is (s/validate refs/RefVersion v2))
+        ;(is (s/validate refs/RefVersion v2))
         (is (not= v1 v2) "version should change")
         (is (pos? (compare (:version v2) (:version v1)))
             "second version should come after first")))
@@ -56,7 +55,7 @@
         (is (= (second hist) (refs/get-ref tracker "bar" (:version (second hist)))))))
     (testing "write ref tombstone"
       (let [v (refs/set-ref! tracker "foo" nil)]
-        (is (s/validate refs/RefVersion v))
+        ;(is (s/validate refs/RefVersion v))
         (is (= 1 (count (refs/list-refs tracker nil)))
             "list only returns non-nil refs by default")
         (is (= 2 (count (refs/list-refs tracker {:include-nil true})))
@@ -70,10 +69,10 @@
 
 
 (deftest memory-tracker-spec
-  (test-ref-tracker (memory-tracker)))
+  (test-ref-tracker (memory-ref-tracker)))
 
 
 (deftest file-tracker-spec
   (let [tmpdir (io/file "target" "test" "tmp"
                         (str "file-tracker." (System/currentTimeMillis)))]
-    (test-ref-tracker (file-tracker tmpdir))))
+    (test-ref-tracker (file-ref-tracker tmpdir))))

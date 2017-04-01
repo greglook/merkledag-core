@@ -3,7 +3,6 @@
     [blocks.core :as block]
     [blocks.data :refer [clean-block]]
     [clojure.test :refer :all]
-    [merkledag.data :as data]
     [merkledag.link :as link]
     [merkledag.node :as node]
     [multicodec.core :as codec]
@@ -11,7 +10,7 @@
 
 
 (def test-codec
-  (node/node-codec data/core-types))
+  (node/node-codec node/default-types))
 
 
 (deftest node-codec
@@ -23,10 +22,8 @@
     (is (false? (codec/encodable? test-codec {:data nil})))
     (is (true? (codec/encodable? test-codec {:data "123"})))
     (is (true? (codec/encodable? test-codec {:links [(link/create "foo" (digest/sha1 "foo") 3)]})))
-    (is (thrown? IllegalArgumentException
-                 (codec/encode test-codec {:links []})))
-    (is (thrown? IllegalArgumentException
-                 (codec/encode test-codec {:data nil}))))
+    (is (thrown? Exception (codec/encode test-codec {:links []})))
+    (is (thrown? Exception (codec/encode test-codec {:data nil}))))
   (testing "Decoder"
     (is (false? (codec/decodable? test-codec "/bin")))
     (is (false? (codec/decodable? test-codec "/edn")))
@@ -47,7 +44,7 @@
           "formats with nil encoding")))
   (testing "node with data value"
     (let [node (node/format-block test-codec {:data "foo bar baz"})]
-      (is (= 28 (:size node)))
+      (is (= 26 (:size node)))
       (is (= "foo bar baz" (:data node)))
       (is (nil? (:links node)))
       (is (= ["/edn"] (:encoding node)))))

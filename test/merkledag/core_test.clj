@@ -5,9 +5,9 @@
     [clojure.test :refer :all]
     [merkledag.codecs.edn :as edn]
     [merkledag.core :as merkle]
-    [merkledag.data :as data]
+    [merkledag.node :as node]
     [merkledag.refs :as refs]
-    [merkledag.refs.memory :refer [memory-tracker]]
+    [merkledag.refs.memory :refer [memory-ref-tracker]]
     [multihash.core :as multihash]
     [multihash.digest :as digest]
     [puget.dispatch :as dispatch]
@@ -24,7 +24,7 @@
    (dispatch/chained-lookup
      {MerkleLink (puget/tagged-handler 'data/link (juxt :name :target :tsize))
       Multihash (puget/tagged-handler 'data/hash multihash/base58)}
-     (edn/types->print-handlers data/core-types)
+     (edn/types->print-handlers node/default-types)
      puget/common-handlers)})
 
 
@@ -44,7 +44,7 @@
   []
   (merkle/graph-repo
     :store (memory-block-store)
-    :refs (memory-tracker)))
+    :refs (memory-ref-tracker)))
 
 
 (deftest node-construction
