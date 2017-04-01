@@ -35,27 +35,22 @@
   merkledag data structure."
   {'data/hash
    {:description "Content-addressed multihash references"
-    :edn/reader multihash/decode
-    :edn/writers {Multihash multihash/base58}
+    :reader multihash/decode
     :cbor/tag 68
-    :cbor/reader multihash/decode
-    :cbor/writers {Multihash multihash/encode}}
+    :cbor/writers {Multihash multihash/encode}
+    :edn/writers {Multihash multihash/base58}}
 
    'data/link
    {:description "Merkle link values"
-    :edn/reader link/form->link
-    :edn/writers {MerkleLink link/link->form}
-    :cbor/tag 69
-    :cbor/reader link/form->link
-    :cbor/writers {MerkleLink link/link->form}}
+    :reader link/form->link
+    :writers {MerkleLink link/link->form}
+    :cbor/tag 69}
 
    'data/link-index
    {:description "Indexes to the link table within a node"
-    :edn/reader link/link-index
-    :edn/writers {LinkIndex :index}
-    :cbor/tag 72
-    :cbor/reader link/link-index
-    :cbor/writers {LinkIndex :index}}})
+    :reader link/link-index
+    :writers {LinkIndex :index}
+    :cbor/tag 72}})
 
 
 

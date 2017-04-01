@@ -19,6 +19,25 @@
     clj_cbor.codec.CBORCodec))
 
 
+(defn- types->write-handlers
+  "Converts a map of type definitions into a map of CBOR write handlers."
+  [types]
+  (->> (vals types)
+       (mapcat (fn [definition]
+                 (map (fn [[cls former]]
+                        [cls #(data/tagged-value (:cbor/tag definition) (former %))])
+                      (:cbor/writers definition (:writers definition)))))
+       (into cbor/default-write-handlers)))
+
+
+(defn- types->read-handlers
+  "Converts a map of type definitions into a map of CBOR read handlers."
+  [types]
+  (->> (vals types)
+       (map (juxt :cbor/tag #(:cbor/reader % (:reader %))))
+       (into cbor/default-read-handlers)))
+
+
 (extend-type CBORCodec
 
   multicodec/Encoder
@@ -53,14 +72,5 @@
   [types & {:as opts}]
   (cbor/cbor-codec
     :header (:cbor multicodec/headers)
-    :write-handlers
-    (->> (vals types)
-         (mapcat (fn [definition]
-                   (map (fn [[cls former]]
-                          [cls #(data/tagged-value (:cbor/tag definition) (former %))])
-                        (:cbor/writers definition))))
-         (into cbor/default-write-handlers))
-    :read-handlers
-    (->> (vals types)
-         (map (juxt :cbor/tag :cbor/reader))
-         (into cbor/default-read-handlers))))
+    :write-handlers (types->write-handlers types)
+    :read-handlers (types->read-handlers types)))

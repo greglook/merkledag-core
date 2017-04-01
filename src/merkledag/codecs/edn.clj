@@ -45,7 +45,7 @@
        (mapcat (fn [[tag definition]]
                  (map (fn [[cls writer]]
                         [cls (puget/tagged-handler tag writer)])
-                      (:edn/writers definition))))
+                      (:edn/writers definition (:writers definition)))))
        (into {})))
 
 
@@ -54,7 +54,7 @@
   functions."
   [types]
   (->> (resolve-types types)
-       (map (juxt key (comp :edn/reader val)))
+       (map (juxt key (comp #(:edn/reader % (:reader %)) val)))
        (into {})))
 
 
@@ -108,4 +108,4 @@
   - `:eof` a value to be returned from the codec when the end of the stream is
     reached instead of throwing an exception. "
   [types & {:as opts}]
-  (map->EDNCodec (merge opts {:header "/edn", :types types})))
+  (map->EDNCodec (assoc opts :header (:edn multicodec/headers) :types types)))
