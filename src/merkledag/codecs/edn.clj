@@ -1,9 +1,8 @@
 (ns merkledag.codecs.edn
   "Functions to handle structured data formatted as EDN.
 
-  Special types are handled by plugins which define three important
-  attributes to support serializing a type to and from EDN. A plugin map should
-  contain:
+  Special types are handled by plugins which define three important attributes
+  to support serializing a type to and from EDN. A plugin map should contain:
 
   - `:reader` a function which converts a literal form into a value of this type.
   - `:writers` a map of classes or other interfaces to functions which return

@@ -1,4 +1,7 @@
 (ns merkledag.link
+  "The edges in the DAG are represented with _links_ from one node to another.
+  A merkle-link has a multihash target, an optional name string, and a recursive
+  'total size' value."
   (:require
     [blocks.core :as block]
     [clojure.string :as str]
