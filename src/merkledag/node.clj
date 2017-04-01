@@ -2,26 +2,60 @@
   "Functions to serialize and operate on merkledag nodes."
   (:require
     [blocks.core :as block]
+    [clojure.future :refer :all]
+    [clojure.spec :as s]
+    [merkledag.codecs.cbor :refer [cbor-codec]]
     [merkledag.codecs.edn :refer [edn-codec]]
     [merkledag.link :as link]
     [multicodec.core :as codec]
     [multicodec.header :as header]
     [multicodec.codecs.mux :refer [mux-codec]]
-    [schema.core :as s :refer [defschema]])
+    [multihash.core :as multihash])
   (:import
     blocks.data.Block
     java.io.ByteArrayInputStream
+    merkledag.link.LinkIndex
     merkledag.link.MerkleLink
     multihash.core.Multihash))
 
 
-(defschema NodeSchema
-  "Schema for a Node value."
-  {:id Multihash
-   :size s/Int
-   :encoding (s/maybe [s/Str])
-   (s/optional-key :links) [MerkleLink]
-   (s/optional-key :data) s/Any})
+(s/def ::id #(instance? Multihash %))
+(s/def ::size pos-int?)
+(s/def ::encoding (s/nilable (s/coll-of string? :kind vector?)))
+(s/def ::links (s/coll-of link/merkle-link? :kind vector?))
+(s/def ::data coll?)
+
+(s/def :merkledag/node
+  (s/keys :req-un [::id ::size ::encoding]
+          :opt-un [::links ::data]))
+
+
+(def default-types
+  "The core type definitions for hashes and links which are used in the base
+  merkledag data structure."
+  {'data/hash
+   {:description "Content-addressed multihash references"
+    :edn/reader multihash/decode
+    :edn/writers {Multihash multihash/base58}
+    :cbor/tag 68
+    :cbor/reader multihash/decode
+    :cbor/writers {Multihash multihash/encode}}
+
+   'data/link
+   {:description "Merkle link values"
+    :edn/reader link/form->link
+    :edn/writers {MerkleLink link/link->form}
+    :cbor/tag 69
+    :cbor/reader link/form->link
+    :cbor/writers {MerkleLink link/link->form}}
+
+   'data/link-index
+   {:description "Indexes to the link table within a node"
+    :edn/reader link/link-index
+    :edn/writers {LinkIndex :index}
+    :cbor/tag 72
+    :cbor/reader link/link-index
+    :cbor/writers {LinkIndex :index}}})
 
 
 
@@ -34,23 +68,19 @@
 
   (encodable?
     [this value]
-    (boolean
-      (and (map? value)
-           (or (seq (:links value))
-               (:data value)))))
+    (boolean (and (map? value)
+                  (or (seq (:links value))
+                      (:data value)))))
 
 
   (encode!
     [this output node]
     (when-not (codec/encodable? this node)
-      (throw (IllegalArgumentException.
-               "Cannot encode a node with no links or data!")))
+      (throw (ex-info (str "Cannot encode node data: " (pr-str node))
+                      {:node node})))
     (let [links' (when (seq (:links node)) (vec (:links node)))
-          data' (link/replace-links links' (:data node))
-          value (cond-> {}
-                  links' (assoc :links links')
-                  data'  (assoc :data  data'))]
-      (codec/encode! mux output value)))
+          data' (link/replace-links links' (:data node))]
+      (codec/encode! mux output [links' data'])))
 
 
   codec/Decoder
@@ -62,24 +92,25 @@
 
   (decode!
     [this input]
-    (let [value (codec/decode! mux input)]
-      (when-not (codec/encodable? this value)
+    (let [[links data :as value] (codec/decode! mux input)]
+      (when-not (and (vector? value) (or links data))
         (throw (ex-info "Decoded bad node value missing links and data"
                         {:value value})))
-      (assoc value :data (link/resolve-indexes (:links value) (:data value))))))
+      {:links links
+       :data (link/resolve-indexes links data)})))
+
+
+;; Privatize automatic constructor functions.
+(alter-meta! #'->NodeCodec assoc :private true)
+(alter-meta! #'map->NodeCodec assoc :private true)
 
 
 (defn node-codec
   [types]
-  (NodeCodec.
+  (->NodeCodec
     "/merkledag/v1"
     (mux-codec
-      :edn (edn-codec types))))
-
-
-;; Remove automatic constructor functions.
-(ns-unmap *ns* '->NodeCodec)
-(ns-unmap *ns* 'map->NodeCodec)
+      :edn (edn-codec (merge default-types types)))))
 
 
 

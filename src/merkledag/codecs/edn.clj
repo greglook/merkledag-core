@@ -42,10 +42,10 @@
   print-handlers."
   [types]
   (->> (resolve-types types)
-       (mapcat (fn [[tag {:keys [writers]}]]
+       (mapcat (fn [[tag definition]]
                  (map (fn [[cls writer]]
                         [cls (puget/tagged-handler tag writer)])
-                      writers)))
+                      (:edn/writers definition))))
        (into {})))
 
 
@@ -54,7 +54,7 @@
   functions."
   [types]
   (->> (resolve-types types)
-       (map #(vector (key %) (:reader (val %))))
+       (map (juxt key (comp :edn/reader val)))
        (into {})))
 
 
