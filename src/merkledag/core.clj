@@ -25,8 +25,8 @@
     [clojure.string :as str]
     (merkledag
       [link :as link]
-      [node :as node :refer [node-codec]]
       [refs :as refs])
+    [merkledag.codecs.node :as node]
     [multicodec.core :as codec]
     [multicodec.codecs.mux :refer [mux-codec]])
   (:import
@@ -43,7 +43,7 @@
 (defn graph-repo
   [& {:keys [types store refs]}]
   (GraphRepo.
-    (mux-codec :node/v1 (node-codec types))
+    (mux-codec :node/v1 (node/node-codec types))
     store
     refs))
 
