@@ -125,6 +125,11 @@
     (apply create v)))
 
 
+(defmethod print-method MerkleLink
+  [link w]
+  (print-method (tagged-literal 'data/link (link->form link)) w))
+
+
 (defn merkle-link?
   "Predicate which returns true if the argument is a `MerkleLink` object."
   [x]
@@ -285,6 +290,19 @@
 
 
 ;; ## Link Utilities
+
+(defn collect-table
+  "Constructs a link table from the given data. The ordered links passed will
+  be placed at the beginning of the link table, in order. Additional links
+  walked from the data value will be appended in a canonical order."
+  [ordered-links data]
+  (->> (find-links data)
+       (concat ordered-links)
+       (compact-links)
+       (remove (set ordered-links))
+       (concat ordered-links)
+       (vec)))
+
 
 (defn total-size
   "Calculates the total size of data reachable from the given node. Expects a
