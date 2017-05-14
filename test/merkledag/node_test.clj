@@ -9,10 +9,12 @@
     [multihash.digest :as digest]))
 
 
+#_
 (def test-codec
   (node/node-codec node/default-types))
 
 
+#_
 (deftest node-codec
   (testing "Encoder"
     (is (false? (codec/encodable? test-codec nil)))
@@ -30,6 +32,7 @@
     (is (true? (codec/decodable? test-codec "/merkledag/v1")))))
 
 
+#_
 (deftest block-formatting
   (testing "nil value"
     (is (nil? (node/format-block test-codec nil))
@@ -55,6 +58,7 @@
       (is (= 1 (count (:links node)))))))
 
 
+#_
 (deftest block-parsing
   (testing "nil block"
     (is (nil? (node/parse-block test-codec nil))))
