@@ -5,13 +5,11 @@
       [file :refer [file-store]]
       [memory :refer [memory-store]])
     [byte-streams :as bytes]
-    (clj-time
-      [core :as time]
-      [coerce :as coerce-time]
-      [format :as format-time])
     [clojure.java.io :as io]
     [clojure.repl :refer :all]
     [clojure.string :as str]
+    [clojure.stacktrace :refer [print-cause-trace]]
+    [clojure.tools.namespace.repl :refer [refresh]]
     (merkledag
       [core :as merkle]
       [data :as data]
@@ -26,10 +24,6 @@
     [multicodec.core :as codec]
     [multihash.core :as multihash]
     [puget.printer :as puget]))
-
-
-(try (require '[clojure.stacktrace :refer [print-cause-trace]]) (catch Exception e nil))
-(try (require '[clojure.tools.namespace.repl :refer [refresh]]) (catch Exception e nil))
 
 
 (defn dprint

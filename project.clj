@@ -32,13 +32,12 @@
    :show-external false}
 
   :whidbey
-  {:tag-types {'blocks.data.Block {'blocks.data.Block (partial into {})}
-               'merkledag.link.LinkIndex {'data/link-index :index}
-               'merkledag.link.MerkleLink {'data/link 'merkledag.link/link->form}
-               'multihash.core.Multihash {'data/hash 'multihash.core/base58}
-               'org.joda.time.DateTime {'inst str}
-               'org.joda.time.LocalDate {'time/date str}
-               'org.joda.time.Interval {'time/interval #(vector (clj-time.core/start %) (clj-time.core/end %))}}}
+  {:tag-types
+   {'blocks.data.Block {'blocks.data.Block (partial into {})}
+    'java.time.Instant {'inst str}
+    'merkledag.link.LinkIndex {'data/link-index :index}
+    'merkledag.link.MerkleLink {'data/link 'merkledag.link/link->form}
+    'multihash.core.Multihash {'data/hash 'multihash.core/base58}}}
 
   :profiles
   {:repl
