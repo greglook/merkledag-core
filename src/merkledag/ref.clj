@@ -1,39 +1,23 @@
-(ns merkledag.refs
+(ns merkledag.ref
   "Mutable references stored with a repository."
   (:require
+    [clojure.future :refer [inst? nat-int?]]
+    [clojure.spec :as s]
     [multihash.core :as multihash])
   (:import
+    java.time.Instant
     multihash.core.Multihash))
 
 
-;; ## Ref Schemas
+;; ## Specs
 
-#_
-(defschema RefName
-  (s/constrained s/Str (partial re-matches #"[a-zA-Z][a-zA-Z0-9-]*")))
+(s/def ::name (s/and string? not-empty))
+(s/def ::value (s/nilable #(instance? Multihash %)))
+(s/def ::version nat-int?)
+(s/def ::time inst?)
 
-
-#_
-(defschema RefVersion
-  {:name RefName
-   :value (s/maybe Multihash)
-   :version s/Int
-   :time DateTime})
-
-
-#_
-(defschema RefHistory
-  (s/constrained
-    [RefVersion]
-    #(every? (fn [[a b]]
-               (and (pos? (compare (:version a) (:version b)))
-                    (= (:name a) (:name b))))
-             (partition 2 1 %))))
-
-
-#_
-(defschema RefsMap
-  {RefName RefHistory})
+(s/def :merkledag/ref
+  (s/keys :req [::name ::value ::version ::time]))
 
 
 

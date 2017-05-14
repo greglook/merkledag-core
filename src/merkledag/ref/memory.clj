@@ -1,7 +1,7 @@
-(ns merkledag.refs.memory
+(ns merkledag.ref.memory
   "Ref storage backed by a map in an atom."
   (:require
-    [merkledag.refs :as refs])
+    [merkledag.ref :as ref])
   (:import
     java.time.Instant
     multihash.core.Multihash))
@@ -13,24 +13,24 @@
 (defrecord MemoryRefTracker
   [memory]
 
-  refs/RefTracker
+  ref/RefTracker
 
   (list-refs
     [this opts]
     (->> (vals @memory)
          (map first)
-         (filter #(or (:value %) (:include-nil opts)))))
+         (filter #(or (::ref/value %) (:include-nil opts)))))
 
 
   (get-ref
     [this ref-name]
-    (refs/get-ref this ref-name nil))
+    (.get-ref this ref-name nil))
 
 
   (get-ref
     [this ref-name version]
     (if version
-      (some #(when (= version (:version %)) %)
+      (some #(when (= version (::ref/version %)) %)
             (get @memory ref-name))
       (first (get @memory ref-name))))
 
@@ -49,13 +49,13 @@
             [db]
             (let [versions (get db ref-name [])
                   current (first versions)]
-              (if (= value (:value current))
+              (if (= value (::ref/value current))
                 db
-                (let [new-version {:name ref-name
-                                   :value value
-                                   :version (inc (:version current 0))
-                                   :time (Instant/now)}]
-                  (assoc db ref-name (list* new-version versions)))))))
+                (let [new-version {::ref/name ref-name
+                                   ::ref/value value
+                                   ::ref/version (inc (::ref/version current 0))
+                                   ::ref/time (Instant/now)}]
+                  (assoc db ref-name (cons new-version versions)))))))
         (get ref-name)
         (first)))
 

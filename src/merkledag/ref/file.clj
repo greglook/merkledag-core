@@ -1,9 +1,9 @@
-(ns merkledag.refs.file
+(ns merkledag.ref.file
   "Block storage backed by a local file."
   (:require
     [clojure.java.io :as io]
     [clojure.string :as str]
-    [merkledag.refs :as refs]
+    [merkledag.ref :as ref]
     [multihash.core :as multihash])
   (:import
     java.time.Instant
@@ -16,20 +16,20 @@
   "Converts a ref version map into a line of text."
   ^String
   [version]
-  (str/join "\t" [(str (:time version))
-                  (multihash/base58 (:value version))
-                  (:name version)
-                  (:version version)]))
+  (str/join "\t" [(str (::ref/time version))
+                  (multihash/base58 (::ref/value version))
+                  (::ref/name version)
+                  (::ref/version version)]))
 
 
 (defn- line->version
   "Converts a line of text into a ref version map."
   [line]
   (let [[timestamp value ref-name version] (str/split line #"\t")]
-    {:name ref-name
-     :value (multihash/decode value)
-     :version (Long/parseLong version)
-     :time (Instant/parse timestamp)}))
+    {::ref/name ref-name
+     ::ref/value (multihash/decode value)
+     ::ref/version (Long/parseLong version)
+     ::ref/time (Instant/parse timestamp)}))
 
 
 (defn- read-history
@@ -42,7 +42,7 @@
         (fn [refs line]
           (let [version (line->version (str/trim-newline line))]
             ; TODO: sort lists by version?
-            (update refs (:name version) conj version)))
+            (update refs (::ref/name version) conj version)))
         (sorted-map)
         (line-seq history)))
     (catch java.io.FileNotFoundException ex
@@ -53,7 +53,7 @@
   "Writes out the complete history from a map of refs to versions. Returns the
   file reference."
   [file refs]
-  (let [versions (->> (vals refs) (apply concat) (sort-by :time))]
+  (let [versions (->> (vals refs) (apply concat) (sort-by ::ref/time))]
     (with-open [history (io/writer file)]
       (doseq [version versions]
         (.write history (version->line version))
@@ -79,25 +79,25 @@
 (defrecord FileRefTracker
   [data-file refs]
 
-  refs/RefTracker
+  ref/RefTracker
 
   (list-refs
     [this opts]
     (->> (vals @refs)
          (map first)
-         (filter #(or (:value %) (:include-nil opts)))))
+         (filter #(or (::ref/value %) (:include-nil opts)))))
 
 
   (get-ref
     [this ref-name]
-    (refs/get-ref this ref-name nil))
+    (ref/get-ref this ref-name nil))
 
 
   (get-ref
     [this ref-name version]
     (let [history (get @refs ref-name)]
       (if version
-        (some #(when (= version (:version %)) %) history)
+        (some #(when (= version (::ref/version %)) %) history)
         (first history))))
 
 
@@ -112,12 +112,12 @@
     (dosync
       (let [versions (get @refs ref-name [])
             current (first versions)]
-        (if (= value (:value current))
+        (if (= value (::ref/value current))
           current
-          (let [new-version {:name ref-name
-                             :value value
-                             :version (inc (:version current 0))
-                             :time (Instant/now)}]
+          (let [new-version {::ref/name ref-name
+                             ::ref/value value
+                             ::ref/version (inc (::ref/version current 0))
+                             ::ref/time (Instant/now)}]
             (alter refs assoc ref-name (list* new-version versions))
             (send-off data-file append-version! new-version)
             new-version)))))

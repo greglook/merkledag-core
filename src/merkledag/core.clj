@@ -25,7 +25,7 @@
     [clojure.string :as str]
     (merkledag
       [link :as link]
-      [refs :as refs])
+      [ref :as ref])
     [merkledag.codec.node :as node]
     [multicodec.core :as codec]
     [multicodec.codecs.mux :refer [mux-codec]])
@@ -96,7 +96,7 @@
   [tracker ident]
   (if (instance? Multihash ident)
     ident
-    (:value (refs/get-ref tracker ident))))
+    (:value (ref/get-ref tracker ident))))
 
 
 (defn- split-path
@@ -181,7 +181,7 @@
   to it. Creates a new version for the ref, which must already exist. Returns
   the updated ref. Path must be a string or sequence of strings."
   [repo root-id path f & args]
-  (if-let [ref-val (refs/get-ref (:refs repo) root-id)]
+  (if-let [ref-val (ref/get-ref (:refs repo) root-id)]
     (let [old-root (get-node repo (:value ref-val))
           path (split-path path)]
       ; Update the ref to point at the new root.
@@ -190,7 +190,7 @@
            (doall)
            (first)
            (:id)
-           (refs/set-ref! (:refs repo) (:name ref-val))))
+           (ref/set-ref! (:refs repo) (:name ref-val))))
     (throw (ex-info (str "Cannot update path rooted at " (pr-str root-id) " which is not a ref")
                     {:id root-id
                      :path path}))))

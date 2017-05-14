@@ -6,8 +6,8 @@
     [merkledag.codec.edn :as edn]
     [merkledag.core :as merkle]
     [merkledag.node :as node]
-    [merkledag.refs :as refs]
-    [merkledag.refs.memory :refer [memory-ref-tracker]]
+    [merkledag.ref :as ref]
+    [merkledag.ref.memory :refer [memory-ref-tracker]]
     [multihash.core :as multihash]
     [multihash.digest :as digest]
     [puget.dispatch :as dispatch]
@@ -112,7 +112,7 @@
         node-1 (merkle/create-node! repo {:foo 123})
         node-2 (merkle/create-node! repo [(merkle/link* "xyz" (digest/sha2-256 "xyz"))] [:bar 123 'abc])
         node-3 (merkle/create-node! repo {:foo (merkle/link* "foo" node-1), :bar (merkle/link* "bar" node-2)})]
-    (refs/set-ref! (:refs repo) "abc" (:id node-3))
+    (ref/set-ref! (:refs repo) "abc" (:id node-3))
     (testing "get nodes"
       (is (nil? (merkle/get-node repo nil)))
       (is (= node-1 (merkle/get-node repo (:id node-1)))))
