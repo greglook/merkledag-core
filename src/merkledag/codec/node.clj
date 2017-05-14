@@ -1,9 +1,9 @@
-(ns merkledag.codecs.node
+(ns merkledag.codec.node
   "Functions to serialize merkledag nodes."
   (:require
     [blocks.core :as block]
-    [merkledag.codecs.cbor :refer [cbor-codec]]
-    [merkledag.codecs.edn :refer [edn-codec]]
+    [merkledag.codec.cbor :refer [cbor-codec]]
+    [merkledag.codec.edn :refer [edn-codec]]
     [merkledag.link :as link]
     [multicodec.core :as codec]
     [multicodec.header :as header]

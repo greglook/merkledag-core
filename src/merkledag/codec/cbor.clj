@@ -1,4 +1,4 @@
-(ns merkledag.codecs.cbor
+(ns merkledag.codec.cbor
   "Functions to handle structured data formatted as CBOR.
 
   Special types are handled by plugins which define three important attributes

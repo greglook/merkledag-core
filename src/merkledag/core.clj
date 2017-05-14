@@ -26,7 +26,7 @@
     (merkledag
       [link :as link]
       [refs :as refs])
-    [merkledag.codecs.node :as node]
+    [merkledag.codec.node :as node]
     [multicodec.core :as codec]
     [multicodec.codecs.mux :refer [mux-codec]])
   (:import
