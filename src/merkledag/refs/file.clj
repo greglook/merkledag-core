@@ -1,29 +1,22 @@
 (ns merkledag.refs.file
   "Block storage backed by a local file."
   (:require
-    [clj-time.core :as time]
-    [clj-time.format :as ftime]
-    [clojure.java.io :as jio]
+    [clojure.java.io :as io]
     [clojure.string :as str]
     [merkledag.refs :as refs]
     [multihash.core :as multihash])
   (:import
-    java.util.Date
+    java.time.Instant
     multihash.core.Multihash))
 
 
 ;; ## File IO
 
-(def ^:private time-format
-  "Joda-time formatter/parser for timestamps."
-  (ftime/formatter "yyyy-MM-dd'T'HH:mm:ss.SSSZ" time/utc))
-
-
 (defn- version->line
   "Converts a ref version map into a line of text."
   ^String
   [version]
-  (str/join "\t" [(ftime/unparse time-format (:time version))
+  (str/join "\t" [(str (:time version))
                   (multihash/base58 (:value version))
                   (:name version)
                   (:version version)]))
@@ -32,11 +25,11 @@
 (defn- line->version
   "Converts a line of text into a ref version map."
   [line]
-  (let [[time value ref-name version] (str/split line #"\t")]
+  (let [[timestamp value ref-name version] (str/split line #"\t")]
     {:name ref-name
      :value (multihash/decode value)
      :version (Long/parseLong version)
-     :time (ftime/parse time-format time)}))
+     :time (Instant/parse timestamp)}))
 
 
 (defn- read-history
@@ -44,7 +37,7 @@
   ref agent."
   [file]
   (try
-    (with-open [history (jio/reader file)]
+    (with-open [history (io/reader file)]
       (reduce
         (fn [refs line]
           (let [version (line->version (str/trim-newline line))]
@@ -61,7 +54,7 @@
   file reference."
   [file refs]
   (let [versions (->> (vals refs) (apply concat) (sort-by :time))]
-    (with-open [history (jio/writer file)]
+    (with-open [history (io/writer file)]
       (doseq [version versions]
         (.write history (version->line version))
         (.write history "\n"))))
@@ -72,11 +65,8 @@
   "Writes a ref version line to the end of a history file. Returns the file
   reference so it can be sent to an agent."
   [file ref-version]
-  (with-open [history (jio/writer file :append true)]
-    (.write history (str/join "\t" [(ftime/unparse time-format (:time ref-version))
-                                    (multihash/base58 (:value ref-version))
-                                    (:name ref-version)
-                                    (:version ref-version)]))
+  (with-open [history (io/writer file :append true)]
+    (.write history (version->line ref-version))
     (.write history "\n"))
   file)
 
@@ -127,7 +117,7 @@
           (let [new-version {:name ref-name
                              :value value
                              :version (inc (:version current 0))
-                             :time (time/now)}]
+                             :time (Instant/now)}]
             (alter refs assoc ref-name (list* new-version versions))
             (send-off data-file append-version! new-version)
             new-version)))))
@@ -151,8 +141,8 @@
   "Creates a new simple file-backed ref tracker."
   [path]
   ; TODO: agent error handling?
-  (let [file (jio/file path)]
-    (jio/make-parents file)
+  (let [file (io/file path)]
+    (io/make-parents file)
     (->FileRefTracker (agent file) (ref (sorted-map)))))
 
 

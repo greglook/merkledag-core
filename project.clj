@@ -14,7 +14,6 @@
    [org.clojure/tools.logging "0.3.1"]
    [clojure-future-spec "1.9.0-alpha14"]
    [byte-streams "0.2.2"]
-   [clj-time "0.13.0"]
    [mvxcvi/blocks "0.9.0"]
    [mvxcvi/clj-cbor "0.4.0"]
    [mvxcvi/multicodec "0.6.0-SNAPSHOT"]

@@ -1,10 +1,9 @@
 (ns merkledag.refs.memory
   "Ref storage backed by a map in an atom."
   (:require
-    [clj-time.core :as time]
     [merkledag.refs :as refs])
   (:import
-    java.util.Date
+    java.time.Instant
     multihash.core.Multihash))
 
 
@@ -55,7 +54,7 @@
                 (let [new-version {:name ref-name
                                    :value value
                                    :version (inc (:version current 0))
-                                   :time (time/now)}]
+                                   :time (Instant/now)}]
                   (assoc db ref-name (list* new-version versions)))))))
         (get ref-name)
         (first)))

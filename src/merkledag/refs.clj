@@ -3,8 +3,7 @@
   (:require
     [multihash.core :as multihash])
   (:import
-    multihash.core.Multihash
-    org.joda.time.DateTime))
+    multihash.core.Multihash))
 
 
 ;; ## Ref Schemas
