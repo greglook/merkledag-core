@@ -21,7 +21,7 @@
     (testing "read non-exsistent ref"
       (is (nil? (refs/get-ref tracker "foo")))
       (is (nil? (refs/get-ref tracker "bar" 123)))
-      (is (nil? (refs/get-ref-history tracker "baz"))))
+      (is (nil? (refs/get-history tracker "baz"))))
     (testing "set new ref"
       (let [v (refs/set-ref! tracker "foo" id-a)]
         ;(is (s/validate refs/RefVersion v))
@@ -49,7 +49,7 @@
         (is (= ["bar" "foo"] (map :name refs)))
         (is (= [id-b id-a] (map :value refs)))))
     (testing "get ref versions"
-      (let [hist (refs/get-ref-history tracker "bar")]
+      (let [hist (refs/get-history tracker "bar")]
         (is (= 2 (count hist)))
         (is (= (first hist) (refs/get-ref tracker "bar")))
         (is (= (second hist) (refs/get-ref tracker "bar" (:version (second hist)))))))
