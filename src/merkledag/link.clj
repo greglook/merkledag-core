@@ -4,12 +4,20 @@
   'total size' value."
   (:require
     [blocks.core :as block]
+    [clojure.future :refer [nat-int?]]
+    [clojure.spec :as s]
     [clojure.string :as str]
     [clojure.walk :as walk]
     [multihash.core :as multihash])
   (:import
     blocks.data.Block
     multihash.core.Multihash))
+
+
+(s/def ::name string?)
+(s/def ::target #(instance? Multihash %))
+(s/def ::tsize (s/nilable nat-int?))
+
 
 
 ;; ## Link Type
@@ -157,6 +165,20 @@
   link-table)
 
 
+(defn find-links
+  "Walks the given data structure looking for links. Returns a set of the links
+  discovered."
+  [data]
+  (let [links (volatile! (transient #{}))]
+    (walk/postwalk
+      (fn link-detector [x]
+        (when (merkle-link? x)
+          (vswap! links conj! x))
+        x)
+      data)
+    (persistent! @links)))
+
+
 (defn compact-links
   "Attempts to convert a sequence of links into a compact, canonical form."
   [link-table]
@@ -164,6 +186,19 @@
        (remove (comp nil? :target))
        (distinct)
        (sort-by (juxt :name :target))))
+
+
+(defn collect-table
+  "Constructs a link table from the given data. The ordered links passed will
+  be placed at the beginning of the link table, in order. Additional links
+  walked from the data value will be appended in a canonical order."
+  [ordered-links data]
+  (->> (find-links data)
+       (concat ordered-links)
+       (compact-links)
+       (remove (set ordered-links))
+       (concat ordered-links)
+       (vec)))
 
 
 (defn resolve-name
@@ -244,20 +279,6 @@
      (->LinkIndex))))
 
 
-(defn find-links
-  "Walks the given data structure looking for links. Returns a set of the links
-  discovered."
-  [data]
-  (let [links (volatile! (transient #{}))]
-    (walk/postwalk
-      (fn link-detector [x]
-        (when (merkle-link? x)
-          (vswap! links conj! x))
-        x)
-      data)
-    (persistent! @links)))
-
-
 (defn replace-links
   "Replaces all the links in a data structure with indexes into the given
   table. Throws an exception if any links are 'broken' because they were not
@@ -286,59 +307,3 @@
                             {:link-table link-table, :index x})))
         x))
     data))
-
-
-
-;; ## Link Utilities
-
-(defn collect-table
-  "Constructs a link table from the given data. The ordered links passed will
-  be placed at the beginning of the link table, in order. Additional links
-  walked from the data value will be appended in a canonical order."
-  [ordered-links data]
-  (->> (find-links data)
-       (concat ordered-links)
-       (compact-links)
-       (remove (set ordered-links))
-       (concat ordered-links)
-       (vec)))
-
-
-(defn total-size
-  "Calculates the total size of data reachable from the given node. Expects a
-  block with `:size` and `:links` entries.
-
-  Raw blocks and nodes with no links have a total size equal to their `:size`.
-  Each link in the node's link table adds its `:tsize` to the total. Returns
-  `nil` if no node is given."
-  [node]
-  (when-let [size (:size node)]
-    (->> (:links node)
-         (keep :tsize)
-         (reduce + size))))
-
-
-(defprotocol Target
-  "Protocol for values which can be targeted by a merkle link."
-
-  (link-to
-    [target name]
-    "Constructs a new named merkle link to the given target."))
-
-
-(extend-protocol Target
-
-  Multihash
-  (link-to
-    [mhash name]
-    (create name mhash nil))
-
-  MerkleLink
-  (link-to
-    [link name]
-    (create name (:target link) (:tsize link)))
-
-  Block
-  (link-to
-    [block name]
-    (create name (:id block) (total-size block))))

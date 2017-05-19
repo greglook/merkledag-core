@@ -113,15 +113,15 @@
             "new link should replace existing link position")))))
 
 
-
-;; ## Link Indexes
-
 (deftest link-discovery
   (let [a (link/create "foo" (digest/sha1 "foo") nil)
         b (link/create "bar" (digest/sha1 "bar") 384)
         c (link/create "baz" (digest/sha2-256 "baz") 123)]
     (is (= #{a b c} (link/find-links {:foo a, :bar [b 123 #{c}]})))))
 
+
+
+;; ## Link Indexes
 
 (deftest link-indices
   (let [table [(link/create "foo" (digest/sha1 "foo") nil)
@@ -146,36 +146,3 @@
         (is (= data-with-links (link/resolve-indexes table data-with-indexes))))
       (is (thrown? Exception (link/replace-links table [(link/create "qux" (digest/sha1 "qux") nil)])))
       (is (thrown? Exception (link/resolve-indexes table [(link/link-index 5)]))))))
-
-
-
-;; ## Link Utilities
-
-(deftest link-targeting
-  (testing "multihashes"
-    (let [mh (digest/sha1 "foo")
-          link (link/link-to mh "a")]
-      (is (= "a" (:name link)))
-      (is (= mh (:target link)))
-      (is (nil? (:tsize link)))))
-  (testing "merkle links"
-    (let [ml (link/create "x" (digest/sha1 "bar") 123)
-          link (link/link-to ml "b")]
-      (is (= "b" (:name link)))
-      (is (= (:target ml) (:target link)))
-      (is (= 123 (:tsize link)))))
-  (testing "block"
-    (let [block (block/read! "abcd1234")]
-      (testing "without links"
-        (let [link (link/link-to block "x")]
-          (is (= "x" (:name link)))
-          (is (= (:id block) (:target link)))
-          (is (= (:size block) (:tsize link)))))
-      (testing "with links"
-        (let [block' (assoc block :links [(link/create "x" nil 5)
-                                          (link/create "y" nil 8)
-                                          (link/create "z" nil 7)])
-              link (link/link-to block' "g")]
-          (is (= "g" (:name link)))
-          (is (= (:id block) (:target link)))
-          (is (= (+ (:size block) 20) (:tsize link))))))))

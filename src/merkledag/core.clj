@@ -55,7 +55,8 @@
   "Link constructor which uses the `link/Target` protocol to build a link to
   the target value."
   [name target]
-  (link/link-to target name))
+  (throw (RuntimeException. "broken"))
+  #_(link/link-to target name))
 
 
 (defn node*
