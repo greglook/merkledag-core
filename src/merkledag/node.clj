@@ -208,7 +208,7 @@
 
 ;; ## Node Storage API
 
-(defprotocol NodeStore
+(defprotocol ^:no-doc NodeStore
   "Node stores provide an interface for creating, persisting, and retrieving
   node data."
 
@@ -224,8 +224,6 @@
   (-delete-node!
     [store id]
     "Remove a node from the store."))
-
-; TODO: flush?
 
 
 (defn get-node
@@ -289,7 +287,7 @@
 
 
 
-;; ## Node Utilities
+;; ## Utility Functions
 
 (defn total-size
   "Calculates the total size of data reachable from the given node. Expects a
