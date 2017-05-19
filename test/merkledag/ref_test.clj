@@ -1,4 +1,4 @@
-(ns merkledag.refs-test
+(ns merkledag.ref-test
   (:require
     [blocks.core :as block]
     [clojure.java.io :as io]
