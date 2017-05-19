@@ -14,9 +14,9 @@
    [org.clojure/tools.logging "0.3.1"]
    [clojure-future-spec "1.9.0-alpha14"]
    [byte-streams "0.2.2"]
-   [mvxcvi/blocks "0.9.0"]
-   [mvxcvi/clj-cbor "0.4.0"]
-   [mvxcvi/multicodec "0.6.0-SNAPSHOT"]
+   [mvxcvi/blocks "0.9.1"]
+   [mvxcvi/clj-cbor "0.4.1"]
+   [mvxcvi/multicodec "0.5.1"]
    [mvxcvi/multihash "2.0.1"]
    [mvxcvi/puget "1.0.1"]]
 
