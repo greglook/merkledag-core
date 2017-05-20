@@ -47,11 +47,24 @@
   amount of memory as their backing blocks, but it is a useful proxy for their
   data size.
 
+  Note: this constructor does not perform an initial reaping, so it is possible
+  to create a cache with more nodes stored than the limit permits.
+
   Options may include:
 
   - `:total-size-limit` limit the total size of nodes stored in the cache
   - `:node-size-limit` if set, prevent the caching of nodes larger than this"
   [base & {:as opts}]
+  (when-let [limit (:total-size-limit opts)]
+    (when-not (and (number? limit) (pos? limit))
+      (throw (IllegalArgumentException.
+               (str "NodeCache total size limit must be a positive number: "
+                    (pr-str limit))))))
+  (when-let [limit (:node-size-limit opts)]
+    (when-not (and (number? limit) (pos? limit))
+      (throw (IllegalArgumentException.
+               (str "NodeCache node size limit must be a positive number: "
+                    (pr-str limit))))))
   (->NodeCache
     base
     (into (priority-map)
@@ -69,10 +82,17 @@
 (defn cacheable?
   "Determine whether the given node should be cached."
   [^NodeCache cache node]
-  (and node
-       (<= (::node/size node) (.total-size-limit cache))
-       (or (nil? (.node-size-limit cache))
-           (<= (::node/size node) (.node-size-limit cache)))))
+  (boolean
+    (and node
+         (<= (::node/size node) (.total-size-limit cache))
+         (or (nil? (.node-size-limit cache))
+             (<= (::node/size node) (.node-size-limit cache))))))
+
+
+(defn cache-size
+  "Return the sum of the sizes of nodes stored in the cache."
+  [^NodeCache cache]
+  (.total-size cache))
 
 
 (defn- evict-least
@@ -97,10 +117,10 @@
     (iterate evict-least cache)
     (drop-while
       (fn [^NodeCache cache]
-        (and (< (- (.total-size-limit cache)
+        (and (seq (.stats cache))
+             (< (- (.total-size-limit cache)
                    (.total-size cache))
-                target-free)
-             (seq (.stats cache)))))
+                target-free))))
     (first)))
 
 
@@ -112,13 +132,10 @@
   cache/CacheProtocol
 
   (lookup
-    [this id]
-    (get (.cache this) id))
-
-
-  (lookup
-    [this id not-found]
-    (get (.cache this) id not-found))
+    ([this id]
+     (get (.cache this) id))
+    ([this id not-found]
+     (get (.cache this) id not-found)))
 
 
   (has?
@@ -173,7 +190,8 @@
 
   (seed
     [this base]
-    (node-cache
-      base
-      :total-size-limit (.total-size-limit this)
-      :node-size-limit (.node-size-limit this))))
+    (-> base
+        (node-cache
+          :total-size-limit (.total-size-limit this)
+          :node-size-limit (.node-size-limit this))
+        (reap 0))))
