@@ -11,6 +11,7 @@
 
   :dependencies
   [[org.clojure/clojure "1.8.0"]
+   [org.clojure/core.cache "0.6.5"]
    [org.clojure/tools.logging "0.3.1"]
    [clojure-future-spec "1.9.0-alpha14"]
    [byte-streams "0.2.2"]
