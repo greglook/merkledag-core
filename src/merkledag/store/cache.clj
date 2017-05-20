@@ -75,53 +75,6 @@
            (<= (::node/size node) (.node-size-limit cache)))))
 
 
-(defn- touch
-  "Updates a node in the cache to have the most recent tick value. If the cache
-  does not contain the id, it is returned unchanged."
-  [^NodeCache cache id]
-  (let [tick+ (inc (.tick cache))]
-    (->NodeCache
-      (.cache cache)
-      (if-let [node (get (.cache cache) id)]
-        (assoc (.stats cache) id [tick+ (::node/size node)])
-        (.stats cache))
-      tick+
-      (.total-size cache)
-      (.total-size-limit cache)
-      (.node-size-limit cache))))
-
-
-(defn- cache-node
-  "Updates the cache by inserting the given node. This function does not
-  perform eviction logic."
-  [^NodeCache cache node]
-  (let [id (::node/id node)
-        node-size (::node/size node)
-        total-size+ (+ (.total-size cache) node-size)
-        tick+ (inc (.tick cache))]
-    (->NodeCache
-      (assoc (.cache cache) id node)
-      (assoc (.stats cache) id [tick+ node-size])
-      tick+
-      total-size+
-      (.total-size-limit cache)
-      (.node-size-limit cache))))
-
-
-(defn- evict
-  "Evict the identified node from the cache, if present."
-  [^NodeCache cache id]
-  (if (contains? (.cache cache) id)
-    (->NodeCache
-      (dissoc (.cache cache) id)
-      (dissoc (.stats cache) id)
-      (.tick cache)
-      (- (.total-size cache) (second (get (.stats cache) id)))
-      (.total-size-limit cache)
-      (.node-size-limit cache))
-    cache))
-
-
 (defn- evict-least
   "Evict the lowest-priority node from the cache."
   [^NodeCache cache]
@@ -151,16 +104,6 @@
     (first)))
 
 
-(defn- maybe-cache?
-  "Update the cache by including the given node and performing eviction logic
-  to keep the cache under the configured limits. If the given node is not
-  cacheable, the cache is returned unmodified."
-  [^NodeCache cache node]
-  (if (cacheable? cache node)
-    (cache-node (reap cache (::node/size node)) node)
-    cache))
-
-
 
 ;; ## Cache Protocol
 
@@ -185,17 +128,47 @@
 
   (hit
     [this id]
-    (touch this id))
+    (if-let [node (get (.cache this) id)]
+      (let [tick+ (inc (.tick this))]
+        (->NodeCache
+          (.cache this)
+          (assoc (.stats this) id [tick+ (::node/size node)])
+          tick+
+          (.total-size this)
+          (.total-size-limit this)
+          (.node-size-limit this)))
+      this))
 
 
   (miss
     [this id node]
-    (maybe-cache? this node))
+    (if (cacheable? this node)
+      (let [id (::node/id node)
+            node-size (::node/size node)
+            cache' ^NodeCache (reap this node-size)
+            total-size+ (+ (.total-size cache') node-size)
+            tick+ (inc (.tick cache'))]
+        (->NodeCache
+          (assoc (.cache cache') id node)
+          (assoc (.stats cache') id [tick+ node-size])
+          tick+
+          total-size+
+          (.total-size-limit cache')
+          (.node-size-limit cache')))
+      this))
 
 
   (evict
     [this id]
-    (evict this id))
+    (if (contains? (.cache this) id)
+      (->NodeCache
+        (dissoc (.cache this) id)
+        (dissoc (.stats this) id)
+        (.tick this)
+        (- (.total-size this) (::node/size (get (.cache this) id)))
+        (.total-size-limit this)
+        (.node-size-limit this))
+      this))
 
 
   (seed
