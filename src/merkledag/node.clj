@@ -30,6 +30,10 @@
           :opt-un [::links ::data]))
 
 
+(def node-keys
+  [::id ::size ::encoding ::links ::data])
+
+
 
 ;; ## Node Codec
 
@@ -208,31 +212,13 @@
 
 ;; ## Node Storage API
 
-(defprotocol ^:no-doc NodeStore
-  "Node stores provide an interface for creating, persisting, and retrieving
-  node data."
-
-  (-get-node
-    [store id]
-    "Retrieve a node map from the store by id.")
-
-  (-store-node!
-    [store links data]
-    "Create a new node by serializing the links and data. Returns a new node
-    map.")
-
-  (-delete-node!
-    [store id]
-    "Remove a node from the store."))
-
-
 (defn get-node
   "Retrieve the identified node from the store. Returns a node map.
 
   The id may be any `Identifiable` value."
   [store id]
   (when-let [id (identify id)]
-    (-get-node store id)))
+    (store/-get-node store id)))
 
 
 (defn get-links
@@ -242,7 +228,7 @@
   The id may be any `Identifiable` value."
   [store id]
   (let [id (identify id)]
-    (when-let [node (and id (-get-node store id))]
+    (when-let [node (and id (store/-get-node store id))]
       (some->
         (:links node)
         (vary-meta
@@ -257,7 +243,7 @@
   The id may be any `Identifiable` value."
   [store id]
   (let [id (identify id)]
-    (when-let [node (and id (-get-node store id))]
+    (when-let [node (and id (store/-get-node store id))]
       (some->
         (:data node)
         (vary-meta
@@ -274,7 +260,17 @@
    (store-node! store nil data))
   ([store links data]
    (when (or links data)
-     (-store-node! store links data))))
+     (if-let [id (or (::id (meta links)) (::id (meta data)))]
+       ; See if we can re-use an already-stored node.
+       (let [node (store/-get-node store id)]
+         (if (and (= links (::links node))
+                  (= data (::data node)))
+           ; Links and data match, re-use stored node.
+           node
+           ; Missing or some value mismatch, store a new node.
+           (store/-store-node! store links data)))
+       ; No id metadata, store new node.
+       (store/-store-node! store links data)))))
 
 
 (defn delete-node!
@@ -283,13 +279,13 @@
   The id may be any `Identifiable` value."
   [store id]
   (when-let [id (identify id)]
-    (-delete-node! store id)))
+    (store/-delete-node! store id)))
 
 
 
 ;; ## Utility Functions
 
-(defn total-size
+(defn reachable-size
   "Calculates the total size of data reachable from the given node. Expects a
   node map with `::size` and `::links` entries.
 

@@ -5,13 +5,14 @@
   (:require
     [merkledag.link :as link]
     [merkledag.node :as node]
+    [merkledag.store.core :as store]
     [multihash.digest :as digest]))
 
 
 (defrecord MemoryNodeStore
   [memory]
 
-  node/NodeStore
+  store/NodeStore
 
   (-get-node
     [this id]
