@@ -4,7 +4,6 @@
   (:require
     [clojure.core.cache :as cache :refer [defcache]]
     [clojure.data.priority-map :refer [priority-map]]
-    [merkledag.link :as link]
     [merkledag.node :as node]
     [multihash.digest :as digest]))
 
