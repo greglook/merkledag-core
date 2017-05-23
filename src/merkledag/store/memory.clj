@@ -5,7 +5,7 @@
   (:require
     [merkledag.link :as link]
     [merkledag.node :as node]
-    [merkledag.store.core :as store]
+    [merkledag.store :as store]
     [multihash.digest :as digest]))
 
 

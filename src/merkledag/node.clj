@@ -5,7 +5,7 @@
     [clojure.future :refer [pos-int?]]
     [clojure.spec :as s]
     [merkledag.link :as link]
-    [merkledag.store.core :as store]
+    [merkledag.store :as store]
     [multihash.core])
   (:import
     blocks.data.Block

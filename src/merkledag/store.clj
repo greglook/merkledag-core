@@ -1,4 +1,4 @@
-(ns ^:no-doc merkledag.store.core
+(ns ^:no-doc merkledag.store
   "Core node storage API.")
 
 
