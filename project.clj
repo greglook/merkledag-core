@@ -8,6 +8,7 @@
   {"coverage" ["with-profile" "+test,+coverage" "cloverage"]}
 
   :deploy-branches ["master"]
+  :pedantic? :abort
 
   :dependencies
   [[org.clojure/clojure "1.8.0"]
@@ -42,11 +43,14 @@
   :profiles
   {:repl
    {:source-paths ["dev"]
-    :dependencies [[org.clojure/tools.namespace "0.2.11"]
-                   [rhizome "0.2.7"]]}
+    :dependencies
+    [[org.clojure/tools.namespace "0.2.11"]
+     [rhizome "0.2.7"]]}
 
    :test
-   {:dependencies [[commons-logging "1.2"]]
+   {:dependencies
+    [[commons-logging "1.2"]
+     [mvxcvi/test.carly "0.1.0"]]
     :jvm-opts ["-Dorg.apache.commons.logging.Log=org.apache.commons.logging.impl.NoOpLog"]}
 
    :coverage
