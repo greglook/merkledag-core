@@ -20,8 +20,9 @@
 
 
   (-store-node!
-    [this links data]
-    (let [links (link/collect-table links data)
+    [this node]
+    (let [data (::node/data node)
+          links (link/collect-table (::node/links node) data)
           content (pr-str [links data])
           id (digest/sha2-256 content)
           node {::node/id id

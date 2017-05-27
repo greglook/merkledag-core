@@ -11,65 +11,55 @@
     [multicodec.codecs.mux :refer [mux-codec]]
     [multihash.core :as multihash])
   (:import
-    java.io.ByteArrayInputStream))
+    (java.io
+      ByteArrayInputStream
+      ByteArrayOutputStream)))
 
 
 ;; ## Formatting Functions
 
-(defn- decode-info!
-  [codec input]
-  (binding [header/*headers* []]
-    (try
-      (-> (codec/decode! codec input)
-          (select-keys [::links ::data])
-          (assoc ::encoding header/*headers*))
-      (catch clojure.lang.ExceptionInfo ex
-        (case (:type (ex-data ex))
-          :multicodec/bad-header
-            {::encoding nil}
-          :multicodec.codecs.mux/no-codec
-            {::encoding header/*headers*}
-          (throw ex))))))
-
-
 (defn format-block
-  "Serializes the given data value into a block using the codec. Returns a
-  block containing the formatted content and extra node attributes."
+  "Serialize the given data value into a block using the codec. The `value`
+  should be a node map, and must contain either a `::links` table or a `::data`
+  entry.
+
+  Returns a block containing the formatted content and extra node attributes,
+  or nil if value is nil."
   [codec value]
   (when value
-    (if (codec/encodable? codec value)
-      (binding [header/*headers* []]
-        (let [content (codec/encode codec value)  ; TODO: encode-with-header
-              encoded-headers header/*headers*
-              block (block/read! content)
-              info (decode-info! codec (ByteArrayInputStream. content))]
-          (when-not (= encoded-headers (:encoding info))
-            (throw (ex-info "Decoded headers do not match written encoding"
-                            {:encoded encoded-headers
-                             :decoded (:encoding info)})))
-          (into block info)))
-      (try
-        (assoc (block/read! value)
-               ::encoding nil)
-        (catch Exception ex
-          (throw (ex-info "Value is not valid node data and can't be read as raw bytes"
-                          {:value value}
-                          ex)))))))
+    (when-not (codec/encodable? codec value)
+      (throw (ex-info "Value is not valid node data" {:value value})))
+    (binding [header/*headers* []]
+      (let [baos (ByteArrayOutputStream.)
+            size (codec/encode-with-header! codec baos value)
+            content (.toByteArray baos)
+            block (block/read! content)]
+        (-> value
+            (select-keys [::node/links ::node/data])
+            (assoc ::node/id (:id block)
+                   ::node/size (:size block)
+                   ::node/encoding header/*headers*)
+            (->> (into block)))))))
 
 
 (defn parse-block
-  "Attempts to parse the contents of a block with the given codec. Returns an
-  updated version of the block with additional keys set. At a minimum, this
-  will add an `::encoding` key with the detected codec, or `nil` for raw
-  blocks.
+  "Attempt to parse the contents of a block with the given node codec. The
+  codec should return a map of attributes to merge into the block;
+  typically including `::links` and `::data` fields with the decoded node
+  information.
 
-  The dispatched codec should return a map of attributes to merge into the
-  block; typically including a `::data` field with the decoded block value.
-  Node codecs should also return a `::links` vector."
+  Returns an updated version of the block with node keys set, or nil if block
+  is nil."
   [codec block]
   (when block
     (with-open [content (block/open block)]
-      (into block (decode-info! codec content)))))
+      (binding [header/*headers* []]
+        (-> (codec/decode-with-header! codec content)
+            (select-keys [::node/links ::node/data])
+            (assoc ::node/id (:id block)
+                   ::node/size (:size block)
+                   ::node/encoding header/*headers*)
+            (->> (into block)))))))
 
 
 
@@ -99,13 +89,22 @@
 
 
   (-store-node!
-    [this links data]
-    (when-let [block (format-block codec {::node/links links, ::node/data data})]
-      (let [node (select-keys block node/node-keys)]
+    [this node]
+    (when node
+      (let [extant (if (instance? blocks.data.Block node)
+                     node
+                     (when-let [id (::node/id node)]
+                       (block/get store id)))
+            block (or (when extant
+                        (let [parsed (parse-block codec (dissoc extant ::node/links ::node/data))]
+                          (and (= (::node/links node) (::node/links parsed))
+                               (= (::node/data node) (::node/data parsed))
+                               parsed)))
+                      (format-block codec (select-keys node [::node/links ::node/data])))]
         (block/put! store block)
-        (swap! cache cache/miss (::node/id node) node)
+        (swap! cache cache/miss (::node/id node) (select-keys block node/node-keys))
         ; TODO: measure node creation and size
-        node)))
+        block)))
 
 
   (-delete-node!

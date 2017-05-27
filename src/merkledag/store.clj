@@ -11,9 +11,11 @@
     "Retrieve a node map from the store by id.")
 
   (-store-node!
-    [store links data]
+    [store node]
     "Create a new node by serializing the links and data. Returns a new node
-    map.")
+    map. The `node` should be a map containing at least a link table or node
+    data under the `:merkledag.node/links` or `:merkledag.node/data` keys,
+    respectively.")
 
   (-delete-node!
     [store id]

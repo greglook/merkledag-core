@@ -102,21 +102,22 @@
 (defn store-node!
   "Create a new node by serializing the links and data. Returns the stored node
   map, or nil if both links and data are nil."
-  ([store data]
-   (store-node! store nil data))
+  ([store node]
+   (let [{:keys [::id ::links ::data]} node]
+     (when (or links data)
+       (if-let [id (or id (::id (meta links)) (::id (meta data)))]
+         ; See if we can re-use an already-stored node.
+         (let [extant (store/-get-node store id)]
+           (if (and (= links (::links extant))
+                    (= data (::data extant)))
+             ; Links and data match, re-use stored node.
+             extant
+             ; Missing or some value mismatch, store a new node.
+             (store/-store-node! store node)))
+         ; No id metadata, store new node.
+         (store/-store-node! store node)))))
   ([store links data]
-   (when (or links data)
-     (if-let [id (or (::id (meta links)) (::id (meta data)))]
-       ; See if we can re-use an already-stored node.
-       (let [node (store/-get-node store id)]
-         (if (and (= links (::links node))
-                  (= data (::data node)))
-           ; Links and data match, re-use stored node.
-           node
-           ; Missing or some value mismatch, store a new node.
-           (store/-store-node! store links data)))
-       ; No id metadata, store new node.
-       (store/-store-node! store links data)))))
+   (store-node! store {::links links, ::data data})))
 
 
 (defn delete-node!
