@@ -91,7 +91,7 @@
   (let [types+ (merge core-types types)
         edn (edn-codec types+)
         cbor (cbor-codec types+)
-        data-mux (mux-codec :cbor cbor :edn edn)]
+        data-mux (mux-codec :edn edn :cbor cbor)]
     (->NodeCodec
       "/merkledag/v1"
       data-mux
