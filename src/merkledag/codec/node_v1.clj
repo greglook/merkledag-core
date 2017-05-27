@@ -1,4 +1,5 @@
-(ns merkledag.codec.node
+(ns merkledag.codec.node-v1
+  "Initial version of the composite node codec."
   (:require
     [merkledag.codec.cbor :refer [cbor-codec]]
     [merkledag.codec.edn :refer [edn-codec]]
@@ -12,6 +13,10 @@
     merkledag.link.LinkIndex
     merkledag.link.MerkleLink
     multihash.core.Multihash))
+
+
+(def ^:const codec-header
+  "/merkledag/v1")
 
 
 (def core-types
@@ -79,11 +84,6 @@
        ::data (link/resolve-indexes links data)})))
 
 
-;; Privatize automatic constructor functions.
-(alter-meta! #'->NodeCodec assoc :private true)
-(alter-meta! #'map->NodeCodec assoc :private true)
-
-
 (defn node-codec
   "Construct a new node codec. The codec will serialize values using the given
   map of types, merged into `core-types`."
@@ -93,7 +93,7 @@
         cbor (cbor-codec types+)
         data-mux (mux-codec :edn edn :cbor cbor)]
     (->NodeCodec
-      "/merkledag/v1"
+      codec-header
       data-mux
       #_ ; TODO: support compression wrapers
       (mux-codec
