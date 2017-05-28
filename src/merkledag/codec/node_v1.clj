@@ -53,8 +53,8 @@
   (encodable?
     [this value]
     (boolean (and (map? value)
-                  (or (seq (::links value))
-                      (::data value)))))
+                  (or (seq (::node/links value))
+                      (::node/data value)))))
 
 
   (encode!
@@ -62,8 +62,8 @@
     (when-not (codec/encodable? this node)
       (throw (ex-info (str "Cannot encode node data: " (pr-str node))
                       {:node node})))
-    (let [links' (when (seq (::links node)) (vec (::links node)))
-          data' (link/replace-links links' (::data node))]
+    (let [links' (when (seq (::node/links node)) (vec (::node/links node)))
+          data' (link/replace-links links' (::node/data node))]
       (codec/encode! mux output [links' data'])))
 
 
@@ -80,8 +80,9 @@
       (when-not (and (vector? value) (or links data))
         (throw (ex-info "Decoded bad node value missing links and data"
                         {:value value})))
-      {::links links
-       ::data (link/resolve-indexes links data)})))
+      (cond-> {}
+        (seq links) (assoc ::node/links (vec links))
+        data        (assoc ::node/data (link/resolve-indexes links data))))))
 
 
 (defn node-codec

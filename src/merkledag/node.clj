@@ -16,12 +16,12 @@
 (s/def ::id #(instance? Multihash %))
 (s/def ::size pos-int?)
 (s/def ::encoding (s/nilable (s/coll-of string? :kind vector?)))
-(s/def ::links (s/coll-of link/merkle-link? :kind vector?))
+(s/def ::links (s/coll-of link/merkle-link? :kind vector? :min-count 1))
 (s/def ::data coll?)
 
 (s/def :merkledag/node
-  (s/keys :req-un [::id ::size ::encoding]
-          :opt-un [::links ::data]))
+  (s/keys :req [::id ::size ::encoding]
+          :opt [::links ::data]))
 
 
 (def node-keys
@@ -45,13 +45,13 @@
   nil
   (identify [_] nil)
 
-  multihash.core.Multihash
+  Multihash
   (identify [m] m)
 
-  blocks.data.Block
+  Block
   (identify [b] (:id b))
 
-  merkledag.link.MerkleLink
+  MerkleLink
   (identify [l] (:target l)))
 
 
@@ -76,7 +76,7 @@
   (let [id (identify id)]
     (when-let [node (and id (store/-get-node store id))]
       (some->
-        (:links node)
+        (::links node)
         (vary-meta
           assoc
           ::id id
@@ -91,7 +91,7 @@
   (let [id (identify id)]
     (when-let [node (and id (store/-get-node store id))]
       (some->
-        (:data node)
+        (::data node)
         (vary-meta
           assoc
           ::id id
@@ -104,18 +104,22 @@
   map, or nil if both links and data are nil."
   ([store node]
    (let [{:keys [::id ::links ::data]} node]
-     (when (or links data)
+     (when (or (seq links) data)
        (if-let [id (or id (::id (meta links)) (::id (meta data)))]
          ; See if we can re-use an already-stored node.
          (let [extant (store/-get-node store id)]
-           (if (and (= links (::links extant))
+           (if (and (= (seq links) (seq (::links extant)))
                     (= data (::data extant)))
              ; Links and data match, re-use stored node.
              extant
              ; Missing or some value mismatch, store a new node.
              (store/-store-node! store node)))
          ; No id metadata, store new node.
-         (store/-store-node! store node)))))
+         (store/-store-node! store (cond-> node
+                                     (nil? (::links node))
+                                       (dissoc ::links)
+                                     (nil? (::data node))
+                                       (dissoc ::data)))))))
   ([store links data]
    (store-node! store {::links links, ::data data})))
 

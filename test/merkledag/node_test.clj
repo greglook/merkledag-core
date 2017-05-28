@@ -1,77 +1,199 @@
 (ns merkledag.node-test
   (:require
     [blocks.core :as block]
-    [blocks.data :refer [clean-block]]
+    [blocks.store.memory :refer [memory-block-store]]
+    [clojure.spec :as s]
+    [clojure.string :as str]
     [clojure.test :refer :all]
+    [clojure.test.check.generators :as gen]
+    [merkledag.codec.node-v1 :as cv1]
+    [merkledag.store.block :as msb]
+    [merkledag.store.memory :as msm]
     [merkledag.link :as link]
     [merkledag.node :as node]
     [multicodec.core :as codec]
-    [multihash.digest :as digest]))
+    [test.carly.core :as carly :refer [defop]]))
 
 
-#_
-(def test-codec
-  (node/node-codec node/default-types))
+(prefer-method clojure.pprint/simple-dispatch
+               clojure.lang.IPersistentMap
+               clojure.lang.IDeref)
+
+(defmethod print-method multihash.core.Multihash
+  [v w]
+  (print-method (tagged-literal 'data/hash (multihash.core/base58 v)) w))
+
+(defmethod print-method blocks.data.Block
+  [v w]
+  (print-method (tagged-literal 'data/block (dissoc (into {} v) :id #_:size)) w))
+
+(defmethod print-method merkledag.link.MerkleLink
+  [v w]
+  (print-method (tagged-literal 'data/link link/link->form) w))
 
 
-#_
-(deftest node-codec
-  (testing "Encoder"
-    (is (false? (codec/encodable? test-codec nil)))
-    (is (false? (codec/encodable? test-codec "foo")))
-    (is (false? (codec/encodable? test-codec {})))
-    (is (false? (codec/encodable? test-codec {:links []})))
-    (is (false? (codec/encodable? test-codec {:data nil})))
-    (is (true? (codec/encodable? test-codec {:data "123"})))
-    (is (true? (codec/encodable? test-codec {:links [(link/create "foo" (digest/sha1 "foo") 3)]})))
-    (is (thrown? Exception (codec/encode test-codec {:links []})))
-    (is (thrown? Exception (codec/encode test-codec {:data nil}))))
-  (testing "Decoder"
-    (is (false? (codec/decodable? test-codec "/bin")))
-    (is (false? (codec/decodable? test-codec "/edn")))
-    (is (true? (codec/decodable? test-codec "/merkledag/v1")))))
 
 
-#_
-(deftest block-formatting
-  (testing "nil value"
-    (is (nil? (node/format-block test-codec nil))
-        "formats as nil"))
-  (testing "string value"
-    (let [block (node/format-block test-codec "foo bar baz")]
-      (is (= 11 (:size block)))
-      (is (= "foo bar baz" (slurp (block/open block))))
-      (is (contains? block :encoding)
-          "block contains an encoding key")
-      (is (nil? (:encoding block))
-          "formats with nil encoding")))
-  (testing "node with data value"
-    (let [node (node/format-block test-codec {:data "foo bar baz"})]
-      (is (= 26 (:size node)))
-      (is (= "foo bar baz" (:data node)))
-      (is (nil? (:links node)))
-      (is (= ["/edn"] (:encoding node)))))
-  (testing "node with links"
-    (let [node (node/format-block test-codec {:links [(link/create "foo" (digest/sha1 "foo") 3)]})]
-      (is (nil? (:data node)))
-      (is (vector? (:links node)))
-      (is (= 1 (count (:links node)))))))
+;; ## Context Generation
+
+(def gen-node-data
+  "Generator for test node data."
+  (gen/one-of
+    [(gen/map
+       gen/keyword-ns
+       gen/any-printable)
+     (gen/vector gen/any-printable)
+     (gen/set gen/any-printable)]))
 
 
-#_
-(deftest block-parsing
-  (testing "nil block"
-    (is (nil? (node/parse-block test-codec nil))))
-  (testing "bad decode"
-    (let [block (block/read! "foo bar baz")
-          bad-codec (reify codec/Decoder
-                      (decode! [_ input] "foo"))
-          codec' (assoc test-codec :mux bad-codec)]
-      (is (thrown? clojure.lang.ExceptionInfo
-                   (node/parse-block codec' block)))))
-  (testing "node with links"
-    (let [node (node/format-block test-codec {:links [(link/create "foo" (digest/sha1 "foo") 3)]})
-          block (clean-block node)
-          node' (node/parse-block test-codec block)]
-        (is (nil? (:links block)))
-        (is (= (:links node) (:links node'))))))
+(defn- build-node-context
+  [codec input]
+  (->>
+    input
+    (reduce
+      (fn [nodes [backlinks data]]
+        (if (empty? nodes)
+          (conj nodes (msb/format-block codec {::node/data data}))
+          (let [links (mapv (fn idx->link
+                              [[n i]]
+                              (let [node (nth nodes (mod i (count nodes)))]
+                                (link/create n (::node/id node) (node/reachable-size node))))
+                            backlinks)]
+            (conj nodes (msb/format-block codec {::node/links links, ::node/data data})))))
+      [])
+    (map (juxt ::node/id identity))
+    (into {})))
+
+
+(defn gen-context
+  "Generate a context map of precreated nodes by serializing generated data
+  with the given codec."
+  [codec]
+  (let [gen-link-name (gen/such-that #(not (str/index-of % "/")) gen/string)
+        gen-backlinks (gen/vector (gen/tuple gen-link-name gen/nat))
+        gen-node-input (gen/tuple gen-backlinks gen-node-data)]
+    (gen/fmap
+      (partial build-node-context codec)
+      (gen/not-empty (gen/vector gen-node-input)))))
+
+
+
+;; ## Operation Definitions
+
+(defop GetNode
+  [id]
+
+  (gen-args
+    [nodes]
+    [(gen/elements (keys nodes))])
+
+  (apply-op
+    [this store]
+    (node/get-node store id))
+
+  (check
+    [this model result]
+    (if-let [node (get model id)]
+      (and
+        (is (= (select-keys node node/node-keys)
+               (select-keys result node/node-keys)))
+        (is (nil? (s/explain-data :merkledag/node node))))
+      (is (nil? result)))))
+
+
+(defop GetLinks
+  [id]
+
+  (gen-args
+    [nodes]
+    [(gen/elements (keys nodes))])
+
+  (apply-op
+    [this store]
+    (node/get-links store id))
+
+  (check
+    [this model result]
+    (and
+      (is (= (get-in model [id ::node/links]) result))
+      (is (nil? (s/explain-data (s/nilable ::node/links) result))))))
+
+
+(defop GetData
+  [id]
+
+  (gen-args
+    [nodes]
+    [(gen/elements (keys nodes))])
+
+  (apply-op
+    [this store]
+    (node/get-data store id))
+
+  (check
+    [this model result]
+    (is (= (get-in model [id ::node/data]) result))))
+
+
+(defop StoreNode
+  [node]
+
+  (gen-args
+    [nodes]
+    [(gen/elements (vals nodes))])
+
+  (apply-op
+    [this store]
+    (node/store-node! store node))
+
+  (check
+    [this model result]
+    (and
+      (is (= (select-keys node node/node-keys)
+             (select-keys result node/node-keys)))
+      (is (nil? (s/explain-data :merkledag/node result)))))
+
+  (update-model
+    [this model]
+    (assoc model (::node/id node) node)))
+
+
+(defop DeleteNode
+  [id]
+
+  (gen-args
+    [nodes]
+    [(gen/elements (keys nodes))])
+
+  (apply-op
+    [this store]
+    (node/delete-node! store id))
+
+  (check
+    [this model result]
+    (is (= (contains? model id) result)))
+
+  (update-model
+    [this model]
+    (dissoc model id)))
+
+
+(def op-generators
+  (juxt gen->GetNode
+        gen->GetLinks
+        gen->GetData
+        gen->StoreNode
+        gen->DeleteNode))
+
+
+
+;; ## Test Harnesses
+
+(deftest block-store-test
+  (let [codec (cv1/node-codec {'uuid {:reader #(java.util.UUID/fromString %), :writers {java.util.UUID str}}})]
+    (carly/check-system
+      "block-node-store linear test"
+      #(msb/block-node-store :codec codec :store (memory-block-store))
+      op-generators
+      :context (gen-context codec)
+      :iterations 20)))

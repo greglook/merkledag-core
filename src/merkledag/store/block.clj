@@ -8,7 +8,6 @@
     [merkledag.store.cache :as msc]
     [multicodec.core :as codec]
     [multicodec.header :as header]
-    [multicodec.codecs.mux :refer [mux-codec]]
     [multihash.core :as multihash])
   (:import
     (java.io
@@ -34,11 +33,12 @@
             size (codec/encode-with-header! codec baos value)
             content (.toByteArray baos)
             block (block/read! content)]
-        (-> value
-            (select-keys [::node/links ::node/data])
-            (assoc ::node/id (:id block)
-                   ::node/size (:size block)
-                   ::node/encoding header/*headers*)
+        (-> {::node/id (:id block)
+             ::node/size (:size block)
+             ::node/encoding header/*headers*}
+            (cond->
+              (::node/links value) (assoc ::node/links (::node/links value))
+              (::node/data value)  (assoc ::node/data (::node/data value)))
             (->> (into block)))))))
 
 
@@ -91,16 +91,7 @@
   (-store-node!
     [this node]
     (when node
-      (let [extant (if (instance? blocks.data.Block node)
-                     node
-                     (when-let [id (::node/id node)]
-                       (block/get store id)))
-            block (or (when extant
-                        (let [parsed (parse-block codec (dissoc extant ::node/links ::node/data))]
-                          (and (= (::node/links node) (::node/links parsed))
-                               (= (::node/data node) (::node/data parsed))
-                               parsed)))
-                      (format-block codec (select-keys node [::node/links ::node/data])))]
+      (let [block (format-block codec (select-keys node [::node/links ::node/data]))]
         (block/put! store block)
         (swap! cache cache/miss (::node/id node) (select-keys block node/node-keys))
         ; TODO: measure node creation and size

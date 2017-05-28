@@ -4,8 +4,7 @@
   (:require
     [clojure.core.cache :as cache :refer [defcache]]
     [clojure.data.priority-map :refer [priority-map]]
-    [merkledag.node :as node]
-    [multihash.digest :as digest]))
+    [merkledag.node :as node]))
 
 
 ;; ## Cache Type

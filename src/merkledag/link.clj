@@ -3,14 +3,12 @@
   A merkle-link has a multihash target, an optional name string, and a recursive
   'total size' value."
   (:require
-    [blocks.core :as block]
     [clojure.future :refer [nat-int?]]
     [clojure.spec :as s]
     [clojure.string :as str]
     [clojure.walk :as walk]
     [multihash.core :as multihash])
   (:import
-    blocks.data.Block
     multihash.core.Multihash))
 
 
