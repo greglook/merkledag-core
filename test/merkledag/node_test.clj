@@ -41,11 +41,16 @@
   (gen/fmap
     (fn [v]
       (walk/postwalk
-        #(if (and (float? %)
-                  (or (Double/isNaN %)
-                      (Double/isInfinite %)))
-           0.0
-           %)
+        #(cond
+           (and (float? %)
+                (or (Double/isNaN %)
+                    (Double/isInfinite %)))
+             0.0
+
+           (char? %)
+             (str %)
+
+           :else %)
         v))
     (gen/one-of
       [(gen/map
@@ -198,14 +203,39 @@
 
 ;; ## Test Harnesses
 
-(deftest block-store-test
-  (let [codec (cv1/node-codec {})]
+(deftest edn-block-store-test
+  (let [codec (cv1/edn-node-codec)]
     (carly/check-system
-      "block-node-store linear test"
+      "block-node-store linear EDN test"
       #(msb/block-node-store
          :store (memory-block-store)
          :codec codec
          :cache {:node-size-limit 1})
       op-generators
       :context (gen-context codec)
-      :iterations 30)))
+      :iterations 15)))
+
+
+(deftest cbor-block-store-test
+  (let [codec (cv1/cbor-node-codec)]
+    (carly/check-system
+      "block-node-store linear CBOR test"
+      #(msb/block-node-store
+         :store (memory-block-store)
+         :codec codec
+         :cache {:node-size-limit 1})
+      op-generators
+      :context (gen-context codec)
+      :iterations 15)))
+
+
+(deftest cbor-block-store-test
+  (let [codec (cv1/cbor-node-codec)]
+    (carly/check-system
+      "block-node-store linear CBOR test with caching"
+      #(msb/block-node-store
+         :store (memory-block-store)
+         :codec codec)
+      op-generators
+      :context (gen-context codec)
+      :iterations 10)))

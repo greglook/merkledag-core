@@ -88,17 +88,27 @@
 (defn node-codec
   "Construct a new node codec. The codec will serialize values using the given
   map of types, merged into `core-types`."
-  [types]
-  (let [types+ (merge core-types types)
-        edn (edn-codec types+)
-        cbor (cbor-codec types+)
-        data-mux (mux-codec :edn edn :cbor cbor)]
-    (->NodeCodec
-      codec-header
-      data-mux
-      #_ ; TODO: support compression wrapers
-      (mux-codec
-        :snappy (snappy-codec data-mux)
-        :gzip (gzip-codec data-mux)
-        :cbor cbor
-        :edn edn))))
+  [& codec-kvs]
+  (->NodeCodec
+    codec-header
+    (apply mux-codec codec-kvs)
+    #_ ; TODO: support compression wrappers
+    (mux-codec
+      :snappy (snappy-codec data-mux)
+      :gzip (gzip-codec data-mux)
+      :cbor cbor
+      :edn edn)))
+
+
+(defn edn-node-codec
+  ([]
+   (edn-node-codec nil))
+  ([types]
+   (node-codec :edn (edn-codec (merge core-types types)))))
+
+
+(defn cbor-node-codec
+  ([]
+   (cbor-node-codec nil))
+  ([types]
+   (node-codec :cbor (cbor-codec (merge core-types types)))))
