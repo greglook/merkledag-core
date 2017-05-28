@@ -16,7 +16,7 @@
 (s/def ::id #(instance? Multihash %))
 (s/def ::size pos-int?)
 (s/def ::encoding (s/nilable (s/coll-of string? :kind vector?)))
-(s/def ::links (s/coll-of link/merkle-link? :kind vector? :min-count 1))
+(s/def ::links ::link/table)
 (s/def ::data coll?)
 
 (s/def :merkledag/node

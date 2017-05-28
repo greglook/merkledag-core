@@ -142,8 +142,20 @@
   (instance? MerkleLink x))
 
 
+(s/def :merkledag/link
+  (s/and merkle-link?
+         ; Can't use s/keys because links aren't maps
+         #(s/valid? ::name (:name %))
+         #(s/valid? ::target (:target %))
+         #(s/valid? ::rsize (:rsize %))))
+
+
 
 ;; ## Link Tables
+
+(s/def ::table
+  (s/coll-of :merkledag/link :kind vector? :min-count 1))
+
 
 (defn validate-links!
   "Validates certain invariants about link tables. Throws an exception on error,
