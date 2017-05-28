@@ -14,7 +14,7 @@
 
 (s/def ::name string?)
 (s/def ::target #(instance? Multihash %))
-(s/def ::tsize (s/nilable nat-int?))
+(s/def ::rsize (s/nilable nat-int?))
 
 
 
@@ -25,11 +25,11 @@
 ;;
 ;; - `:name` is a string giving the link's name from an object link table.
 ;; - `:target` is the merklehash to which the link points.
-;; - `:tsize` is the total number of bytes reachable from the linked block.
-;;   This should equal the sum of the target's links' tsizes, plus the size
+;; - `:rsize` is the total number of bytes reachable from the linked block.
+;;   This should equal the sum of the target's links' rsizes, plus the size
 ;;   of the object itself.
 (deftype MerkleLink
-  [_name _target _tsize _meta]
+  [name target rsize _meta]
 
   :load-ns true
 
@@ -37,20 +37,20 @@
 
   (toString
     [this]
-    (format "link:%s:%s:%s" _name (multihash/hex _target) (or _tsize "-")))
+    (format "link:%s:%s:%s" name (multihash/hex target) (or rsize "-")))
 
   (equals
     [this that]
     (cond
       (identical? this that) true
       (instance? MerkleLink that)
-        (and (= _name   (._name   ^MerkleLink that))
-             (= _target (._target ^MerkleLink that)))
+        (and (= name   (.name   ^MerkleLink that))
+             (= target (.target ^MerkleLink that)))
       :else false))
 
   (hashCode
     [this]
-    (hash-combine (hash _name) (hash _target)))
+    (hash-combine (hash name) (hash target)))
 
 
   Comparable
@@ -59,7 +59,7 @@
     [this that]
     (if (= this that)
       0
-      (compare [_name _target]
+      (compare [name target]
                [(:name that) (:target that)])))
 
 
@@ -69,7 +69,7 @@
 
   (withMeta
     [_ meta-map]
-    (MerkleLink. _name _target _tsize meta-map))
+    (MerkleLink. name target rsize meta-map))
 
 
   clojure.lang.ILookup
@@ -77,9 +77,9 @@
   (valAt
     [this k not-found]
     (case k
-      :name _name
-      :target _target
-      :tsize _tsize
+      :name name
+      :target target
+      :rsize rsize
       not-found))
 
   (valAt
@@ -92,7 +92,7 @@
 
 (defn create
   "Constructs a `MerkleLink` value, validating the inputs."
-  [name target tsize]
+  [name target rsize]
   (when-not (string? name)
     (throw (IllegalArgumentException.
              (str "Link name must be a string, got: "
@@ -105,11 +105,11 @@
     (throw (IllegalArgumentException.
              (str "Link target must be a multihash, got: "
                   (pr-str target)))))
-  (when (and tsize (not (integer? tsize)))
+  (when (and rsize (not (integer? rsize)))
     (throw (IllegalArgumentException.
              (str "Link size must be an integer, got: "
-                  (pr-str tsize)))))
-  (->MerkleLink name target tsize nil))
+                  (pr-str rsize)))))
+  (->MerkleLink name target rsize nil))
 
 
 (defn link->form
@@ -117,7 +117,7 @@
   part of a tagged literal value."
   [link]
   (when link
-    [(:name link) (:target link) (:tsize link)]))
+    [(:name link) (:target link) (:rsize link)]))
 
 
 (defn form->link

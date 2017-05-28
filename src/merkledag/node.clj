@@ -141,10 +141,10 @@
   node map with `::size` and `::links` entries.
 
   Raw blocks and nodes with no links have a total size equal to their `::size`.
-  Each link in the node's link table adds its `::link/tsize` to the total.
+  Each link in the node's link table adds its `::link/rsize` to the total.
   Returns `nil` if no node is given."
   [node]
   (when-let [size (::size node)]
     (->> (::links node)
-         (keep ::link/tsize)
+         (keep ::link/rsize)
          (reduce + size))))

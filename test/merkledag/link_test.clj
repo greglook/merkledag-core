@@ -23,7 +23,7 @@
   (testing "non-multihash target"
     (is (thrown? IllegalArgumentException
                  (link/create "foo" :bar nil))))
-  (testing "non-integer tsize"
+  (testing "non-integer rsize"
     (is (thrown? IllegalArgumentException
                  (link/create "foo" nil 123.0))))
   (testing "valid args"
@@ -52,7 +52,7 @@
     (testing "keyword lookup"
       (is (= "foo" (:name a)) "should return name for :name")
       (is (= mhash (:target a)) "should return target for :target")
-      (is (= 123 (:tsize a)) "should return total size for :tsize")
+      (is (= 123 (:rsize a)) "should return total size for :rsize")
       (is (= ::not-found (get b :something ::not-found))
           "should return not-found for other keywords"))
     (testing "equality"
