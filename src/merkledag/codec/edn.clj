@@ -22,7 +22,8 @@
       OutputStream
       OutputStreamWriter
       PushbackReader)
-    java.nio.charset.Charset))
+    java.nio.charset.Charset
+    java.util.UUID))
 
 
 (def ^Charset data-charset
@@ -30,11 +31,17 @@
   (Charset/forName "UTF-8"))
 
 
+(def core-types
+  {'uuid
+   {:reader #(UUID/fromString %)
+    :writers {UUID str}}})
+
+
 (defn- resolve-types
   "Returns the type map from the given argument. Accepts either direct maps or
   vars holding a map."
   [types]
-  (if (var? types) @types types))
+  (merge core-types (if (var? types) @types types)))
 
 
 (defn ^:no-doc types->print-handlers
@@ -108,4 +115,7 @@
   - `:eof` a value to be returned from the codec when the end of the stream is
     reached instead of throwing an exception. "
   [types & {:as opts}]
-  (map->EDNCodec (assoc opts :header (:edn multicodec/headers) :types types)))
+  (map->EDNCodec
+    (assoc opts
+           :header (:edn multicodec/headers)
+           :types types)))

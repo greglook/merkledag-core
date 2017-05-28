@@ -189,7 +189,7 @@
 ;; ## Test Harnesses
 
 (deftest block-store-test
-  (let [codec (cv1/node-codec {'uuid {:reader #(java.util.UUID/fromString %), :writers {java.util.UUID str}}})]
+  (let [codec (cv1/node-codec {})]
     (carly/check-system
       "block-node-store linear test"
       #(msb/block-node-store :codec codec :store (memory-block-store))
