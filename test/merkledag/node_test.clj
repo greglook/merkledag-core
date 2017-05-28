@@ -6,6 +6,7 @@
     [clojure.string :as str]
     [clojure.test :refer :all]
     [clojure.test.check.generators :as gen]
+    [clojure.walk :as walk]
     [merkledag.codec.node-v1 :as cv1]
     [merkledag.store.block :as msb]
     [merkledag.link :as link]
@@ -37,12 +38,21 @@
 
 (def gen-node-data
   "Generator for test node data."
-  (gen/one-of
-    [(gen/map
-       gen/keyword-ns
-       gen/any-printable)
-     (gen/vector gen/any-printable)
-     (gen/set gen/any-printable)]))
+  (gen/fmap
+    (fn [v]
+      (walk/postwalk
+        #(if (and (float? %)
+                  (or (Double/isNaN %)
+                      (Double/isInfinite %)))
+           0.0
+           %)
+        v))
+    (gen/one-of
+      [(gen/map
+         gen/keyword-ns
+         gen/any-printable)
+       (gen/vector gen/any-printable)
+       (gen/set gen/any-printable)])))
 
 
 (defn- build-node-context
@@ -192,7 +202,10 @@
   (let [codec (cv1/node-codec {})]
     (carly/check-system
       "block-node-store linear test"
-      #(msb/block-node-store :codec codec :store (memory-block-store))
+      #(msb/block-node-store
+         :store (memory-block-store)
+         :codec codec
+         :cache {:node-size-limit 1})
       op-generators
       :context (gen-context codec)
-      :iterations 20)))
+      :iterations 30)))
