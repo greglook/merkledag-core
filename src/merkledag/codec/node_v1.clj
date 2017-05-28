@@ -62,7 +62,7 @@
     (when-not (codec/encodable? this node)
       (throw (ex-info (str "Cannot encode node data: " (pr-str node))
                       {:node node})))
-    (let [links' (when (seq (::node/links node)) (vec (::node/links node)))
+    (let [links' (link/collect-table (::node/links node) (::node/data node))
           data' (link/replace-links links' (::node/data node))]
       (codec/encode! mux output [links' data'])))
 
