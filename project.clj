@@ -29,8 +29,8 @@
   :hiera
   {:vertical false
    :cluster-depth 2
-   :ignore-ns #{clojure}
-   :show-external false}
+   :ignore-ns #{clojure clj-cbor puget}
+   :show-external true}
 
   :whidbey
   {:tag-types
@@ -50,7 +50,7 @@
    :test
    {:dependencies
     [[commons-logging "1.2"]
-     [mvxcvi/test.carly "0.1.0"]]
+     [mvxcvi/test.carly "0.3.0-SNAPSHOT"]]
     :jvm-opts ["-Dorg.apache.commons.logging.Log=org.apache.commons.logging.impl.NoOpLog"]}
 
    :coverage
