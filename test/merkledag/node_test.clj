@@ -8,7 +8,6 @@
     [clojure.test.check.generators :as gen]
     [merkledag.codec.node-v1 :as cv1]
     [merkledag.store.block :as msb]
-    [merkledag.store.memory :as msm]
     [merkledag.link :as link]
     [merkledag.node :as node]
     [multicodec.core :as codec]
