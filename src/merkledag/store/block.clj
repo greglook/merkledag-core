@@ -34,8 +34,6 @@
   or nil if value is nil."
   [codec value]
   (when value
-    (when-not (codec/encodable? codec value)
-      (throw (ex-info "Value is not valid node data" {:value value})))
     (binding [header/*headers* []]
       (let [baos (ByteArrayOutputStream.)
             size (codec/encode-with-header! codec baos value)
@@ -45,8 +43,8 @@
              ::node/size (:size block)
              ::node/encoding header/*headers*}
             (cond->
-              (::node/links value) (assoc ::node/links (::node/links value))
-              (::node/data value)  (assoc ::node/data (::node/data value)))
+              (seq (::node/links value)) (assoc ::node/links (::node/links value))
+              (::node/data value) (assoc ::node/data (::node/data value)))
             (->> (into block)))))))
 
 
@@ -119,6 +117,6 @@
 
 (defn block-node-store
   [& {:as opts}]
-  (let [cache (atom (merge (msc/node-cache {}) (:cache opts)))]
+  (let [cache (atom (apply msc/node-cache {} (apply concat (:cache opts))))]
     (map->BlockNodeStore
       (assoc opts :cache cache))))
