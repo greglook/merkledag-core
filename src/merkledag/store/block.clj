@@ -10,9 +10,17 @@
     [multicodec.header :as header]
     [multihash.core :as multihash])
   (:import
+    blocks.data.Block
     (java.io
       ByteArrayInputStream
       ByteArrayOutputStream)))
+
+
+(extend-protocol node/Identifiable
+
+  Block
+  (identify [b] (:id b)))
+
 
 
 ;; ## Formatting Functions

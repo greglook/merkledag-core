@@ -1,14 +1,12 @@
 (ns merkledag.node
   "Functions to serialize and operate on merkledag nodes."
   (:require
-    [blocks.core]
     [clojure.future :refer [pos-int?]]
     [clojure.spec :as s]
     [merkledag.link :as link]
     [merkledag.store :as store]
     [multihash.core])
   (:import
-    blocks.data.Block
     merkledag.link.MerkleLink
     multihash.core.Multihash))
 
@@ -47,9 +45,6 @@
 
   Multihash
   (identify [m] m)
-
-  Block
-  (identify [b] (:id b))
 
   MerkleLink
   (identify [l] (:target l)))
