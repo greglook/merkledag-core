@@ -208,7 +208,8 @@
        (compact-links)
        (remove (set ordered-links))
        (concat ordered-links)
-       (vec)))
+       (vec)
+       (not-empty)))
 
 
 (defn resolve-name
