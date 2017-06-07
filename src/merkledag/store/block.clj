@@ -4,11 +4,8 @@
     [blocks.core :as block]
     [clojure.core.cache :as cache]
     [merkledag.node :as node]
-    [merkledag.store :as store]
-    [merkledag.store.cache :as msc]
     [multicodec.core :as codec]
-    [multicodec.header :as header]
-    [multihash.core :as multihash])
+    [multicodec.header :as header])
   (:import
     blocks.data.Block
     (java.io
@@ -74,7 +71,7 @@
 (defrecord BlockNodeStore
   [codec store cache]
 
-  store/NodeStore
+  node/NodeStore
 
   (-get-node
     [this id]
