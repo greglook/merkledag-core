@@ -9,6 +9,7 @@
     [clojure.walk :as walk]
     [merkledag.codec.node-v1 :as cv1]
     [merkledag.store.block :as msb]
+    [merkledag.store.cache :as cache]
     [merkledag.link :as link]
     [merkledag.node :as node]
     [multicodec.core :as codec]
@@ -209,8 +210,7 @@
       "block-node-store linear EDN test"
       #(msb/block-node-store
          :store (memory-block-store)
-         :codec codec
-         :cache {:node-size-limit 1})
+         :codec codec)
       op-generators
       :context (gen-context codec)
       :iterations 15)))
@@ -222,20 +222,20 @@
       "block-node-store linear CBOR test"
       #(msb/block-node-store
          :store (memory-block-store)
-         :codec codec
-         :cache {:node-size-limit 1})
+         :codec codec)
       op-generators
       :context (gen-context codec)
       :iterations 15)))
 
 
-(deftest cbor-block-store-test
+(deftest caching-block-store-test
   (let [codec (cv1/cbor-node-codec)]
     (carly/check-system
       "block-node-store linear CBOR test with caching"
       #(msb/block-node-store
          :store (memory-block-store)
-         :codec codec)
+         :codec codec
+         :cache (atom (cache/node-cache {})))
       op-generators
       :context (gen-context codec)
       :iterations 10)))

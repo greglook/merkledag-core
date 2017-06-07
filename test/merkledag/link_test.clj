@@ -50,9 +50,9 @@
         c (link/create "bar" mhash 123)
         d (link/create "foo" (digest/sha2-256 "qux") 123)]
     (testing "keyword lookup"
-      (is (= "foo" (:name a)) "should return name for :name")
-      (is (= mhash (:target a)) "should return target for :target")
-      (is (= 123 (:rsize a)) "should return total size for :rsize")
+      (is (= "foo" (::link/name a)) "should return name for :name")
+      (is (= mhash (::link/target a)) "should return target for :target")
+      (is (= 123 (::link/rsize a)) "should return total size for :rsize")
       (is (= ::not-found (get b :something ::not-found))
           "should return not-found for other keywords"))
     (testing "equality"
@@ -94,10 +94,11 @@
       (is (= [a b c] (link/compact-links [b a nil c b nil]))))
     (testing "resolve-name"
       (testing "with nil name"
-        (is (nil? (link/resolve-name [(link/create "" (:target a) nil)] nil))))
+        (is (nil? (link/resolve-name [(link/create "" (::link/target a) nil)] nil))))
       (testing "with explicit table"
         (is (= a (link/resolve-name table "a")))
         (is (nil? (link/resolve-name table "d")))))
+    #_
     (testing "update-link"
       (is (= ::x (link/update-link ::x nil))
           "nil link should not change argument")
