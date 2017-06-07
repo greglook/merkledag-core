@@ -4,7 +4,7 @@
     [clojure.future :refer [pos-int?]]
     [clojure.spec :as s]
     [merkledag.link :as link]
-    [multihash.core])
+    [multihash.core :as multihash])
   (:import
     merkledag.link.MerkleLink
     multihash.core.Multihash))
@@ -23,30 +23,6 @@
 
 (def node-keys
   [::id ::size ::encoding ::links ::data])
-
-
-
-;; ## Identity Protocol
-
-(defprotocol Identifiable
-  "Protocol for values which can be resolved to a multihash value in order to
-  uniquely identify a node in the graph."
-
-  (identify
-    [value]
-    "Return the multihash identifying the value."))
-
-
-(extend-protocol Identifiable
-
-  nil
-  (identify [_] nil)
-
-  Multihash
-  (identify [m] m)
-
-  MerkleLink
-  (identify [l] (:target l)))
 
 
 

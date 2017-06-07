@@ -3,6 +3,7 @@
   (:require
     [blocks.core :as block]
     [clojure.core.cache :as cache]
+    [merkledag.link :as link]
     [merkledag.node :as node]
     [multicodec.core :as codec]
     [multicodec.header :as header])
@@ -13,10 +14,18 @@
       ByteArrayOutputStream)))
 
 
-(extend-protocol node/Identifiable
+(extend-protocol link/Target
 
   Block
-  (identify [b] (:id b)))
+
+  (identify
+    [block]
+    (:id block))
+
+  (reachable-size
+    [block]
+    (or (node/reachable-size block)
+        (:size block))))
 
 
 

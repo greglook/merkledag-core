@@ -321,3 +321,43 @@
                             {:link-table link-table, :index x})))
         x))
     data))
+
+
+
+;; ## Targeting Protocol
+
+(defprotocol Target
+  "Protocol for values which can be targeted by merkle links."
+
+  (identify
+    [target]
+    "Return the multihash identifying the target value.")
+
+  (reachable-size
+    [target]
+    "Calculate the size of data in bytes reachable from the target."))
+
+
+(extend-protocol Target
+
+  nil
+  (identify [_] nil)
+  (reachable-size [_] nil)
+
+  String
+  (identify [s] (multihash/decode s))
+  (reachable-size [s] nil)
+
+  Multihash
+  (identify [m] m)
+  (reachable-size [m] nil)
+
+  MerkleLink
+  (identify [l] (::target l))
+  (reachable-size [l] (::rsize l)))
+
+
+(defn link-to
+  "Construct a new merkle link to the given target value."
+  [link-name target]
+  (create link-name (identify target) (reachable-size target)))
