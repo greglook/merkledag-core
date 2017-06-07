@@ -32,6 +32,11 @@
    :ignore-ns #{clojure clj-cbor puget}
    :show-external true}
 
+  :codox
+  {:metadata {:doc/format :markdown}
+   :source-uri "https://github.com/greglook/merkledag-core/blob/master/{filepath}#L{line}"
+   :output-path "target/doc/api"}
+
   :whidbey
   {:tag-types
    {'blocks.data.Block {'blocks.data.Block (partial into {})}
