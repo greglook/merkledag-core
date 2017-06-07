@@ -60,7 +60,7 @@
     (if (= this that)
       0
       (compare [name target]
-               [(:name that) (:target that)])))
+               [(.name ^MerkleLink that) (.target ^MerkleLink that)])))
 
 
   clojure.lang.IObj
@@ -75,16 +75,16 @@
   clojure.lang.ILookup
 
   (valAt
-    [this k not-found]
-    (case k
-      :name name
-      :target target
-      :rsize rsize
-      not-found))
+    [this k]
+    (.valAt this k nil))
 
   (valAt
-    [this k]
-    (.valAt this k nil)))
+    [this k not-found]
+    (case k
+      ::name   name
+      ::target target
+      ::rsize  rsize
+      not-found)))
 
 
 (alter-meta! #'->MerkleLink assoc :private true)
@@ -115,9 +115,9 @@
 (defn link->form
   "Returns a vector representing the given link, suitable for serialization as
   part of a tagged literal value."
-  [link]
+  [^MerkleLink link]
   (when link
-    [(:name link) (:target link) (:rsize link)]))
+    [(.name link) (.target link) (.rsize link)]))
 
 
 (defn form->link
@@ -143,11 +143,11 @@
 
 
 (s/def :merkledag/link
+  ; Can't use s/keys because links aren't maps
   (s/and merkle-link?
-         ; Can't use s/keys because links aren't maps
-         #(s/valid? ::name (:name %))
-         #(s/valid? ::target (:target %))
-         #(s/valid? ::rsize (:rsize %))))
+         #(s/valid? ::name (::name %))
+         #(s/valid? ::target (::target %))
+         #(s/valid? ::rsize (::rsize %))))
 
 
 
@@ -161,7 +161,7 @@
   "Validates certain invariants about link tables. Throws an exception on error,
   or returns the table if it is valid."
   [link-table]
-  (let [by-name (group-by :name link-table)]
+  (let [by-name (group-by ::name link-table)]
     ; throw exception if any links have the same name and different targets
     (when-let [bad-names (seq (filter #(< 1 (count (val %))) by-name))]
       (throw (ex-info (str "Cannot compact links with multiple targets for the "
@@ -193,9 +193,9 @@
   "Attempts to convert a sequence of links into a compact, canonical form."
   [link-table]
   (->> link-table
-       (remove (comp nil? :target))
+       (remove (comp nil? ::target))
        (distinct)
-       (sort-by (juxt :name :target))))
+       (sort-by (juxt ::name ::target))))
 
 
 (defn collect-table
@@ -217,24 +217,27 @@
   link is found."
   [link-table link-name]
   (when link-name
-    (first (filter #(= (str link-name) (:name %)) link-table))))
+    (first (filter #(= (str link-name) (::name %)) link-table))))
 
 
+; TODO: move this to node ns?
+#_
 (defn update-link
   "Returns an updated node map with the given link added, replacing any
-  existing link with the same name. Returns a map with `:links` and `:data`
+  existing link with the same name. Returns a map with `:merkledag.node/links` and `:merkledag.node/data`
   values."
   [node new-link]
   (if new-link
-    (let [name-match? #(= (:name new-link) (:name %))
-          [before after] (split-with (complement name-match?) (:links node))]
-      {:links (vec (concat before [new-link] (rest after)))
-       :data (walk/postwalk
-               (fn link-updater [x]
-                 (if (and (merkle-link? x) (name-match? x))
-                   new-link
-                   x))
-               (:data node))})
+    (let [name-match? #(= (::name new-link) (::name %))
+          [before after] (split-with (complement name-match?) (:merkledag.node/links node))]
+      {:merkledag.node/links (vec (concat before [new-link] (rest after)))
+       :merkledag.node/data
+       (walk/postwalk
+         (fn link-updater [x]
+           (if (and (merkle-link? x) (name-match? x))
+             new-link
+             x))
+         (:merkledag.node/data node))})
     node))
 
 
