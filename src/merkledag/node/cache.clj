@@ -1,4 +1,4 @@
-(ns merkledag.store.cache
+(ns merkledag.node.cache
   "Cache implementation which stores parsed node values, limited based on the
   size of the blocks cached."
   (:require

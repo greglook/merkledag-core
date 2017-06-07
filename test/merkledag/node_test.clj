@@ -8,8 +8,8 @@
     [clojure.test.check.generators :as gen]
     [clojure.walk :as walk]
     [merkledag.codec.node-v1 :as cv1]
-    [merkledag.store.block :as msb]
-    [merkledag.store.cache :as cache]
+    [merkledag.node.store :as store]
+    [merkledag.node.cache :as cache]
     [merkledag.link :as link]
     [merkledag.node :as node]
     [multicodec.core :as codec]
@@ -68,13 +68,13 @@
     (reduce
       (fn [nodes [backlinks data]]
         (if (empty? nodes)
-          (conj nodes (msb/format-block codec {::node/data data}))
+          (conj nodes (store/format-block codec {::node/data data}))
           (let [links (mapv (fn idx->link
                               [[n i]]
                               (let [node (nth nodes (mod i (count nodes)))]
                                 (link/create n (::node/id node) (node/reachable-size node))))
                             backlinks)]
-            (conj nodes (msb/format-block codec {::node/links links, ::node/data data})))))
+            (conj nodes (store/format-block codec {::node/links links, ::node/data data})))))
       [])
     (map (juxt ::node/id identity))
     (into {})))
@@ -208,7 +208,7 @@
   (let [codec (cv1/edn-node-codec)]
     (carly/check-system
       "block-node-store linear EDN test"
-      #(msb/block-node-store
+      #(store/block-node-store
          :store (memory-block-store)
          :codec codec)
       op-generators
@@ -220,7 +220,7 @@
   (let [codec (cv1/cbor-node-codec)]
     (carly/check-system
       "block-node-store linear CBOR test"
-      #(msb/block-node-store
+      #(store/block-node-store
          :store (memory-block-store)
          :codec codec)
       op-generators
@@ -232,7 +232,7 @@
   (let [codec (cv1/cbor-node-codec)]
     (carly/check-system
       "block-node-store linear CBOR test with caching"
-      #(msb/block-node-store
+      #(store/block-node-store
          :store (memory-block-store)
          :codec codec
          :cache (atom (cache/node-cache {})))
