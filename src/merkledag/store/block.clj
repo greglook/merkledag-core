@@ -76,7 +76,7 @@
   (-get-node
     [this id]
     ; TODO: measure node size
-    (if (cache/has? @cache id)
+    (if (and cache (cache/has? @cache id))
       ; Return cached value.
       (when-let [node (cache/lookup @cache id)]
         (swap! cache cache/hit id)
@@ -86,8 +86,9 @@
       ; TODO: measure parse time
       (when-let [parsed (parse-block codec (block/get store id))]
         (let [node (select-keys parsed node/node-keys)]
-          (swap! cache cache/miss id node)
-          ; TODO: measure cache misses
+          (when cache
+            ; TODO: measure cache misses
+            (swap! cache cache/miss id node))
           node))))
 
 
@@ -95,16 +96,18 @@
     [this node]
     (when node
       (let [block (format-block codec (select-keys node [::node/links ::node/data]))]
-        (block/put! store block)
-        (swap! cache cache/miss (::node/id node) (select-keys block node/node-keys))
         ; TODO: measure node creation and size
+        (block/put! store block)
+        (when cache
+          (swap! cache cache/miss (::node/id node) (select-keys block node/node-keys)))
         block)))
 
 
   (-delete-node!
     [this id]
     ; TODO: measure node deletion
-    (swap! cache cache/evict id)
+    (when cache
+      (swap! cache cache/evict id))
     (block/delete! store id)))
 
 
@@ -114,6 +117,4 @@
 
 (defn block-node-store
   [& {:as opts}]
-  (let [cache (atom (apply msc/node-cache {} (apply concat (:cache opts))))]
-    (map->BlockNodeStore
-      (assoc opts :cache cache))))
+  (map->BlockNodeStore opts))
