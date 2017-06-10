@@ -22,20 +22,23 @@
 (defn- types->write-handlers
   "Converts a map of type definitions into a map of CBOR write handlers."
   [types]
-  (->> (vals types)
-       (mapcat (fn [definition]
+  (into cbor/default-write-handlers
+        (comp
+          (map (juxt :cbor/tag (some-fn :cbor/writers :writers)))
+          (map (fn [[tag writers]]
                  (map (fn [[cls former]]
-                        [cls #(data/tagged-value (:cbor/tag definition) (former %))])
-                      (:cbor/writers definition (:writers definition)))))
-       (into cbor/default-write-handlers)))
+                        [cls #(data/tagged-value tag (former %))])
+                      writers)))
+          cat)
+        (vals types)))
 
 
 (defn- types->read-handlers
   "Converts a map of type definitions into a map of CBOR read handlers."
   [types]
-  (->> (vals types)
-       (map (juxt :cbor/tag #(:cbor/reader % (:reader %))))
-       (into cbor/default-read-handlers)))
+  (into cbor/default-read-handlers
+        (map (juxt :cbor/tag (some-fn :cbor/reader :reader)))
+        (vals types)))
 
 
 (extend-type CBORCodec
