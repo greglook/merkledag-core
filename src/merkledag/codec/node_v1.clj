@@ -78,11 +78,11 @@
     [this input]
     (let [[links data* :as value] (codec/decode! mux input)]
       (when-not (and (vector? value) (or links data*))
-        (throw (ex-info "Decoded bad node value missing links and data"
+        (throw (ex-info "Decoded bad node value without links or data"
                         {:value value})))
       (cond-> {}
-        (seq links) (assoc ::node/links (vec links))
-        data*       (assoc ::node/data (link/resolve-indexes links data*))))))
+        (seq links)   (assoc ::node/links (vec links))
+        (some? data*) (assoc ::node/data (link/resolve-indexes links data*))))))
 
 
 (defn node-codec

@@ -53,8 +53,8 @@
              ::node/size (:size block)
              ::node/encoding header/*headers*}
             (cond->
-              (seq links) (assoc ::node/links links)
-              data        (assoc ::node/data data))
+              (seq links)  (assoc ::node/links links)
+              (some? data) (assoc ::node/data data))
             (->> (into block)))))))
 
 
