@@ -41,7 +41,7 @@
   {:tag-types
    {'blocks.data.Block {'blocks.data.Block (partial into {})}
     'java.time.Instant {'inst str}
-    'merkledag.link.LinkIndex {'data/link-index :index}
+    'merkledag.link.LinkIndex {'merkledag.link/index :index}
     'merkledag.link.MerkleLink {'data/link 'merkledag.link/link->form}
     'multihash.core.Multihash {'data/hash 'multihash.core/base58}}}
 
@@ -55,7 +55,7 @@
    :test
    {:dependencies
     [[commons-logging "1.2"]
-     [mvxcvi/test.carly "0.3.0-SNAPSHOT"]]
+     [mvxcvi/test.carly "0.3.0"]]
     :jvm-opts ["-Dorg.apache.commons.logging.Log=org.apache.commons.logging.impl.NoOpLog"]}
 
    :coverage
