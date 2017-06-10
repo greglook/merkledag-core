@@ -22,6 +22,7 @@
 
 
 (def node-keys
+  "Collection of attributes that make up a merkledag node map."
   [::id ::size ::encoding ::links ::data])
 
 
@@ -134,7 +135,7 @@
   Each link in the node's link table adds its `::link/rsize` to the total.
   Returns `nil` if no node is given."
   [node]
-  (when-let [size (::size node)]
+  (if-let [size (or (::size node) (:size node))]
     (->> (::links node)
          (keep ::link/rsize)
          (reduce + size))))
