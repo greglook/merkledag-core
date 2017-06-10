@@ -47,7 +47,63 @@ unchanged data with the old version.
 
 ## Usage
 
-...
+This is the core library, so it provides a direct interface for working with the
+nodes in a graph.
+
+```clojure
+; Require and alias core namespaces:
+=> (require '[merkledag.link :as link] '[merkledag.node :as node])
+
+; Create a node store to hold the graph data:
+=> (require '[merkledag.system.util :as msu])
+=> (def graph (msu/init-store))
+```
+
+By default, the `init-store` constructor produces a node store with in-memory
+block storage, a simple EDN-based codec, and no parse cache. Now we can store
+some data in it:
+
+```clojure
+=> (node/store-node! graph nil {:abc 123})
+{:merkledag.node/id #data/hash "Qma2BhVGoacUWC9duYDBkLDNWohB3dfCHBpGQdZUJ8B5H7",
+ :merkledag.node/size 38,
+ :merkledag.node/encoding ["/merkledag/v1" "/edn"],
+ :merkledag.node/data {:abc 123}}
+
+=> (node/store-node! graph nil [true #{123 :x} 'efg])
+{:merkledag.node/id #data/hash "Qmaarse6kx5tKmtsX1LgJ2B59Xi8bzEnH8uQ5MKMQJg3Pd",
+ :merkledag.node/size 48,
+ :merkledag.node/encoding ["/merkledag/v1" "/edn"],
+ :merkledag.node/data [true #{123 :x} efg]}
+
+=> (node/store-node! graph nil {:a (link/link-to "a" *2), :b (link/link-to "b" *1)})
+{:merkledag.node/id #data/hash "QmVSR5TWZmKr3uXF8yBLPSE2ki25LKXkniGMNBCxCT8UUt",
+ :merkledag.node/size 251,
+ :merkledag.node/encoding ["/merkledag/v1" "/edn"],
+ :merkledag.node/links [#merkledag/link ["a" #data/hash "Qma2BhVGoacUWC9duYDBkLDNWohB3dfCHBpGQdZUJ8B5H7" 38]
+                        #merkledag/link ["b" #data/hash "Qmaarse6kx5tKmtsX1LgJ2B59Xi8bzEnH8uQ5MKMQJg3Pd" 48]],
+ :merkledag.node/data {:a #merkledag/link ["a" #data/hash "Qma2BhVGoacUWC9duYDBkLDNWohB3dfCHBpGQdZUJ8B5H7" 38],
+                       :b #merkledag/link ["b" #data/hash "Qmaarse6kx5tKmtsX1LgJ2B59Xi8bzEnH8uQ5MKMQJg3Pd" 48]}}
+```
+
+We've now stored a basic three-node structure in the graph! Note that the last
+node has links to each of the initial nodes, forming a simple binary tree. The
+links were captured in the node's link table automatically by detecting them in
+the node data body.
+
+Later, node data can be retrieved from the graph by using a value which can be
+linked to a node id.
+
+```clojure
+; Basic sting-encoded multihashes work:
+=> (node/get-data graph "QmVSR5TWZmKr3uXF8yBLPSE2ki25LKXkniGMNBCxCT8UUt")
+{:a #merkledag/link ["a" #data/hash "Qma2BhVGoacUWC9duYDBkLDNWohB3dfCHBpGQdZUJ8B5H7" 38],
+ :b #merkledag/link ["b" #data/hash "Qmaarse6kx5tKmtsX1LgJ2B59Xi8bzEnH8uQ5MKMQJg3Pd" 48]}
+
+; As do links themselves:
+=> (node/get-data graph (:b *1))
+[true #{123 :x} efg]
+```
 
 
 ## License
