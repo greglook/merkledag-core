@@ -41,16 +41,20 @@
   [codec value]
   (when value
     (binding [header/*headers* []]
-      (let [baos (ByteArrayOutputStream.)
-            size (codec/encode-with-header! codec baos value)
+      (let [data (::node/data value)
+            links (link/collect-table (::node/links value) data)
+            node {::node/links links
+                  ::node/data data}
+            baos (ByteArrayOutputStream.)
+            size (codec/encode-with-header! codec baos node)
             content (.toByteArray baos)
             block (block/read! content)]
         (-> {::node/id (:id block)
              ::node/size (:size block)
              ::node/encoding header/*headers*}
             (cond->
-              (seq (::node/links value)) (assoc ::node/links (::node/links value))
-              (::node/data value) (assoc ::node/data (::node/data value)))
+              (seq links) (assoc ::node/links links)
+              data        (assoc ::node/data data))
             (->> (into block)))))))
 
 
