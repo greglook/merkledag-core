@@ -1,85 +1,56 @@
 (ns merkledag.link
-  (:refer-clojure :exclude [resolve])
+  "The edges in the DAG are represented with _links_ from one node to another.
+  A merkle-link has a multihash target, an optional name string, and a recursive
+  'total size' value."
   (:require
+    [clojure.future :refer [nat-int?]]
+    [clojure.spec :as s]
+    [clojure.string :as str]
+    [clojure.walk :as walk]
     [multihash.core :as multihash])
   (:import
     multihash.core.Multihash))
 
 
-;; ## Link Table
-
-(def ^:dynamic *link-table*
-  "Contextual link table used to collect links when defining nodes, and to
-  assign links when parsing nodes."
-  nil)
-
-
-(defn resolve
-  "Resolves a link against the current `*link-table*`, if any. Returns nil if
-  no matching link is found."
-  [name]
-  (when-not (string? name)
-    (throw (IllegalArgumentException.
-             (str "Link name must be a string, got: " (pr-str name)))))
-  (some #(when (= name (:name %)) %)
-        *link-table*))
-
-
-(defmulti target
-  "Multimethod which returns the multihash identifying the given value."
-  class)
-
-(defmethod target nil
-  [_]
-  nil)
-
-(defmethod target Multihash
-  [mhash]
-  mhash)
+(s/def ::name string?)
+(s/def ::target #(instance? Multihash %))
+(s/def ::rsize (s/nilable nat-int?))
 
 
 
-;; ## Merkle Link Type
-
-(def ^:dynamic *get-node*
-  "Dynamic var which can be bound to a function which fetches a node from some
-  contextual graph repository. If available, this is used to resolve links when
-  they are `deref`ed."
-  nil)
-
+;; ## Link Type
 
 ;; Links have three main properties. Note that **only** link-name and target
 ;; are used for equality and comparison checks!
 ;;
 ;; - `:name` is a string giving the link's name from an object link table.
 ;; - `:target` is the merklehash to which the link points.
-;; - `:tsize` is the total number of bytes reachable from the linked block.
-;;   This should equal the sum of the target's links' tsizes, plus the size
+;; - `:rsize` is the total number of bytes reachable from the linked block.
+;;   This should equal the sum of the target's links' rsizes, plus the size
 ;;   of the object itself.
-;;
-;; In the context of a repo, links can be dereferenced to look up their
-;; contents from the store.
 (deftype MerkleLink
-  [_name _target _tsize _meta]
+  [name target rsize _meta]
+
+  :load-ns true
 
   Object
 
   (toString
     [this]
-    (format "link:%s:%s:%s" _name (multihash/hex _target) (or _tsize "-")))
+    (format "link:%s:%s:%s" name (multihash/hex target) (or rsize "-")))
 
   (equals
     [this that]
     (cond
       (identical? this that) true
       (instance? MerkleLink that)
-        (and (= _name   (._name   ^MerkleLink that))
-             (= _target (._target ^MerkleLink that)))
+        (and (= name   (.name   ^MerkleLink that))
+             (= target (.target ^MerkleLink that)))
       :else false))
 
   (hashCode
     [this]
-    (hash-combine (hash _name) (hash _target)))
+    (hash-combine (hash name) (hash target)))
 
 
   Comparable
@@ -88,8 +59,8 @@
     [this that]
     (if (= this that)
       0
-      (compare [_name _target]
-               [(:name that) (:target that)])))
+      (compare [name target]
+               [(.name ^MerkleLink that) (.target ^MerkleLink that)])))
 
 
   clojure.lang.IObj
@@ -98,70 +69,295 @@
 
   (withMeta
     [_ meta-map]
-    (MerkleLink. _name _target _tsize meta-map))
+    (MerkleLink. name target rsize meta-map))
+
+
+  clojure.lang.ILookup
+
+  (valAt
+    [this k]
+    (.valAt this k nil))
+
+  (valAt
+    [this k not-found]
+    (case k
+      ::name   name
+      ::target target
+      ::rsize  rsize
+      not-found)))
+
+
+(alter-meta! #'->MerkleLink assoc :private true)
+
+
+(defn create
+  "Constructs a `MerkleLink` value, validating the inputs."
+  [name target rsize]
+  (when-not (string? name)
+    (throw (IllegalArgumentException.
+             (str "Link name must be a string, got: "
+                  (pr-str name)))))
+  (when (str/index-of name "/")
+    (throw (IllegalArgumentException.
+             (str "Link name must not contain slashes: "
+                  (pr-str name)))))
+  (when (and target (not (instance? Multihash target)))
+    (throw (IllegalArgumentException.
+             (str "Link target must be a multihash, got: "
+                  (pr-str target)))))
+  (when (and rsize (not (integer? rsize)))
+    (throw (IllegalArgumentException.
+             (str "Link size must be an integer, got: "
+                  (pr-str rsize)))))
+  (->MerkleLink name target rsize nil))
+
+
+(defn link->form
+  "Returns a vector representing the given link, suitable for serialization as
+  part of a tagged literal value."
+  [^MerkleLink link]
+  (when link
+    [(.name link) (.target link) (.rsize link)]))
+
+
+(defn form->link
+  "Reader for link vectors produced by `link->form`."
+  [v]
+  (when v
+    (when-not (and (sequential? v) (= 3 (count v)))
+      (throw (IllegalArgumentException.
+               (str "Link form must be a sequential collection with three "
+                    "elements: " (pr-str v)))))
+    (apply create v)))
+
+
+(defmethod print-method MerkleLink
+  [link w]
+  (print-method (tagged-literal 'data/link (link->form link)) w))
+
+
+(defn merkle-link?
+  "Predicate which returns true if the argument is a `MerkleLink` object."
+  [x]
+  (instance? MerkleLink x))
+
+
+(s/def :merkledag/link
+  ; Can't use s/keys because links aren't maps
+  (s/and merkle-link?
+         #(s/valid? ::name (::name %))
+         #(s/valid? ::target (::target %))
+         #(s/valid? ::rsize (::rsize %))))
+
+
+
+;; ## Link Tables
+
+(s/def ::table
+  (s/coll-of :merkledag/link :kind vector? :min-count 1))
+
+
+(defn validate-links!
+  "Validates certain invariants about link tables. Throws an exception on error,
+  or returns the table if it is valid."
+  [link-table]
+  (let [by-name (group-by ::name link-table)]
+    ; throw exception if any links have the same name and different targets
+    (when-let [bad-names (seq (filter #(< 1 (count (val %))) by-name))]
+      (throw (ex-info (str "Cannot compact links with multiple targets for the "
+                           "same name: " (str/join ", " (map first bad-names)))
+                      {:bad-links (into {} bad-names)})))
+    ; throw exception if any link name contains '/'
+    (when-let [bad-names (seq (filter #(str/index-of % "/") (keys by-name)))]
+      (throw (ex-info (str "Some links in table have illegal names: "
+                           (str/join ", " (map pr-str bad-names)))
+                      {:bad-links bad-names}))))
+  link-table)
+
+
+(defn find-links
+  "Walks the given data structure looking for links. Returns a set of the links
+  discovered."
+  [data]
+  (let [links (volatile! (transient #{}))]
+    (walk/postwalk
+      (fn link-detector [x]
+        (when (merkle-link? x)
+          (vswap! links conj! x))
+        x)
+      data)
+    (persistent! @links)))
+
+
+(defn compact-links
+  "Attempts to convert a sequence of links into a compact, canonical form."
+  [link-table]
+  (->> link-table
+       (remove (comp nil? ::target))
+       (distinct)
+       (sort-by (juxt ::name ::target))))
+
+
+(defn collect-table
+  "Constructs a link table from the given data. The ordered links passed will
+  be placed at the beginning of the link table, in order. Additional links
+  walked from the data value will be appended in a canonical order."
+  [ordered-links data]
+  (->> (find-links data)
+       (concat ordered-links)
+       (compact-links)
+       (remove (set ordered-links))
+       (concat ordered-links)
+       (vec)
+       (not-empty)))
+
+
+(defn resolve-name
+  "Resolves a link name against the given table. Returns nil if no matching
+  link is found."
+  [link-table link-name]
+  (when link-name
+    (first (filter #(= (str link-name) (::name %)) link-table))))
+
+
+; TODO: move this to node ns?
+#_
+(defn update-link
+  "Returns an updated node map with the given link added, replacing any
+  existing link with the same name. Returns a map with `:merkledag.node/links` and `:merkledag.node/data`
+  values."
+  [node new-link]
+  (if new-link
+    (let [name-match? #(= (::name new-link) (::name %))
+          [before after] (split-with (complement name-match?) (:merkledag.node/links node))]
+      {:merkledag.node/links (vec (concat before [new-link] (rest after)))
+       :merkledag.node/data
+       (walk/postwalk
+         (fn link-updater [x]
+           (if (and (merkle-link? x) (name-match? x))
+             new-link
+             x))
+         (:merkledag.node/data node))})
+    node))
+
+
+
+;; ## Link Indexes
+
+;; This type represents a simple indexed pointer into the link table. It is used
+;; to replace actual links before values are encoded, and replaced with real
+;; links from the table when decoding.
+(deftype LinkIndex
+  [^long index]
+
+  Object
+
+  (toString
+    [this]
+    (format "link-index:%d" index))
+
+  (equals
+    [this that]
+    (or (identical? this that)
+        (and (instance? LinkIndex that)
+             (= index (.index ^LinkIndex that)))))
+
+  (hashCode
+    [this]
+    (hash-combine (hash (class this)) (hash index)))
 
 
   clojure.lang.ILookup
 
   (valAt
     [this k not-found]
-    (case k
-      :name _name
-      :target _target
-      :tsize _tsize
-      not-found))
+    (if (= :index k) index not-found))
 
   (valAt
     [this k]
-    (.valAt this k nil))
+    (.valAt this k nil)))
 
 
-  clojure.lang.IDeref
-
-  (deref
-    [this]
-    (when-not _target
-      (throw (IllegalArgumentException.
-               (str "Broken link to " (pr-str _name)
-                    " cannot be dereferenced."))))
-    (when-not *get-node*
-      (throw (IllegalStateException.
-               (str "Cannot dereference " this " when no *get-node* function is bound."))))
-    (*get-node* _target))
+(alter-meta! #'->LinkIndex assoc :private true)
 
 
-  clojure.lang.IPending
-
-  (isRealized
-    [this]
-    false))
-
-
-;; Remove automatic constructor function.
-(ns-unmap *ns* '->MerkleLink)
-
-
-(defn ->link
-  "Constructs a `MerkleLink` value, validating the inputs."
-  [name target tsize]
-  (when-not (string? name)
-    (throw (IllegalArgumentException.
-             (str "Link name must be a string, got: "
-                  (pr-str name)))))
-  (when (and target (not (instance? Multihash target)))
-    (throw (IllegalArgumentException.
-             (str "Link target must be a multihash, got: "
-                  (pr-str target)))))
-  (when (and tsize (not (integer? tsize)))
-    (throw (IllegalArgumentException.
-             (str "Link size must be an integer, got: "
-                  (pr-str tsize)))))
-  (MerkleLink. name target tsize nil))
+(defn link-index
+  "Return a `LinkIndex` value pointing to the given link in the table."
+  ([i]
+   (LinkIndex. i))
+  ([link-table link]
+   (some->>
+     link-table
+     (keep-indexed #(when (= link %2) %1))
+     (first)
+     (->LinkIndex))))
 
 
-(defn read-link
-  "Resolves a link against the current `*link-table*`, or returns a new broken
-  link with a nil target."
-  [name]
-  (or (resolve name)
-      (MerkleLink. name nil nil nil)))
+(defn replace-links
+  "Replaces all the links in a data structure with indexes into the given
+  table. Throws an exception if any links are 'broken' because they were not
+  found in the table."
+  [link-table data]
+  (walk/postwalk
+    (fn replacer [x]
+      (if (merkle-link? x)
+        (or (link-index link-table x)
+            (throw (ex-info (str "No link in table matching " x)
+                            {:link-table link-table, :link x})))
+        x))
+    data))
+
+
+(defn resolve-indexes
+  "Replaces all the link indexes in a data structure with link values resolved
+  against the given table. Throws an exception if any links are 'broken' because
+  the index is outside the table."
+  [link-table data]
+  (walk/postwalk
+    (fn resolver [x]
+      (if (instance? LinkIndex x)
+        (or (nth link-table (:index x) nil)
+            (throw (ex-info (str "No index in table for " x)
+                            {:link-table link-table, :index x})))
+        x))
+    data))
+
+
+
+;; ## Targeting Protocol
+
+(defprotocol Target
+  "Protocol for values which can be targeted by merkle links."
+
+  (identify
+    [target]
+    "Return the multihash identifying the target value.")
+
+  (reachable-size
+    [target]
+    "Calculate the size of data in bytes reachable from the target."))
+
+
+(extend-protocol Target
+
+  nil
+  (identify [_] nil)
+  (reachable-size [_] nil)
+
+  String
+  (identify [s] (multihash/decode s))
+  (reachable-size [s] nil)
+
+  Multihash
+  (identify [m] m)
+  (reachable-size [m] nil)
+
+  MerkleLink
+  (identify [l] (::target l))
+  (reachable-size [l] (::rsize l)))
+
+
+(defn link-to
+  "Construct a new merkle link to the given target value."
+  [link-name target]
+  (create link-name (identify target) (reachable-size target)))
