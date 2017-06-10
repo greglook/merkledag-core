@@ -60,5 +60,6 @@
 
    :coverage
    {:plugins [[lein-cloverage "1.0.9"]]
+    :dependencies [[riddley "0.1.14"]]
     :jvm-opts ["-Dorg.apache.commons.logging.Log=org.apache.commons.logging.impl.SimpleLog"
                "-Dorg.apache.commons.logging.simplelog.defaultlog=trace"]}})
