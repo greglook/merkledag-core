@@ -9,7 +9,7 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 ...
 
-## 0.1.0 - 2015-11-26
+## [0.1.0] - 2017-06-10
 
 Initial project release.
 

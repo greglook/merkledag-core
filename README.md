@@ -21,7 +21,7 @@ which can model any directed acyclic graph - hence the name, MerkleDAG.
 Library releases are published on Clojars. To use the latest version with
 Leiningen, add the following dependency to your project definition:
 
-[![Clojars Project](http://clojars.org/mvxcvi/clj-cbor/latest-version.svg)](http://clojars.org/mvxcvi/clj-cbor)
+[![Clojars Project](http://clojars.org/mvxcvi/merkledag-core/latest-version.svg)](http://clojars.org/mvxcvi/merkledag-core)
 
 
 ## Concepts
