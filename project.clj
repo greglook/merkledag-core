@@ -46,17 +46,19 @@
     'multihash.core.Multihash {'data/hash 'multihash.core/base58}}}
 
   :profiles
-  {:repl
+  {:dev
+   {:dependencies
+    [[commons-logging "1.2"]
+     [mvxcvi/test.carly "0.3.0"]]}
+
+   :repl
    {:source-paths ["dev"]
     :dependencies
     [[org.clojure/tools.namespace "0.2.11"]
      [rhizome "0.2.7"]]}
 
    :test
-   {:dependencies
-    [[commons-logging "1.2"]
-     [mvxcvi/test.carly "0.3.0"]]
-    :jvm-opts ["-Dorg.apache.commons.logging.Log=org.apache.commons.logging.impl.NoOpLog"]}
+   {:jvm-opts ["-Dorg.apache.commons.logging.Log=org.apache.commons.logging.impl.NoOpLog"]}
 
    :coverage
    {:plugins [[lein-cloverage "1.0.9"]]

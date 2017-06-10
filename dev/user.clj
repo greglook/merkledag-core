@@ -2,8 +2,8 @@
   (:require
     [blocks.core :as block]
     (blocks.store
-      [file :refer [file-store]]
-      [memory :refer [memory-store]])
+      [file :refer [file-block-store]]
+      [memory :refer [memory-block-store]])
     [byte-streams :as bytes]
     [clojure.java.io :as io]
     [clojure.repl :refer :all]
@@ -11,30 +11,19 @@
     [clojure.stacktrace :refer [print-cause-trace]]
     [clojure.tools.namespace.repl :refer [refresh]]
     (merkledag
-      [core :as merkle]
-      [data :as data]
       [link :as link]
-      [node :as node]
-      [refs :as refs]
-      [test-utils :refer [dprint-opts random-bytes]]
-      [viz :as viz])
-    (merkledag.refs
-      [file :refer [file-tracker]]
-      [memory :refer [memory-tracker]])
+      [node :as node])
+    [merkledag.system.util :refer [init-store]]
     [multicodec.core :as codec]
     [multihash.core :as multihash]
     [puget.printer :as puget]))
 
 
-(defn dprint
-  [value]
-  (puget/pprint value dprint-opts))
-
-
-(def repo
-  (merkle/graph-repo
-    :store (memory-store)
-    :refs (memory-tracker)))
+(def graph
+  (init-store
+    ; TODO: codec that can read both cbor and edn
+    :store (file-block-store "dev/data/blocks")
+    :cache {:total-size-limit (* 16 1024)}))
 
 
 #_
