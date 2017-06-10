@@ -108,12 +108,13 @@
   (-store-node!
     [this node]
     (when node
-      (let [block (format-block codec (select-keys node [::node/links ::node/data]))]
+      (let [block (format-block codec (select-keys node [::node/links ::node/data]))
+            node' (select-keys block node/node-keys)]
         ; TODO: measure node creation and size
         (block/put! store block)
         (when cache
-          (swap! cache cache/miss (::node/id node) (select-keys block node/node-keys)))
-        block)))
+          (swap! cache cache/miss (:id block) node'))
+        node')))
 
 
   (-delete-node!

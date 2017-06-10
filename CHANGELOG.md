@@ -12,6 +12,7 @@ This project adheres to [Semantic Versioning](http://semver.org/).
   `merkledag/link` (from `data/link`) and `merkledag.link/index` (from
   `data/link-index`). This is a breaking change for already-stored EDN data, but
   can be backwards compatible by declaring readers for the old tags.
+- Node store methods consistently return maps, not blocks.
 
 ## [0.1.0] - 2017-06-10
 
