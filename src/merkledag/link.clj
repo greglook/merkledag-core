@@ -1,7 +1,7 @@
 (ns merkledag.link
   "The edges in the DAG are represented with _links_ from one node to another.
   A merkle-link has a multihash target, an optional name string, and a recursive
-  'total size' value."
+  'reference size' value."
   (:require
     [clojure.future :refer [nat-int?]]
     [clojure.spec :as s]
@@ -12,7 +12,7 @@
     multihash.core.Multihash))
 
 
-(s/def ::name string?)
+(s/def ::name (s/nilable string?))
 (s/def ::target #(instance? Multihash %))
 (s/def ::rsize (s/nilable nat-int?))
 
@@ -23,11 +23,11 @@
 ;; Links have three main properties. Note that **only** link-name and target
 ;; are used for equality and comparison checks!
 ;;
-;; - `:name` is a string giving the link's name from an object link table.
-;; - `:target` is the merklehash to which the link points.
-;; - `:rsize` is the total number of bytes reachable from the linked block.
+;; - `name` is a string giving the link's name from an object link table.
+;; - `target` is the multihash to which the link points.
+;; - `rsize` is the total number of bytes reachable from the linked block.
 ;;   This should equal the sum of the target's links' rsizes, plus the size
-;;   of the object itself.
+;;   of the target block itself.
 (deftype MerkleLink
   [name target rsize _meta]
 
