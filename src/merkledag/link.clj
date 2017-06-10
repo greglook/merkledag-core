@@ -133,7 +133,7 @@
 
 (defmethod print-method MerkleLink
   [link w]
-  (print-method (tagged-literal 'data/link (link->form link)) w))
+  (print-method (tagged-literal 'merkledag/link (link->form link)) w))
 
 
 (defn merkle-link?

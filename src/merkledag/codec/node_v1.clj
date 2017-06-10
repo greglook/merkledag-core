@@ -29,13 +29,13 @@
     :cbor/writers {Multihash multihash/encode}
     :edn/writers {Multihash multihash/base58}}
 
-   'data/link
+   'merkledag/link
    {:description "Merkle link values"
     :reader link/form->link
     :writers {MerkleLink link/link->form}
     :cbor/tag 69}
 
-   'data/link-index
+   'merkledag.link/index
    {:description "Indexes to the link table within a node"
     :reader link/link-index
     :writers {LinkIndex :index}

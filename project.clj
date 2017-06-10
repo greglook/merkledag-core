@@ -42,7 +42,7 @@
    {'blocks.data.Block {'blocks.data.Block (partial into {})}
     'java.time.Instant {'inst str}
     'merkledag.link.LinkIndex {'merkledag.link/index :index}
-    'merkledag.link.MerkleLink {'data/link 'merkledag.link/link->form}
+    'merkledag.link.MerkleLink {'merkledag/link 'merkledag.link/link->form}
     'multihash.core.Multihash {'data/hash 'multihash.core/base58}}}
 
   :profiles

@@ -7,7 +7,11 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
-...
+### Changed
+- Symbol tags for the `MerkleLink` and `LinkIndex` types changed to
+  `merkledag/link` (from `data/link`) and `merkledag.link/index` (from
+  `data/link-index`). This is a breaking change for already-stored EDN data, but
+  can be backwards compatible by declaring readers for the old tags.
 
 ## [0.1.0] - 2017-06-10
 
