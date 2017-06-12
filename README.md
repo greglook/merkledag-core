@@ -21,7 +21,7 @@ which can model any directed acyclic graph - hence the name, MerkleDAG.
 Library releases are published on Clojars. To use the latest version with
 Leiningen, add the following dependency to your project definition:
 
-[![Clojars Project](http://clojars.org/mvxcvi/clj-cbor/latest-version.svg)](http://clojars.org/mvxcvi/clj-cbor)
+[![Clojars Project](http://clojars.org/mvxcvi/merkledag-core/latest-version.svg)](http://clojars.org/mvxcvi/merkledag-core)
 
 
 ## Concepts
@@ -47,7 +47,85 @@ unchanged data with the old version.
 
 ## Usage
 
-...
+This is the core library, so it provides a direct interface for working with the
+nodes in a graph.
+
+```clojure
+; Require and alias core namespace:
+=> (require '[merkledag.core :as mdag])
+
+; Create a node store to hold the graph data:
+=> (def graph (mdag/init-store))
+```
+
+By default, the `init-store` constructor produces a node store with in-memory
+block storage, a simple EDN-based codec, and no parse cache. Now we can store
+some data in it:
+
+```clojure
+=> (mdag/store-node! graph nil {:abc 123})
+{:merkledag.node/id #data/hash "Qma2BhVGoacUWC9duYDBkLDNWohB3dfCHBpGQdZUJ8B5H7",
+ :merkledag.node/size 38,
+ :merkledag.node/encoding ["/merkledag/v1" "/edn"],
+ :merkledag.node/data {:abc 123}}
+
+=> (mdag/store-node! graph nil [true #{123 :x} 'efg])
+{:merkledag.node/id #data/hash "Qmaarse6kx5tKmtsX1LgJ2B59Xi8bzEnH8uQ5MKMQJg3Pd",
+ :merkledag.node/size 48,
+ :merkledag.node/encoding ["/merkledag/v1" "/edn"],
+ :merkledag.node/data [true #{123 :x} efg]}
+
+=> (mdag/store-node! graph nil {:a (mdag/link "a" *2), :b (mdag/link "b" *1)})
+{:merkledag.node/id #data/hash "QmVSR5TWZmKr3uXF8yBLPSE2ki25LKXkniGMNBCxCT8UUt",
+ :merkledag.node/size 251,
+ :merkledag.node/encoding ["/merkledag/v1" "/edn"],
+ :merkledag.node/links
+ [#merkledag/link ["a" #data/hash "Qma2BhVGoacUWC9duYDBkLDNWohB3dfCHBpGQdZUJ8B5H7" 38]
+  #merkledag/link ["b" #data/hash "Qmaarse6kx5tKmtsX1LgJ2B59Xi8bzEnH8uQ5MKMQJg3Pd" 48]],
+ :merkledag.node/data
+ {:a #merkledag/link ["a" #data/hash "Qma2BhVGoacUWC9duYDBkLDNWohB3dfCHBpGQdZUJ8B5H7" 38],
+  :b #merkledag/link ["b" #data/hash "Qmaarse6kx5tKmtsX1LgJ2B59Xi8bzEnH8uQ5MKMQJg3Pd" 48]}}
+```
+
+We've now stored a basic three-node structure in the graph! Note that the last
+node has links to each of the initial nodes, forming a simple binary tree. The
+links were captured in the node's link table automatically by detecting them in
+the node data body.
+
+Later, node data can be retrieved from the graph by using a value which can be
+linked to a node id.
+
+```clojure
+; Basic sting-encoded multihashes work:
+=> (mdag/get-data graph "QmVSR5TWZmKr3uXF8yBLPSE2ki25LKXkniGMNBCxCT8UUt")
+{:a #merkledag/link ["a" #data/hash "Qma2BhVGoacUWC9duYDBkLDNWohB3dfCHBpGQdZUJ8B5H7" 38],
+ :b #merkledag/link ["b" #data/hash "Qmaarse6kx5tKmtsX1LgJ2B59Xi8bzEnH8uQ5MKMQJg3Pd" 48]}
+
+; As do links themselves:
+=> (mdag/get-data graph (:b *1))
+[true #{123 :x} efg]
+```
+
+The real power of the link names comes up when you have more deeply nested
+structures, and want to resolve paths through them:
+
+```clojure
+; Store a new top-level link-only node:
+=> (mdag/store-node! graph [(mdag/link "link:0" "QmVSR5TWZmKr3uXF8yBLPSE2ki25LKXkniGMNBCxCT8UUt")] nil)
+{:merkledag.node/id #data/hash "QmcFVHLW7vXYNowWH3DhmuNkvQnWW59ex7MutG8fcUuLXJ",
+ :merkledag.node/size 120,
+ :merkledag.node/encoding ["/merkledag/v1" "/edn"],
+ :merkledag.node/links
+ [#merkledag/link ["link:0" #data/hash "QmVSR5TWZmKr3uXF8yBLPSE2ki25LKXkniGMNBCxCT8UUt" nil]]}
+
+; Look up data with a string path:
+=> (mdag/get-data graph *1 "link:0/a")
+{:abc 123}
+
+; We can also look up paths as a vector:
+=> (mdag/get-data graph *2 "link:0" "b")
+[true #{123 :x} efg]
+```
 
 
 ## License

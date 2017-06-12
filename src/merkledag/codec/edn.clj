@@ -32,41 +32,38 @@
 
 
 (def core-types
+  "Core type extensions for the EDN codec."
   {'uuid
    {:reader #(UUID/fromString %)
     :writers {UUID str}}})
 
 
-(defn- resolve-types
-  "Returns the type map from the given argument. Accepts either direct maps or
-  vars holding a map."
-  [types]
-  (merge core-types (if (var? types) @types types)))
-
-
-(defn ^:no-doc types->print-handlers
+(defn- types->print-handlers
   "Converts a map of type definitions to a dispatching function to look up
   print-handlers."
   [types]
-  (->> (resolve-types types)
-       (mapcat (fn [[tag definition]]
+  (into {}
+        (comp
+          (map (juxt key (comp (some-fn :edn/writers :writers) val)))
+          (map (fn [[tag writers]]
                  (map (fn [[cls writer]]
                         [cls (puget/tagged-handler tag writer)])
-                      (:edn/writers definition (:writers definition)))))
-       (into {})))
+                      writers)))
+          cat)
+        types))
 
 
-(defn ^:no-doc types->data-readers
+(defn- types->data-readers
   "Converts a map of type definitions to a map of tag symbols to reader
   functions."
   [types]
-  (->> (resolve-types types)
-       (map (juxt key (comp #(:edn/reader % (:reader %)) val)))
-       (into {})))
+  (into {}
+        (map (juxt key (comp (some-fn :edn/reader :reader) val)))
+        types))
 
 
 (defrecord EDNCodec
-  [header types eof]
+  [header printer data-readers eof]
 
   multicodec/Encoder
 
@@ -78,8 +75,7 @@
 
   (encode!
     [this output value]
-    (let [printer (puget/canonical-printer (types->print-handlers types))
-          data (OutputStreamWriter. ^OutputStream output data-charset)
+    (let [data (OutputStreamWriter. ^OutputStream output data-charset)
           encoded (puget/render-str printer value)]
       (.write data encoded)
       (.write data "\n")
@@ -97,14 +93,13 @@
   (decode!
     [this input]
     (edn/read
-      {:readers (types->data-readers types)
+      {:readers data-readers
        :eof eof}
       (-> ^InputStream input
           (InputStreamReader. data-charset)
           (PushbackReader.)))))
 
 
-;; Remove automatic constructor functions.
 (alter-meta! #'->EDNCodec assoc :private true)
 (alter-meta! #'map->EDNCodec assoc :private true)
 
@@ -115,7 +110,9 @@
   - `:eof` a value to be returned from the codec when the end of the stream is
     reached instead of throwing an exception. "
   [types & {:as opts}]
-  (map->EDNCodec
-    (assoc opts
-           :header (:edn multicodec/headers)
-           :types types)))
+  (let [types* (merge core-types types)]
+    (map->EDNCodec
+      (assoc opts
+             :header (:edn multicodec/headers)
+             :printer (puget/canonical-printer (types->print-handlers types*))
+             :data-readers (types->data-readers types*)))))

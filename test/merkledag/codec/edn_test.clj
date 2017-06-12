@@ -15,11 +15,6 @@
               :writers {clojure.lang.Ratio str}}})
 
 
-(deftest type-maps
-  (is (= (keys (edn/types->print-handlers test-types))
-         (keys (edn/types->print-handlers #'test-types)))))
-
-
 (deftest edn-codec
   (let [edn (edn/edn-codec test-types)
         test-encode #(let [baos (ByteArrayOutputStream.)]

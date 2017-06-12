@@ -1,4 +1,4 @@
-(defproject mvxcvi/merkledag-core "0.1.0"
+(defproject mvxcvi/merkledag-core "0.2.0"
   :description "Graph datastore built on content-addressed merkle hash links"
   :url "http://github.com/greglook/merkledag-core"
   :license {:name "Public Domain"
@@ -13,9 +13,9 @@
   :dependencies
   [[org.clojure/clojure "1.8.0"]
    [org.clojure/core.cache "0.6.5"]
-   [org.clojure/tools.logging "0.3.1"]
+   [org.clojure/tools.logging "0.4.0"]
    [clojure-future-spec "1.9.0-alpha14"]
-   [byte-streams "0.2.2"]
+   [byte-streams "0.2.3"]
    [mvxcvi/blocks "0.9.1"]
    [mvxcvi/clj-cbor "0.4.1"]
    [mvxcvi/multicodec "0.5.1"]
@@ -42,23 +42,26 @@
    {'blocks.data.Block {'blocks.data.Block (partial into {})}
     'java.time.Instant {'inst str}
     'merkledag.link.LinkIndex {'merkledag.link/index :index}
-    'merkledag.link.MerkleLink {'data/link 'merkledag.link/link->form}
+    'merkledag.link.MerkleLink {'merkledag/link 'merkledag.link/link->form}
     'multihash.core.Multihash {'data/hash 'multihash.core/base58}}}
 
   :profiles
-  {:repl
+  {:dev
+   {:dependencies
+    [[commons-logging "1.2"]
+     [mvxcvi/test.carly "0.3.0"]]}
+
+   :repl
    {:source-paths ["dev"]
     :dependencies
     [[org.clojure/tools.namespace "0.2.11"]
      [rhizome "0.2.7"]]}
 
    :test
-   {:dependencies
-    [[commons-logging "1.2"]
-     [mvxcvi/test.carly "0.3.0"]]
-    :jvm-opts ["-Dorg.apache.commons.logging.Log=org.apache.commons.logging.impl.NoOpLog"]}
+   {:jvm-opts ["-Dorg.apache.commons.logging.Log=org.apache.commons.logging.impl.NoOpLog"]}
 
    :coverage
    {:plugins [[lein-cloverage "1.0.9"]]
+    :dependencies [[riddley "0.1.14"]]
     :jvm-opts ["-Dorg.apache.commons.logging.Log=org.apache.commons.logging.impl.SimpleLog"
                "-Dorg.apache.commons.logging.simplelog.defaultlog=trace"]}})

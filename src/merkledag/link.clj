@@ -1,7 +1,7 @@
 (ns merkledag.link
   "The edges in the DAG are represented with _links_ from one node to another.
   A merkle-link has a multihash target, an optional name string, and a recursive
-  'total size' value."
+  'reference size' value."
   (:require
     [clojure.future :refer [nat-int?]]
     [clojure.spec :as s]
@@ -12,7 +12,7 @@
     multihash.core.Multihash))
 
 
-(s/def ::name string?)
+(s/def ::name (s/nilable string?))
 (s/def ::target #(instance? Multihash %))
 (s/def ::rsize (s/nilable nat-int?))
 
@@ -23,11 +23,11 @@
 ;; Links have three main properties. Note that **only** link-name and target
 ;; are used for equality and comparison checks!
 ;;
-;; - `:name` is a string giving the link's name from an object link table.
-;; - `:target` is the merklehash to which the link points.
-;; - `:rsize` is the total number of bytes reachable from the linked block.
+;; - `name` is a string giving the link's name from an object link table.
+;; - `target` is the multihash to which the link points.
+;; - `rsize` is the total number of bytes reachable from the linked block.
 ;;   This should equal the sum of the target's links' rsizes, plus the size
-;;   of the object itself.
+;;   of the target block itself.
 (deftype MerkleLink
   [name target rsize _meta]
 
@@ -133,7 +133,7 @@
 
 (defmethod print-method MerkleLink
   [link w]
-  (print-method (tagged-literal 'data/link (link->form link)) w))
+  (print-method (tagged-literal 'merkledag/link (link->form link)) w))
 
 
 (defn merkle-link?
@@ -218,27 +218,6 @@
   [link-table link-name]
   (when link-name
     (first (filter #(= (str link-name) (::name %)) link-table))))
-
-
-; TODO: move this to node ns?
-#_
-(defn update-link
-  "Returns an updated node map with the given link added, replacing any
-  existing link with the same name. Returns a map with `:merkledag.node/links` and `:merkledag.node/data`
-  values."
-  [node new-link]
-  (if new-link
-    (let [name-match? #(= (::name new-link) (::name %))
-          [before after] (split-with (complement name-match?) (:merkledag.node/links node))]
-      {:merkledag.node/links (vec (concat before [new-link] (rest after)))
-       :merkledag.node/data
-       (walk/postwalk
-         (fn link-updater [x]
-           (if (and (merkle-link? x) (name-match? x))
-             new-link
-             x))
-         (:merkledag.node/data node))})
-    node))
 
 
 
@@ -355,9 +334,3 @@
   MerkleLink
   (identify [l] (::target l))
   (reachable-size [l] (::rsize l)))
-
-
-(defn link-to
-  "Construct a new merkle link to the given target value."
-  [link-name target]
-  (create link-name (identify target) (reachable-size target)))
