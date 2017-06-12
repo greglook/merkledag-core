@@ -25,29 +25,7 @@
   (reachable-size
     [block]
     (or (node/reachable-size block)
-        (:size block)))
-
-
-  clojure.lang.PersistentArrayMap
-
-  (identify
-    [node]
-    (::node/id node))
-
-  (reachable-size
-    [node]
-    (node/reachable-size node))
-
-
-  clojure.lang.PersistentHashMap
-
-  (identify
-    [node]
-    (::node/id node))
-
-  (reachable-size
-    [node]
-    (node/reachable-size node)))
+        (:size block))))
 
 
 

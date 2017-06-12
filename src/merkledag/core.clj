@@ -13,13 +13,13 @@
 
 ;; ## Constructors
 
-(defn link+
+(defn link
   "Construct a new merkle link to the given target value."
   [link-name target]
   (link/create link-name (link/identify target) (link/reachable-size target)))
 
 
-(defn node+
+(defn node*
   "Construct a new merkle node by serializing it to a block."
   [store links data]
   (store/format-block (:codec store) {::node/links links, ::node/data data}))
@@ -141,7 +141,7 @@
 
 
 
-;; ## ...
+;; ## Update Functions
 
 (defn update-link
   "Returns an updated node map with the given link added, replacing any
@@ -168,9 +168,9 @@
   links with matching names exist in the current node, they will be replaced
   with the new links. Otherwise, the links will be appended to the table.
 
-  Returns an updated and serialized block node."
+  Returns an updated node map."
   ([store node links]
    (update-node store node links identity))
   ([store node links f & args]
-   (let [node' (reduce update-link node links)]
-     (node+ store (::node/links node') (apply f (::node/data node') args)))))
+   (->> (reduce update-link node links)
+        (apply update ::node/data f args))))

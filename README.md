@@ -75,7 +75,7 @@ some data in it:
  :merkledag.node/encoding ["/merkledag/v1" "/edn"],
  :merkledag.node/data [true #{123 :x} efg]}
 
-=> (mdag/store-node! graph nil {:a (mdag/link+ "a" *2), :b (mdag/link+ "b" *1)})
+=> (mdag/store-node! graph nil {:a (mdag/link "a" *2), :b (mdag/link "b" *1)})
 {:merkledag.node/id #data/hash "QmVSR5TWZmKr3uXF8yBLPSE2ki25LKXkniGMNBCxCT8UUt",
  :merkledag.node/size 251,
  :merkledag.node/encoding ["/merkledag/v1" "/edn"],
@@ -111,7 +111,7 @@ structures, and want to resolve paths through them:
 
 ```clojure
 ; Store a new top-level link-only node:
-=> (mdag/store-node! graph [(mdag/link+ "link:0" "QmVSR5TWZmKr3uXF8yBLPSE2ki25LKXkniGMNBCxCT8UUt")] nil)
+=> (mdag/store-node! graph [(mdag/link "link:0" "QmVSR5TWZmKr3uXF8yBLPSE2ki25LKXkniGMNBCxCT8UUt")] nil)
 {:merkledag.node/id #data/hash "QmcFVHLW7vXYNowWH3DhmuNkvQnWW59ex7MutG8fcUuLXJ",
  :merkledag.node/size 120,
  :merkledag.node/encoding ["/merkledag/v1" "/edn"],

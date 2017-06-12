@@ -27,7 +27,7 @@
 
 
 
-;; ## Storage API
+;; ## Storage Protocol
 
 (defprotocol ^:no-doc NodeStore
   "Node stores provide an interface for creating, persisting, and retrieving
@@ -64,3 +64,27 @@
     (->> (::links node)
          (keep ::link/rsize)
          (reduce + size))))
+
+
+(extend-protocol link/Target
+
+  clojure.lang.PersistentArrayMap
+
+  (identify
+    [node]
+    (::id node))
+
+  (reachable-size
+    [node]
+    (reachable-size node))
+
+
+  clojure.lang.PersistentHashMap
+
+  (identify
+    [node]
+    (::id node))
+
+  (reachable-size
+    [node]
+    (reachable-size node)))
