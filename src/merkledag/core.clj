@@ -60,7 +60,7 @@
        (if (seq path)
          (if-let [link (link/resolve-name (::node/links node) (first path))]
            ; Continue resolving.
-           (recur (node/-get-node store link) (next path))
+           (recur (node/-get-node store (::link/target link)) (next path))
            ; Link was not found in node.
            not-found)
          ; No more path segments, this is the target node.

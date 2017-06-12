@@ -11,16 +11,16 @@
     [clojure.stacktrace :refer [print-cause-trace]]
     [clojure.tools.namespace.repl :refer [refresh]]
     (merkledag
+      [core :as mdag]
       [link :as link]
       [node :as node])
-    [merkledag.system.util :refer [init-store]]
     [multicodec.core :as codec]
     [multihash.core :as multihash]
     [puget.printer :as puget]))
 
 
 (def graph
-  (init-store
+  (mdag/init-store
     ; TODO: codec that can read both cbor and edn
     :store (file-block-store "dev/data/blocks")
     :cache {:total-size-limit (* 16 1024)}))
