@@ -220,27 +220,6 @@
     (first (filter #(= (str link-name) (::name %)) link-table))))
 
 
-; TODO: move this to node ns?
-#_
-(defn update-link
-  "Returns an updated node map with the given link added, replacing any
-  existing link with the same name. Returns a map with `:merkledag.node/links` and `:merkledag.node/data`
-  values."
-  [node new-link]
-  (if new-link
-    (let [name-match? #(= (::name new-link) (::name %))
-          [before after] (split-with (complement name-match?) (:merkledag.node/links node))]
-      {:merkledag.node/links (vec (concat before [new-link] (rest after)))
-       :merkledag.node/data
-       (walk/postwalk
-         (fn link-updater [x]
-           (if (and (merkle-link? x) (name-match? x))
-             new-link
-             x))
-         (:merkledag.node/data node))})
-    node))
-
-
 
 ;; ## Link Indexes
 
