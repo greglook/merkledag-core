@@ -7,7 +7,11 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+This is a breaking change which moves much of the library API into a single
+`merkledag.core` namespace.
+
 ### Changed
+- Many functions moved to `merkledag.core` namespace.
 - Symbol tags for the `MerkleLink` and `LinkIndex` types changed to
   `merkledag/link` (from `data/link`) and `merkledag.link/index` (from
   `data/link-index`). This is a breaking change for already-stored EDN data, but
