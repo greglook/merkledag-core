@@ -334,9 +334,3 @@
   MerkleLink
   (identify [l] (::target l))
   (reachable-size [l] (::rsize l)))
-
-
-(defn link-to
-  "Construct a new merkle link to the given target value."
-  [link-name target]
-  (create link-name (identify target) (reachable-size target)))

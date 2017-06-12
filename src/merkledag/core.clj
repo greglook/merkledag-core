@@ -13,13 +13,13 @@
 
 ;; ## Constructors
 
-(defn link*
+(defn link+
   "Construct a new merkle link to the given target value."
   [link-name target]
   (link/create link-name (link/identify target) (link/reachable-size target)))
 
 
-(defn node*
+(defn node+
   "Construct a new merkle node by serializing it to a block."
   [store links data]
   (store/format-block (:codec store) {::node/links links, ::node/data data}))
@@ -173,4 +173,4 @@
    (update-node store node links identity))
   ([store node links f & args]
    (let [node' (reduce update-link node links)]
-     (node* store (::node/links node') (apply f (::node/data node') args)))))
+     (node+ store (::node/links node') (apply f (::node/data node') args)))))
