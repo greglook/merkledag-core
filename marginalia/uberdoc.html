@@ -2865,8 +2865,147 @@ net.brehaut.ClojureTools = (function (SH) {
     build_tree: build_tree
   };
 })(SyntaxHighlighter);
-</script><title>mvxcvi/merkledag-core -- Marginalia</title></head><body><table><tr><td class="docs"><div class="header"><h1 class="project-name"><a href="http://github.com/greglook/merkledag-core">mvxcvi/merkledag-core</a></h1><h2 class="project-version">0.1.0</h2><br /><p>Graph datastore built on content-addressed merkle hash links</p>
-</div><div class="dependencies"><h3>dependencies</h3><table><tr><td class="dep-name">org.clojure/clojure</td><td class="dotted"><hr /></td><td class="dep-version">1.8.0</td></tr><tr><td class="dep-name">org.clojure/core.cache</td><td class="dotted"><hr /></td><td class="dep-version">0.6.5</td></tr><tr><td class="dep-name">org.clojure/tools.logging</td><td class="dotted"><hr /></td><td class="dep-version">0.3.1</td></tr><tr><td class="dep-name">clojure-future-spec</td><td class="dotted"><hr /></td><td class="dep-version">1.9.0-alpha14</td></tr><tr><td class="dep-name">byte-streams</td><td class="dotted"><hr /></td><td class="dep-version">0.2.2</td></tr><tr><td class="dep-name">mvxcvi/blocks</td><td class="dotted"><hr /></td><td class="dep-version">0.9.1</td></tr><tr><td class="dep-name">mvxcvi/clj-cbor</td><td class="dotted"><hr /></td><td class="dep-version">0.4.1</td></tr><tr><td class="dep-name">mvxcvi/multicodec</td><td class="dotted"><hr /></td><td class="dep-version">0.5.1</td></tr><tr><td class="dep-name">mvxcvi/multihash</td><td class="dotted"><hr /></td><td class="dep-version">2.0.1</td></tr><tr><td class="dep-name">mvxcvi/puget</td><td class="dotted"><hr /></td><td class="dep-version">1.0.1</td></tr></table></div></td><td class="codes" style="text-align: center; vertical-align: middle;color: #666;padding-right:20px"><br /><br /><br />(this space intentionally left almost blank)</td></tr><tr><td class="docs"><div class="toc"><a name="toc"><h3>namespaces</h3></a><ul><li><a href="#merkledag.node.store">merkledag.node.store</a></li><li><a href="#merkledag.node.cache">merkledag.node.cache</a></li><li><a href="#merkledag.link">merkledag.link</a></li><li><a href="#merkledag.codec.node-v1">merkledag.codec.node-v1</a></li><li><a href="#merkledag.codec.cbor">merkledag.codec.cbor</a></li><li><a href="#merkledag.codec.edn">merkledag.codec.edn</a></li><li><a href="#merkledag.node">merkledag.node</a></li><li><a href="#merkledag.system.util">merkledag.system.util</a></li></ul></div></td><td class="codes">&nbsp;</td></tr><tr><td class="docs"><div class="docs-header"><a class="anchor" href="#merkledag.node.store" name="merkledag.node.store"><h1 class="project-name">merkledag.node.store</h1><a class="toc-link" href="#toc">toc</a></a></div></td><td class="codes" /></tr><tr><td class="docs"><p>Node store backed by content-addressable blocks, serialized with a codec.</p>
+</script><title>mvxcvi/merkledag-core -- Marginalia</title></head><body><table><tr><td class="docs"><div class="header"><h1 class="project-name"><a href="http://github.com/greglook/merkledag-core">mvxcvi/merkledag-core</a></h1><h2 class="project-version">0.2.0</h2><br /><p>Graph datastore built on content-addressed merkle hash links</p>
+</div><div class="dependencies"><h3>dependencies</h3><table><tr><td class="dep-name">org.clojure/clojure</td><td class="dotted"><hr /></td><td class="dep-version">1.8.0</td></tr><tr><td class="dep-name">org.clojure/core.cache</td><td class="dotted"><hr /></td><td class="dep-version">0.6.5</td></tr><tr><td class="dep-name">org.clojure/tools.logging</td><td class="dotted"><hr /></td><td class="dep-version">0.4.0</td></tr><tr><td class="dep-name">clojure-future-spec</td><td class="dotted"><hr /></td><td class="dep-version">1.9.0-alpha14</td></tr><tr><td class="dep-name">byte-streams</td><td class="dotted"><hr /></td><td class="dep-version">0.2.3</td></tr><tr><td class="dep-name">mvxcvi/blocks</td><td class="dotted"><hr /></td><td class="dep-version">0.9.1</td></tr><tr><td class="dep-name">mvxcvi/clj-cbor</td><td class="dotted"><hr /></td><td class="dep-version">0.4.1</td></tr><tr><td class="dep-name">mvxcvi/multicodec</td><td class="dotted"><hr /></td><td class="dep-version">0.5.1</td></tr><tr><td class="dep-name">mvxcvi/multihash</td><td class="dotted"><hr /></td><td class="dep-version">2.0.1</td></tr><tr><td class="dep-name">mvxcvi/puget</td><td class="dotted"><hr /></td><td class="dep-version">1.0.1</td></tr></table></div></td><td class="codes" style="text-align: center; vertical-align: middle;color: #666;padding-right:20px"><br /><br /><br />(this space intentionally left almost blank)</td></tr><tr><td class="docs"><div class="toc"><a name="toc"><h3>namespaces</h3></a><ul><li><a href="#merkledag.core">merkledag.core</a></li><li><a href="#merkledag.node.store">merkledag.node.store</a></li><li><a href="#merkledag.node.cache">merkledag.node.cache</a></li><li><a href="#merkledag.link">merkledag.link</a></li><li><a href="#merkledag.codec.node-v1">merkledag.codec.node-v1</a></li><li><a href="#merkledag.codec.cbor">merkledag.codec.cbor</a></li><li><a href="#merkledag.codec.edn">merkledag.codec.edn</a></li><li><a href="#merkledag.node">merkledag.node</a></li></ul></div></td><td class="codes">&nbsp;</td></tr><tr><td class="docs"><div class="docs-header"><a class="anchor" href="#merkledag.core" name="merkledag.core"><h1 class="project-name">merkledag.core</h1><a class="toc-link" href="#toc">toc</a></a></div></td><td class="codes" /></tr><tr><td class="docs"><p>Core library API.</p>
+</td><td class="codes"><pre class="brush: clojure">(ns merkledag.core
+  (:require
+    [blocks.store.memory :refer [memory-block-store]]
+    [clojure.string :as str]
+    [clojure.walk :as walk]
+    [merkledag.codec.node-v1 :as cv1]
+    [merkledag.link :as link]
+    [merkledag.node :as node]
+    [merkledag.node.store :as store]
+    [merkledag.node.cache :as cache]))</pre></td></tr><tr><td class="docs"><h2>Constructors</h2>
+</td><td class="codes"></td></tr><tr><td class="docs"><p>Construct a new merkle link to the given target value.</p>
+</td><td class="codes"><pre class="brush: clojure">(defn link
+  [link-name target]
+  (link/create link-name (link/identify target) (link/reachable-size target)))</pre></td></tr><tr><td class="docs"><p>Construct a new merkle node by serializing it to a block.</p>
+</td><td class="codes"><pre class="brush: clojure">(defn node*
+  [store links data]
+  (store/format-block (:codec store) {::node/links links, ::node/data data}))</pre></td></tr><tr><td class="docs"><h2>Node Storage API</h2>
+</td><td class="codes"></td></tr><tr><td class="docs"><p>Constructs a new node store with default values.</p>
+
+<p>  Options may include:</p>
+
+<ul>
+<li><code>:store</code>
+Block store to persist nodes to. Defaults to an in-memory store.</li>
+<li><code>:codec</code>
+Codec to serialize nodes with. Defaults to an EDN codec with basic types.</li>
+<li><code>:cache</code>
+Map of options to supply to construct a node cache. See
+<code>merkledag.node.cache/node-cache</code> for options.</li>
+</ul>
+</td><td class="codes"><pre class="brush: clojure">(defn init-store
+  [&amp; {:as opts}]
+  (store/block-node-store
+    :store (or (:store opts) (memory-block-store))
+    :codec (or (:codec opts) (cv1/edn-node-codec (:types opts)))
+    :cache (when (:cache opts)
+             (atom (apply cache/node-cache {} (apply concat (:cache opts)))))))</pre></td></tr><tr><td class="docs"><p>Retrieve a node by recursively resolving a path through a sequence of nodes.
+  The <code>path</code> should be a slash-separated string or a vector of path segments.</p>
+</td><td class="codes"><pre class="brush: clojure">(defn- resolve-path
+  ([store root-id path]
+   (resolve-path store root-id path nil))
+  ([store root-id path not-found]
+   (loop [node (node/-get-node store root-id)
+          path (mapcat #(str/split (str %) #&quot;/+&quot;) (flatten path))]
+     (if node
+       (if (seq path)
+         (if-let [link (link/resolve-name (::node/links node) (first path))]
+           ; Continue resolving.
+           (recur (node/-get-node store (::link/target link)) (next path))
+           ; Link was not found in node.
+           not-found)
+         ; No more path segments, this is the target node.
+         node)
+       ; Linked node was not found in store.
+       not-found))))</pre></td></tr><tr><td class="docs"><p>Retrieve the identified node from the store. Returns a node map.</p>
+
+<p>  The id may be any <code>link/Target</code> value.</p>
+</td><td class="codes"><pre class="brush: clojure">(defn get-node
+  [store id &amp; path]
+  (when-let [id (link/identify id)]
+    (resolve-path store id path)))</pre></td></tr><tr><td class="docs"><p>Retrieve the links for the identified node. Returns the node's link table as
+  a vector of <code>MerkleLink</code> values.</p>
+
+<p>  The id may be any <code>link/Target</code> value.</p>
+</td><td class="codes"><pre class="brush: clojure">(defn get-links
+  [store id &amp; path]
+  (let [id (link/identify id)]
+    (when-let [node (and id (resolve-path store id path))]
+      (some-&gt;
+        (::node/links node)
+        (vary-meta
+          assoc
+          ::node/id id
+          ::node/size (::node/size node))))))</pre></td></tr><tr><td class="docs"><p>Retrieve the data for the identified node. Returns the node's data body.</p>
+
+<p>  The id may be any <code>link/Target</code> value.</p>
+</td><td class="codes"><pre class="brush: clojure">(defn get-data
+  [store id &amp; path]
+  (let [id (link/identify id)]
+    (when-let [node (and id (resolve-path store id path))]
+      (some-&gt;
+        (::node/data node)
+        (vary-meta
+          assoc
+          ::node/id id
+          ::node/size (::node/size node)
+          ::node/links (::node/links node))))))</pre></td></tr><tr><td class="docs"><p>Create a new node by serializing the links and data. Returns the stored node
+  map, or nil if both links and data are nil.</p>
+</td><td class="codes"><pre class="brush: clojure">(defn store-node!
+  ([store node]
+   (let [{:keys [::node/id ::node/links ::node/data]} node]
+     (when (or (seq links) data)
+       (if-let [id (or id (::node/id (meta links)) (::node/id (meta data)))]
+         ; See if we can re-use an already-stored node.
+         (let [extant (node/-get-node store id)]
+           (if (and (= (seq links) (seq (::node/links extant)))
+                    (= data (::node/data extant)))
+             ; Links and data match, re-use stored node.
+             extant
+             ; Missing or some value mismatch, store a new node.
+             (node/-store-node! store node)))
+         ; No id metadata, store new node.
+         (node/-store-node! store node)))))
+  ([store links data]
+   (store-node! store {::node/links links, ::node/data data})))</pre></td></tr><tr><td class="docs"><p>Remove a node from the store.</p>
+
+<p>  The id may be any <code>link/Target</code> value.</p>
+</td><td class="codes"><pre class="brush: clojure">(defn delete-node!
+  [store id]
+  (when-let [id (link/identify id)]
+    (node/-delete-node! store id)))</pre></td></tr><tr><td class="docs"><h2>Update Functions</h2>
+</td><td class="codes"></td></tr><tr><td class="docs"><p>Returns an updated node map with the given link added, replacing any
+  existing link with the same name. Returns a map with <code>:merkledag.node/links</code> and <code>:merkledag.node/data</code>
+  values.</p>
+</td><td class="codes"><pre class="brush: clojure">(defn update-link
+  [node new-link]
+  (if new-link
+    (let [name-match? #(= (::link/name new-link) (::link/name %))
+          [before after] (split-with (complement name-match?) (::node/links node))]
+      {::node/links (vec (concat before [new-link] (rest after)))
+       ::node/data
+       (walk/postwalk
+         (fn link-updater [x]
+           (if (and (link/merkle-link? x) (name-match? x))
+             new-link
+             x))
+         (::node/data node))})
+    node))</pre></td></tr><tr><td class="docs"><p>Updates the given node by substituting in the given links and potentially
+  running a function to update the body. If the given links have names, and
+  links with matching names exist in the current node, they will be replaced
+  with the new links. Otherwise, the links will be appended to the table.</p>
+
+<p>  Returns an updated node map.</p>
+</td><td class="codes"><pre class="brush: clojure">(defn update-node
+  ([store node links]
+   (update-node store node links identity))
+  ([store node links f &amp; args]
+   (-&gt;&gt; (reduce update-link node links)
+        (apply update ::node/data f args))))</pre></td></tr><tr><td class="spacer docs">&nbsp;</td><td class="codes" /></tr><tr><td class="docs"><div class="docs-header"><a class="anchor" href="#merkledag.node.store" name="merkledag.node.store"><h1 class="project-name">merkledag.node.store</h1><a class="toc-link" href="#toc">toc</a></a></div></td><td class="codes" /></tr><tr><td class="docs"><p>Node store backed by content-addressable blocks, serialized with a codec.</p>
 </td><td class="codes"><pre class="brush: clojure">(ns merkledag.node.store
   (:require
     [blocks.core :as block]
@@ -2958,12 +3097,13 @@ net.brehaut.ClojureTools = (function (SH) {
   (-store-node!
     [this node]
     (when node
-      (let [block (format-block codec (select-keys node [::node/links ::node/data]))]
+      (let [block (format-block codec (select-keys node [::node/links ::node/data]))
+            node' (select-keys block node/node-keys)]
         ; TODO: measure node creation and size
         (block/put! store block)
         (when cache
-          (swap! cache cache/miss (::node/id node) (select-keys block node/node-keys)))
-        block)))
+          (swap! cache cache/miss (:id block) node'))
+        node')))
   (-delete-node!
     [this id]
     ; TODO: measure node deletion
@@ -3147,7 +3287,7 @@ the cache will always miss nodes larger than the limit.</li>
           :node-size-limit (.node-size-limit this))
         (reap 0))))</pre></td></tr><tr><td class="spacer docs">&nbsp;</td><td class="codes" /></tr><tr><td class="docs"><div class="docs-header"><a class="anchor" href="#merkledag.link" name="merkledag.link"><h1 class="project-name">merkledag.link</h1><a class="toc-link" href="#toc">toc</a></a></div></td><td class="codes" /></tr><tr><td class="docs"><p>The edges in the DAG are represented with <em>links</em> from one node to another.
   A merkle-link has a multihash target, an optional name string, and a recursive
-  'total size' value.</p>
+  'reference size' value.</p>
 </td><td class="codes"><pre class="brush: clojure">(ns merkledag.link
   (:require
     [clojure.future :refer [nat-int?]]
@@ -3157,18 +3297,18 @@ the cache will always miss nodes larger than the limit.</li>
     [multihash.core :as multihash])
   (:import
     multihash.core.Multihash))</pre></td></tr><tr><td class="docs">
-</td><td class="codes"><pre class="brush: clojure">(s/def ::name string?)
+</td><td class="codes"><pre class="brush: clojure">(s/def ::name (s/nilable string?))
 (s/def ::target #(instance? Multihash %))
 (s/def ::rsize (s/nilable nat-int?))</pre></td></tr><tr><td class="docs"><h2>Link Type</h2>
 </td><td class="codes"></td></tr><tr><td class="docs"><p>Links have three main properties. Note that <strong>only</strong> link-name and target
 are used for equality and comparison checks!</p>
 
 <ul>
-<li><code>:name</code> is a string giving the link's name from an object link table.</li>
-<li><code>:target</code> is the merklehash to which the link points.</li>
-<li><code>:rsize</code> is the total number of bytes reachable from the linked block.
+<li><code>name</code> is a string giving the link's name from an object link table.</li>
+<li><code>target</code> is the multihash to which the link points.</li>
+<li><code>rsize</code> is the total number of bytes reachable from the linked block.
 This should equal the sum of the target's links' rsizes, plus the size
-of the object itself.</li>
+of the target block itself.</li>
 </ul>
 </td><td class="codes"><pre class="brush: clojure">(deftype MerkleLink
   [name target rsize _meta]
@@ -3246,7 +3386,7 @@ of the object itself.</li>
     (apply create v)))</pre></td></tr><tr><td class="docs">
 </td><td class="codes"><pre class="brush: clojure">(defmethod print-method MerkleLink
   [link w]
-  (print-method (tagged-literal 'data/link (link-&gt;form link)) w))</pre></td></tr><tr><td class="docs"><p>Predicate which returns true if the argument is a <code>MerkleLink</code> object.</p>
+  (print-method (tagged-literal 'merkledag/link (link-&gt;form link)) w))</pre></td></tr><tr><td class="docs"><p>Predicate which returns true if the argument is a <code>MerkleLink</code> object.</p>
 </td><td class="codes"><pre class="brush: clojure">(defn merkle-link?
   [x]
   (instance? MerkleLink x))</pre></td></tr><tr><td class="docs">
@@ -3306,30 +3446,11 @@ of the object itself.</li>
 </td><td class="codes"><pre class="brush: clojure">(defn resolve-name
   [link-table link-name]
   (when link-name
-    (first (filter #(= (str link-name) (::name %)) link-table))))</pre></td></tr><tr><td class="docs">
-</td><td class="codes"><pre class="brush: clojure">#_
-(defn update-link
-  &quot;Returns an updated node map with the given link added, replacing any
-  existing link with the same name. Returns a map with `:merkledag.node/links` and `:merkledag.node/data`
-  values.&quot;
-  [node new-link]
-  (if new-link
-    (let [name-match? #(= (::name new-link) (::name %))
-          [before after] (split-with (complement name-match?) (:merkledag.node/links node))]
-      {:merkledag.node/links (vec (concat before [new-link] (rest after)))
-       :merkledag.node/data
-       (walk/postwalk
-         (fn link-updater [x]
-           (if (and (merkle-link? x) (name-match? x))
-             new-link
-             x))
-         (:merkledag.node/data node))})
-    node))
-;; ## Link Indexes
-;; This type represents a simple indexed pointer into the link table. It is used
-;; to replace actual links before values are encoded, and replaced with real
-;; links from the table when decoding.
-(deftype LinkIndex
+    (first (filter #(= (str link-name) (::name %)) link-table))))</pre></td></tr><tr><td class="docs"><h2>Link Indexes</h2>
+</td><td class="codes"></td></tr><tr><td class="docs"><p>This type represents a simple indexed pointer into the link table. It is used
+to replace actual links before values are encoded, and replaced with real
+links from the table when decoding.</p>
+</td><td class="codes"><pre class="brush: clojure">(deftype LinkIndex
   [^long index]
   Object
   (toString
@@ -3408,10 +3529,7 @@ of the object itself.</li>
 
   MerkleLink
   (identify [l] (::target l))
-  (reachable-size [l] (::rsize l)))</pre></td></tr><tr><td class="docs"><p>Construct a new merkle link to the given target value.</p>
-</td><td class="codes"><pre class="brush: clojure">(defn link-to
-  [link-name target]
-  (create link-name (identify target) (reachable-size target)))</pre></td></tr><tr><td class="spacer docs">&nbsp;</td><td class="codes" /></tr><tr><td class="docs"><div class="docs-header"><a class="anchor" href="#merkledag.codec.node-v1" name="merkledag.codec.node-v1"><h1 class="project-name">merkledag.codec.node-v1</h1><a class="toc-link" href="#toc">toc</a></a></div></td><td class="codes" /></tr><tr><td class="docs"><p>Initial version of the composite node codec.</p>
+  (reachable-size [l] (::rsize l)))</pre></td></tr><tr><td class="spacer docs">&nbsp;</td><td class="codes" /></tr><tr><td class="docs"><div class="docs-header"><a class="anchor" href="#merkledag.codec.node-v1" name="merkledag.codec.node-v1"><h1 class="project-name">merkledag.codec.node-v1</h1><a class="toc-link" href="#toc">toc</a></a></div></td><td class="codes" /></tr><tr><td class="docs"><p>Initial version of the composite node codec.</p>
 </td><td class="codes"><pre class="brush: clojure">(ns merkledag.codec.node-v1
   (:require
     [merkledag.codec.cbor :refer [cbor-codec]]
@@ -3436,12 +3554,12 @@ of the object itself.</li>
     :cbor/tag 68
     :cbor/writers {Multihash multihash/encode}
     :edn/writers {Multihash multihash/base58}}
-   'data/link
+   'merkledag/link
    {:description &quot;Merkle link values&quot;
     :reader link/form-&gt;link
     :writers {MerkleLink link/link-&gt;form}
     :cbor/tag 69}
-   'data/link-index
+   'merkledag.link/index
    {:description &quot;Indexes to the link table within a node&quot;
     :reader link/link-index
     :writers {LinkIndex :index}
@@ -3520,17 +3638,20 @@ the plugin for that type.</p></li>
     clj_cbor.codec.CBORCodec))</pre></td></tr><tr><td class="docs"><p>Converts a map of type definitions into a map of CBOR write handlers.</p>
 </td><td class="codes"><pre class="brush: clojure">(defn- types-&gt;write-handlers
   [types]
-  (-&gt;&gt; (vals types)
-       (mapcat (fn [definition]
+  (into cbor/default-write-handlers
+        (comp
+          (map (juxt :cbor/tag (some-fn :cbor/writers :writers)))
+          (map (fn [[tag writers]]
                  (map (fn [[cls former]]
-                        [cls #(data/tagged-value (:cbor/tag definition) (former %))])
-                      (:cbor/writers definition (:writers definition)))))
-       (into cbor/default-write-handlers)))</pre></td></tr><tr><td class="docs"><p>Converts a map of type definitions into a map of CBOR read handlers.</p>
+                        [cls #(data/tagged-value tag (former %))])
+                      writers)))
+          cat)
+        (vals types)))</pre></td></tr><tr><td class="docs"><p>Converts a map of type definitions into a map of CBOR read handlers.</p>
 </td><td class="codes"><pre class="brush: clojure">(defn- types-&gt;read-handlers
   [types]
-  (-&gt;&gt; (vals types)
-       (map (juxt :cbor/tag #(:cbor/reader % (:reader %))))
-       (into cbor/default-read-handlers)))</pre></td></tr><tr><td class="docs">
+  (into cbor/default-read-handlers
+        (map (juxt :cbor/tag (some-fn :cbor/reader :reader)))
+        (vals types)))</pre></td></tr><tr><td class="docs">
 </td><td class="codes"><pre class="brush: clojure">(extend-type CBORCodec
 
   multicodec/Encoder
@@ -3592,32 +3713,31 @@ the plugin for that type.</p></li>
     java.nio.charset.Charset
     java.util.UUID))</pre></td></tr><tr><td class="docs"><p>Character set which data node text is serialized as.</p>
 </td><td class="codes"><pre class="brush: clojure">(def ^Charset data-charset
-  (Charset/forName &quot;UTF-8&quot;))</pre></td></tr><tr><td class="docs">
+  (Charset/forName &quot;UTF-8&quot;))</pre></td></tr><tr><td class="docs"><p>Core type extensions for the EDN codec.</p>
 </td><td class="codes"><pre class="brush: clojure">(def core-types
   {'uuid
    {:reader #(UUID/fromString %)
-    :writers {UUID str}}})</pre></td></tr><tr><td class="docs"><p>Returns the type map from the given argument. Accepts either direct maps or
-  vars holding a map.</p>
-</td><td class="codes"><pre class="brush: clojure">(defn- resolve-types
-  [types]
-  (merge core-types (if (var? types) @types types)))</pre></td></tr><tr><td class="docs"><p>Converts a map of type definitions to a dispatching function to look up
+    :writers {UUID str}}})</pre></td></tr><tr><td class="docs"><p>Converts a map of type definitions to a dispatching function to look up
   print-handlers.</p>
-</td><td class="codes"><pre class="brush: clojure">(defn ^:no-doc types-&gt;print-handlers
+</td><td class="codes"><pre class="brush: clojure">(defn- types-&gt;print-handlers
   [types]
-  (-&gt;&gt; (resolve-types types)
-       (mapcat (fn [[tag definition]]
+  (into {}
+        (comp
+          (map (juxt key (comp (some-fn :edn/writers :writers) val)))
+          (map (fn [[tag writers]]
                  (map (fn [[cls writer]]
                         [cls (puget/tagged-handler tag writer)])
-                      (:edn/writers definition (:writers definition)))))
-       (into {})))</pre></td></tr><tr><td class="docs"><p>Converts a map of type definitions to a map of tag symbols to reader
+                      writers)))
+          cat)
+        types))</pre></td></tr><tr><td class="docs"><p>Converts a map of type definitions to a map of tag symbols to reader
   functions.</p>
-</td><td class="codes"><pre class="brush: clojure">(defn ^:no-doc types-&gt;data-readers
+</td><td class="codes"><pre class="brush: clojure">(defn- types-&gt;data-readers
   [types]
-  (-&gt;&gt; (resolve-types types)
-       (map (juxt key (comp #(:edn/reader % (:reader %)) val)))
-       (into {})))</pre></td></tr><tr><td class="docs">
+  (into {}
+        (map (juxt key (comp (some-fn :edn/reader :reader) val)))
+        types))</pre></td></tr><tr><td class="docs">
 </td><td class="codes"><pre class="brush: clojure">(defrecord EDNCodec
-  [header types eof]
+  [header printer data-readers eof]
   multicodec/Encoder
   (encodable?
     [this value]
@@ -3625,8 +3745,7 @@ the plugin for that type.</p></li>
     true)
   (encode!
     [this output value]
-    (let [printer (puget/canonical-printer (types-&gt;print-handlers types))
-          data (OutputStreamWriter. ^OutputStream output data-charset)
+    (let [data (OutputStreamWriter. ^OutputStream output data-charset)
           encoded (puget/render-str printer value)]
       (.write data encoded)
       (.write data &quot;\n&quot;)
@@ -3639,11 +3758,11 @@ the plugin for that type.</p></li>
   (decode!
     [this input]
     (edn/read
-      {:readers (types-&gt;data-readers types)
+      {:readers data-readers
        :eof eof}
       (-&gt; ^InputStream input
           (InputStreamReader. data-charset)
-          (PushbackReader.)))))</pre></td></tr><tr><td class="docs"><p>Remove automatic constructor functions.</p>
+          (PushbackReader.)))))</pre></td></tr><tr><td class="docs">
 </td><td class="codes"><pre class="brush: clojure">(alter-meta! #'-&gt;EDNCodec assoc :private true)
 (alter-meta! #'map-&gt;EDNCodec assoc :private true)</pre></td></tr><tr><td class="docs"><p>Constructs a new EDN codec. Opts may include:</p>
 
@@ -3653,10 +3772,12 @@ reached instead of throwing an exception.</li>
 </ul>
 </td><td class="codes"><pre class="brush: clojure">(defn edn-codec
   [types &amp; {:as opts}]
-  (map-&gt;EDNCodec
-    (assoc opts
-           :header (:edn multicodec/headers)
-           :types types)))</pre></td></tr><tr><td class="spacer docs">&nbsp;</td><td class="codes" /></tr><tr><td class="docs"><div class="docs-header"><a class="anchor" href="#merkledag.node" name="merkledag.node"><h1 class="project-name">merkledag.node</h1><a class="toc-link" href="#toc">toc</a></a></div></td><td class="codes" /></tr><tr><td class="docs"><p>Functions to serialize and operate on merkledag nodes.</p>
+  (let [types* (merge core-types types)]
+    (map-&gt;EDNCodec
+      (assoc opts
+             :header (:edn multicodec/headers)
+             :printer (puget/canonical-printer (types-&gt;print-handlers types*))
+             :data-readers (types-&gt;data-readers types*)))))</pre></td></tr><tr><td class="spacer docs">&nbsp;</td><td class="codes" /></tr><tr><td class="docs"><div class="docs-header"><a class="anchor" href="#merkledag.node" name="merkledag.node"><h1 class="project-name">merkledag.node</h1><a class="toc-link" href="#toc">toc</a></a></div></td><td class="codes" /></tr><tr><td class="docs"><p>Functions to serialize and operate on merkledag nodes.</p>
 </td><td class="codes"><pre class="brush: clojure">(ns merkledag.node
   (:require
     [clojure.future :refer [pos-int?]]
@@ -3673,9 +3794,9 @@ reached instead of throwing an exception.</li>
 (s/def ::data coll?)</pre></td></tr><tr><td class="docs">
 </td><td class="codes"><pre class="brush: clojure">(s/def :merkledag/node
   (s/keys :req [::id ::size ::encoding]
-          :opt [::links ::data]))</pre></td></tr><tr><td class="docs">
+          :opt [::links ::data]))</pre></td></tr><tr><td class="docs"><p>Collection of attributes that make up a merkledag node map.</p>
 </td><td class="codes"><pre class="brush: clojure">(def node-keys
-  [::id ::size ::encoding ::links ::data])</pre></td></tr><tr><td class="docs"><h2>Storage API</h2>
+  [::id ::size ::encoding ::links ::data])</pre></td></tr><tr><td class="docs"><h2>Storage Protocol</h2>
 </td><td class="codes"></td></tr><tr><td class="docs"><p>Node stores provide an interface for creating, persisting, and retrieving
   node data.</p>
 </td><td class="codes"><pre class="brush: clojure">(defprotocol ^:no-doc NodeStore
@@ -3690,67 +3811,7 @@ reached instead of throwing an exception.</li>
     respectively.&quot;)
   (-delete-node!
     [store id]
-    &quot;Remove a node from the store.&quot;))</pre></td></tr><tr><td class="docs"><p>Retrieve the identified node from the store. Returns a node map.</p>
-
-<p>  The id may be any <code>link/Target</code> value.</p>
-</td><td class="codes"><pre class="brush: clojure">(defn get-node
-  [store id]
-  (when-let [id (link/identify id)]
-    (-get-node store id)))</pre></td></tr><tr><td class="docs"><p>Retrieve the links for the identified node. Returns the node's link table as
-  a vector of <code>MerkleLink</code> values.</p>
-
-<p>  The id may be any <code>link/Target</code> value.</p>
-</td><td class="codes"><pre class="brush: clojure">(defn get-links
-  [store id]
-  (let [id (link/identify id)]
-    (when-let [node (and id (-get-node store id))]
-      (some-&gt;
-        (::links node)
-        (vary-meta
-          assoc
-          ::id id
-          ::size (::size node))))))</pre></td></tr><tr><td class="docs"><p>Retrieve the data for the identified node. Returns the node's data body.</p>
-
-<p>  The id may be any <code>link/Target</code> value.</p>
-</td><td class="codes"><pre class="brush: clojure">(defn get-data
-  [store id]
-  (let [id (link/identify id)]
-    (when-let [node (and id (-get-node store id))]
-      (some-&gt;
-        (::data node)
-        (vary-meta
-          assoc
-          ::id id
-          ::size (::size node)
-          ::links (:links node))))))</pre></td></tr><tr><td class="docs"><p>Create a new node by serializing the links and data. Returns the stored node
-  map, or nil if both links and data are nil.</p>
-</td><td class="codes"><pre class="brush: clojure">(defn store-node!
-  ([store node]
-   (let [{:keys [::id ::links ::data]} node]
-     (when (or (seq links) data)
-       (if-let [id (or id (::id (meta links)) (::id (meta data)))]
-         ; See if we can re-use an already-stored node.
-         (let [extant (-get-node store id)]
-           (if (and (= (seq links) (seq (::links extant)))
-                    (= data (::data extant)))
-             ; Links and data match, re-use stored node.
-             extant
-             ; Missing or some value mismatch, store a new node.
-             (-store-node! store node)))
-         ; No id metadata, store new node.
-         (-store-node! store (cond-&gt; node
-                               (nil? (::links node))
-                                 (dissoc ::links)
-                               (nil? (::data node))
-                                 (dissoc ::data)))))))
-  ([store links data]
-   (store-node! store {::links links, ::data data})))</pre></td></tr><tr><td class="docs"><p>Remove a node from the store.</p>
-
-<p>  The id may be any <code>link/Target</code> value.</p>
-</td><td class="codes"><pre class="brush: clojure">(defn delete-node!
-  [store id]
-  (when-let [id (link/identify id)]
-    (-delete-node! store id)))</pre></td></tr><tr><td class="docs"><h2>Utility Functions</h2>
+    &quot;Remove a node from the store.&quot;))</pre></td></tr><tr><td class="docs"><h2>Utility Functions</h2>
 </td><td class="codes"></td></tr><tr><td class="docs"><p>Calculates the total size of data reachable from the given node. Expects a
   node map with <code>::size</code> and <code>::links</code> entries.</p>
 
@@ -3759,23 +3820,32 @@ reached instead of throwing an exception.</li>
   Returns <code>nil</code> if no node is given.</p>
 </td><td class="codes"><pre class="brush: clojure">(defn reachable-size
   [node]
-  (when-let [size (::size node)]
+  (if-let [size (or (::size node) (:size node))]
     (-&gt;&gt; (::links node)
          (keep ::link/rsize)
-         (reduce + size))))</pre></td></tr><tr><td class="spacer docs">&nbsp;</td><td class="codes" /></tr><tr><td class="docs"><div class="docs-header"><a class="anchor" href="#merkledag.system.util" name="merkledag.system.util"><h1 class="project-name">merkledag.system.util</h1><a class="toc-link" href="#toc">toc</a></a></div></td><td class="codes" /></tr><tr><td class="docs"><p>Construction functions for component systems.</p>
-</td><td class="codes"><pre class="brush: clojure">(ns ^:no-doc merkledag.system.util
-  (:require
-    [blocks.store.memory :refer [memory-block-store]]
-    [merkledag.codec.node-v1 :refer [edn-node-codec]]
-    [merkledag.node.store :refer [block-node-store]]
-    [merkledag.node.cache :refer [node-cache]]))</pre></td></tr><tr><td class="docs"><p>Constructs an in-memory node store.</p>
-</td><td class="codes"><pre class="brush: clojure">(defn init-store
-  [&amp; {:as opts}]
-  (block-node-store
-    :store (or (:store opts) (memory-block-store))
-    :codec (or (:codec opts) (edn-node-codec (:types opts)))
-    :cache (when (:cache opts)
-             (atom (apply node-cache {} (apply concat (:cache opts)))))))</pre></td></tr><tr><td class="spacer docs">&nbsp;</td><td class="codes" /></tr></table><div class="footer">Generated by <a href="https://github.com/gdeer81/marginalia">Marginalia</a>.&nbsp;&nbsp;Syntax highlighting provided by Alex Gorbatchev's <a href="http://alexgorbatchev.com/SyntaxHighlighter/">SyntaxHighlighter</a><div id="floating-toc"><ul><li class="floating-toc-li" id="floating-toc_merkledag.node.store">merkledag.node.store</li><li class="floating-toc-li" id="floating-toc_merkledag.node.cache">merkledag.node.cache</li><li class="floating-toc-li" id="floating-toc_merkledag.link">merkledag.link</li><li class="floating-toc-li" id="floating-toc_merkledag.codec.node-v1">merkledag.codec.node-v1</li><li class="floating-toc-li" id="floating-toc_merkledag.codec.cbor">merkledag.codec.cbor</li><li class="floating-toc-li" id="floating-toc_merkledag.codec.edn">merkledag.codec.edn</li><li class="floating-toc-li" id="floating-toc_merkledag.node">merkledag.node</li><li class="floating-toc-li" id="floating-toc_merkledag.system.util">merkledag.system.util</li></ul></div></div><script type="text/javascript">SyntaxHighlighter.defaults['gutter'] = false;
+         (reduce + size))))</pre></td></tr><tr><td class="docs">
+</td><td class="codes"><pre class="brush: clojure">(extend-protocol link/Target
+
+  clojure.lang.PersistentArrayMap
+
+  (identify
+    [node]
+    (::id node))
+
+  (reachable-size
+    [node]
+    (reachable-size node))
+
+
+  clojure.lang.PersistentHashMap
+
+  (identify
+    [node]
+    (::id node))
+
+  (reachable-size
+    [node]
+    (reachable-size node)))</pre></td></tr><tr><td class="spacer docs">&nbsp;</td><td class="codes" /></tr></table><div class="footer">Generated by <a href="https://github.com/gdeer81/marginalia">Marginalia</a>.&nbsp;&nbsp;Syntax highlighting provided by Alex Gorbatchev's <a href="http://alexgorbatchev.com/SyntaxHighlighter/">SyntaxHighlighter</a><div id="floating-toc"><ul><li class="floating-toc-li" id="floating-toc_merkledag.core">merkledag.core</li><li class="floating-toc-li" id="floating-toc_merkledag.node.store">merkledag.node.store</li><li class="floating-toc-li" id="floating-toc_merkledag.node.cache">merkledag.node.cache</li><li class="floating-toc-li" id="floating-toc_merkledag.link">merkledag.link</li><li class="floating-toc-li" id="floating-toc_merkledag.codec.node-v1">merkledag.codec.node-v1</li><li class="floating-toc-li" id="floating-toc_merkledag.codec.cbor">merkledag.codec.cbor</li><li class="floating-toc-li" id="floating-toc_merkledag.codec.edn">merkledag.codec.edn</li><li class="floating-toc-li" id="floating-toc_merkledag.node">merkledag.node</li></ul></div></div><script type="text/javascript">SyntaxHighlighter.defaults['gutter'] = false;
 SyntaxHighlighter.all();
 
 // hackity hack
