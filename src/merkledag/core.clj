@@ -75,7 +75,7 @@
   The id may be any `link/Target` value."
   [store id & path]
   (when-let [id (link/identify id)]
-    (resolve-path id path)))
+    (resolve-path store id path)))
 
 
 (defn get-links
