@@ -7,6 +7,10 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+...
+
+## [0.2.0] - 2017-06-11
+
 This is a breaking change which moves much of the library API into a single
 `merkledag.core` namespace.
 
@@ -22,5 +26,6 @@ This is a breaking change which moves much of the library API into a single
 
 Initial project release.
 
-[Unreleased]: https://github.com/greglook/merkledag-core/compare/0.1.0...HEAD
+[Unreleased]: https://github.com/greglook/merkledag-core/compare/0.2.0...HEAD
+[0.2.0]: https://github.com/greglook/merkledag-core/compare/0.1.0...0.2.0
 [0.1.0]: https://github.com/greglook/merkledag-core/tag/0.1.0
