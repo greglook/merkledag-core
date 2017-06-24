@@ -25,7 +25,7 @@
   {'data/hash
    {:description "Content-addressed multihash references"
     :reader multihash/decode
-    :cbor/tag 68
+    :cbor/tag 422
     :cbor/writers {Multihash multihash/encode}
     :edn/writers {Multihash multihash/base58}}
 
@@ -33,7 +33,7 @@
    {:description "Merkle link values"
     :reader link/form->link
     :writers {MerkleLink link/link->form}
-    :cbor/tag 69}
+    :cbor/tag 423}
 
    'merkledag.link/index
    {:description "Indexes to the link table within a node"
@@ -104,11 +104,11 @@
   ([]
    (edn-node-codec nil))
   ([types]
-   (node-codec :edn (edn-codec (merge core-types types)))))
+   (node-codec :edn (edn-codec (merge-with merge core-types types)))))
 
 
 (defn cbor-node-codec
   ([]
    (cbor-node-codec nil))
   ([types]
-   (node-codec :cbor (cbor-codec (merge core-types types)))))
+   (node-codec :cbor (cbor-codec (merge-with merge core-types types)))))
