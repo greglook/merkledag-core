@@ -136,18 +136,12 @@
   (print-method (tagged-literal 'merkledag/link (link->form link)) w))
 
 
-(defn merkle-link?
-  "Predicate which returns true if the argument is a `MerkleLink` object."
-  [x]
-  (instance? MerkleLink x))
-
-
 (s/def :merkledag/link
   ; Can't use s/keys because links aren't maps
-  (s/and merkle-link?
-         #(s/valid? ::name (::name %))
-         #(s/valid? ::target (::target %))
-         #(s/valid? ::rsize (::rsize %))))
+  (s/and #(instance? MerkleLink %)
+         #(s/valid? ::name (:name %))
+         #(s/valid? ::target (:target %))
+         #(s/valid? ::rsize (:rsize %))))
 
 
 
@@ -182,7 +176,7 @@
   (let [links (volatile! (transient #{}))]
     (walk/postwalk
       (fn link-detector [x]
-        (when (merkle-link? x)
+        (when (instance? MerkleLink x)
           (vswap! links conj! x))
         x)
       data)
@@ -279,7 +273,7 @@
   [link-table data]
   (walk/postwalk
     (fn replacer [x]
-      (if (merkle-link? x)
+      (if (instance? MerkleLink x)
         (or (link-index link-table x)
             (throw (ex-info (str "No link in table matching " x)
                             {:link-table link-table, :link x})))

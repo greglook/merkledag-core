@@ -8,10 +8,18 @@
     [merkledag.link :as link]
     [merkledag.node :as node]
     [merkledag.node.store :as store]
-    [merkledag.node.cache :as cache]))
+    [merkledag.node.cache :as cache])
+  (:import
+    merkledag.link.MerkleLink))
 
 
 ;; ## Constructors
+
+(defn link?
+  "Predicate which returns true if the argument is a `MerkleLink` object."
+  [x]
+  (instance? MerkleLink x))
+
 
 (defn link
   "Construct a new merkle link to the given target value."
@@ -155,7 +163,7 @@
        ::node/data
        (walk/postwalk
          (fn link-updater [x]
-           (if (and (link/merkle-link? x) (name-match? x))
+           (if (and (link? x) (name-match? x))
              new-link
              x))
          (::node/data node))})
