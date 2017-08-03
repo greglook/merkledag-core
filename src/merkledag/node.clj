@@ -72,19 +72,21 @@
 
   (identify
     [node]
-    (::id node))
+    (or (::id node) (::id (meta node))))
 
   (reachable-size
     [node]
-    (reachable-size node))
+    (or (reachable-size node)
+        (reachable-size (meta node))))
 
 
   clojure.lang.PersistentHashMap
 
   (identify
     [node]
-    (::id node))
+    (or (::id node) (::id (meta node))))
 
   (reachable-size
     [node]
-    (reachable-size node)))
+    (or (reachable-size node)
+        (reachable-size (meta node)))))
