@@ -2865,7 +2865,7 @@ net.brehaut.ClojureTools = (function (SH) {
     build_tree: build_tree
   };
 })(SyntaxHighlighter);
-</script><title>mvxcvi/merkledag-core -- Marginalia</title></head><body><table><tr><td class="docs"><div class="header"><h1 class="project-name"><a href="http://github.com/greglook/merkledag-core">mvxcvi/merkledag-core</a></h1><h2 class="project-version">0.2.0</h2><br /><p>Graph datastore built on content-addressed merkle hash links</p>
+</script><title>mvxcvi/merkledag-core -- Marginalia</title></head><body><table><tr><td class="docs"><div class="header"><h1 class="project-name"><a href="http://github.com/greglook/merkledag-core">mvxcvi/merkledag-core</a></h1><h2 class="project-version">0.3.0</h2><br /><p>Graph datastore built on content-addressed merkle hash links</p>
 </div><div class="dependencies"><h3>dependencies</h3><table><tr><td class="dep-name">org.clojure/clojure</td><td class="dotted"><hr /></td><td class="dep-version">1.8.0</td></tr><tr><td class="dep-name">org.clojure/core.cache</td><td class="dotted"><hr /></td><td class="dep-version">0.6.5</td></tr><tr><td class="dep-name">org.clojure/tools.logging</td><td class="dotted"><hr /></td><td class="dep-version">0.4.0</td></tr><tr><td class="dep-name">clojure-future-spec</td><td class="dotted"><hr /></td><td class="dep-version">1.9.0-alpha14</td></tr><tr><td class="dep-name">byte-streams</td><td class="dotted"><hr /></td><td class="dep-version">0.2.3</td></tr><tr><td class="dep-name">mvxcvi/blocks</td><td class="dotted"><hr /></td><td class="dep-version">0.9.1</td></tr><tr><td class="dep-name">mvxcvi/clj-cbor</td><td class="dotted"><hr /></td><td class="dep-version">0.4.1</td></tr><tr><td class="dep-name">mvxcvi/multicodec</td><td class="dotted"><hr /></td><td class="dep-version">0.5.1</td></tr><tr><td class="dep-name">mvxcvi/multihash</td><td class="dotted"><hr /></td><td class="dep-version">2.0.1</td></tr><tr><td class="dep-name">mvxcvi/puget</td><td class="dotted"><hr /></td><td class="dep-version">1.0.1</td></tr></table></div></td><td class="codes" style="text-align: center; vertical-align: middle;color: #666;padding-right:20px"><br /><br /><br />(this space intentionally left almost blank)</td></tr><tr><td class="docs"><div class="toc"><a name="toc"><h3>namespaces</h3></a><ul><li><a href="#merkledag.core">merkledag.core</a></li><li><a href="#merkledag.node.store">merkledag.node.store</a></li><li><a href="#merkledag.node.cache">merkledag.node.cache</a></li><li><a href="#merkledag.link">merkledag.link</a></li><li><a href="#merkledag.codec.node-v1">merkledag.codec.node-v1</a></li><li><a href="#merkledag.codec.cbor">merkledag.codec.cbor</a></li><li><a href="#merkledag.codec.edn">merkledag.codec.edn</a></li><li><a href="#merkledag.node">merkledag.node</a></li></ul></div></td><td class="codes">&nbsp;</td></tr><tr><td class="docs"><div class="docs-header"><a class="anchor" href="#merkledag.core" name="merkledag.core"><h1 class="project-name">merkledag.core</h1><a class="toc-link" href="#toc">toc</a></a></div></td><td class="codes" /></tr><tr><td class="docs"><p>Core library API.</p>
 </td><td class="codes"><pre class="brush: clojure">(ns merkledag.core
   (:require
@@ -2876,8 +2876,13 @@ net.brehaut.ClojureTools = (function (SH) {
     [merkledag.link :as link]
     [merkledag.node :as node]
     [merkledag.node.store :as store]
-    [merkledag.node.cache :as cache]))</pre></td></tr><tr><td class="docs"><h2>Constructors</h2>
-</td><td class="codes"></td></tr><tr><td class="docs"><p>Construct a new merkle link to the given target value.</p>
+    [merkledag.node.cache :as cache])
+  (:import
+    merkledag.link.MerkleLink))</pre></td></tr><tr><td class="docs"><h2>Constructors</h2>
+</td><td class="codes"></td></tr><tr><td class="docs"><p>Predicate which returns true if the argument is a <code>MerkleLink</code> object.</p>
+</td><td class="codes"><pre class="brush: clojure">(defn link?
+  [x]
+  (instance? MerkleLink x))</pre></td></tr><tr><td class="docs"><p>Construct a new merkle link to the given target value.</p>
 </td><td class="codes"><pre class="brush: clojure">(defn link
   [link-name target]
   (link/create link-name (link/identify target) (link/reachable-size target)))</pre></td></tr><tr><td class="docs"><p>Construct a new merkle node by serializing it to a block.</p>
@@ -2904,56 +2909,82 @@ Map of options to supply to construct a node cache. See
     :codec (or (:codec opts) (cv1/edn-node-codec (:types opts)))
     :cache (when (:cache opts)
              (atom (apply cache/node-cache {} (apply concat (:cache opts)))))))</pre></td></tr><tr><td class="docs"><p>Retrieve a node by recursively resolving a path through a sequence of nodes.
-  The <code>path</code> should be a slash-separated string or a vector of path segments.</p>
+  The <code>path</code> should be a slash-separated string.</p>
 </td><td class="codes"><pre class="brush: clojure">(defn- resolve-path
-  ([store root-id path]
-   (resolve-path store root-id path nil))
-  ([store root-id path not-found]
-   (loop [node (node/-get-node store root-id)
-          path (mapcat #(str/split (str %) #&quot;/+&quot;) (flatten path))]
-     (if node
-       (if (seq path)
-         (if-let [link (link/resolve-name (::node/links node) (first path))]
-           ; Continue resolving.
-           (recur (node/-get-node store (::link/target link)) (next path))
-           ; Link was not found in node.
-           not-found)
-         ; No more path segments, this is the target node.
-         node)
-       ; Linked node was not found in store.
-       not-found))))</pre></td></tr><tr><td class="docs"><p>Retrieve the identified node from the store. Returns a node map.</p>
+  [store root-id path not-found]
+  (loop [node (node/-get-node store root-id)
+         path (when path (str/split (str path) #&quot;/+&quot;))]
+    (if node
+      (if (seq path)
+        (if-let [link (link/resolve-name (::node/links node) (first path))]
+          ; Continue resolving.
+          (recur (node/-get-node store (:target link)) (next path))
+          ; Link was not found in node.
+          not-found)
+        ; No more path segments, this is the target node.
+        node)
+      ; Linked node was not found in store.
+      not-found)))</pre></td></tr><tr><td class="docs"><p>Enrich the link table and data in a node by attaching metadata about the
+  other node properties.</p>
+</td><td class="codes"><pre class="brush: clojure">(defn- apply-node-metadata
+  [node]
+  (cond-&gt; node
+    (::node/links node)
+      (update ::node/links
+              vary-meta assoc
+              ::node/id (::node/id node)
+              ::node/size (::node/size node))
+    (::node/data node)
+      (update ::node/data
+              vary-meta assoc
+              ::node/id (::node/id node)
+              ::node/links (::node/links node)
+              ::node/size (::node/size node))))</pre></td></tr><tr><td class="docs"><p>Retrieve the identified node from the store. Returns a node map, or
+  <code>not-found</code> if the node was not found.</p>
 
-<p>  The id may be any <code>link/Target</code> value.</p>
+<p>  The id may be any <code>link/Target</code> value. If a <code>path</code> is given, each slash
+  separated segment is used to recursively look up nodes in the graph by
+  walking the corresponding named links.</p>
 </td><td class="codes"><pre class="brush: clojure">(defn get-node
-  [store id &amp; path]
-  (when-let [id (link/identify id)]
-    (resolve-path store id path)))</pre></td></tr><tr><td class="docs"><p>Retrieve the links for the identified node. Returns the node's link table as
-  a vector of <code>MerkleLink</code> values.</p>
+  ([store id]
+   (get-node store id nil nil))
+  ([store id path]
+   (get-node store id path nil))
+  ([store id path not-found]
+   (when-let [id (link/identify id)]
+     (let [node (resolve-path store id path not-found)]
+       (if (identical? node not-found)
+         not-found
+         (apply-node-metadata node))))))</pre></td></tr><tr><td class="docs"><p>Retrieve the links for the identified node. Returns the node's link table as
+  a vector of <code>MerkleLink</code> values, or <code>not-found</code>.</p>
 
-<p>  The id may be any <code>link/Target</code> value.</p>
+<p>  The id may be any <code>link/Target</code> value. If a <code>path</code> is given, each slash
+  separated segment is used to recursively look up nodes in the graph by
+  walking the corresponding named links.</p>
 </td><td class="codes"><pre class="brush: clojure">(defn get-links
-  [store id &amp; path]
-  (let [id (link/identify id)]
-    (when-let [node (and id (resolve-path store id path))]
-      (some-&gt;
-        (::node/links node)
-        (vary-meta
-          assoc
-          ::node/id id
-          ::node/size (::node/size node))))))</pre></td></tr><tr><td class="docs"><p>Retrieve the data for the identified node. Returns the node's data body.</p>
+  ([store id]
+   (get-links store id nil nil))
+  ([store id path]
+   (get-links store id path nil))
+  ([store id path not-found]
+   (let [node (get-node store id path not-found)]
+     (if (identical? node not-found)
+       not-found
+       (::node/links node)))))</pre></td></tr><tr><td class="docs"><p>Retrieve the data for the identified node. Returns the node's data body.</p>
 
-<p>  The id may be any <code>link/Target</code> value.</p>
+<p>  The id may be any <code>link/Target</code> value. If a <code>path</code> is given, each slash
+  separated segment is used to recursively look up nodes in the graph by
+  walking the corresponding named links.</p>
 </td><td class="codes"><pre class="brush: clojure">(defn get-data
-  [store id &amp; path]
-  (let [id (link/identify id)]
-    (when-let [node (and id (resolve-path store id path))]
-      (some-&gt;
-        (::node/data node)
-        (vary-meta
-          assoc
-          ::node/id id
-          ::node/size (::node/size node)
-          ::node/links (::node/links node))))))</pre></td></tr><tr><td class="docs"><p>Create a new node by serializing the links and data. Returns the stored node
+  ([store id]
+   (get-data store id nil nil))
+  ([store id path]
+   (get-data store id path nil))
+  ([store id path not-found]
+   (let [node (get-node store id path not-found)]
+     (if (identical? node not-found)
+       not-found
+       (::node/data node)))))</pre></td></tr><tr><td class="docs"><p>Create a new node by serializing the links and data. Returns the stored node
   map, or nil if both links and data are nil.</p>
 </td><td class="codes"><pre class="brush: clojure">(defn store-node!
   ([store node]
@@ -2990,7 +3021,7 @@ Map of options to supply to construct a node cache. See
        ::node/data
        (walk/postwalk
          (fn link-updater [x]
-           (if (and (link/merkle-link? x) (name-match? x))
+           (if (and (link? x) (name-match? x))
              new-link
              x))
          (::node/data node))})
@@ -3347,9 +3378,9 @@ of the target block itself.</li>
   (valAt
     [this k not-found]
     (case k
-      ::name   name
-      ::target target
-      ::rsize  rsize
+      (:name   ::name)   name
+      (:target ::target) target
+      (:rsize  ::rsize)  rsize
       not-found)))</pre></td></tr><tr><td class="docs">
 </td><td class="codes"><pre class="brush: clojure">(alter-meta! #'-&gt;MerkleLink assoc :private true)</pre></td></tr><tr><td class="docs"><p>Constructs a <code>MerkleLink</code> value, validating the inputs.</p>
 </td><td class="codes"><pre class="brush: clojure">(defn create
@@ -3386,16 +3417,13 @@ of the target block itself.</li>
     (apply create v)))</pre></td></tr><tr><td class="docs">
 </td><td class="codes"><pre class="brush: clojure">(defmethod print-method MerkleLink
   [link w]
-  (print-method (tagged-literal 'merkledag/link (link-&gt;form link)) w))</pre></td></tr><tr><td class="docs"><p>Predicate which returns true if the argument is a <code>MerkleLink</code> object.</p>
-</td><td class="codes"><pre class="brush: clojure">(defn merkle-link?
-  [x]
-  (instance? MerkleLink x))</pre></td></tr><tr><td class="docs">
+  (print-method (tagged-literal 'merkledag/link (link-&gt;form link)) w))</pre></td></tr><tr><td class="docs">
 </td><td class="codes"><pre class="brush: clojure">(s/def :merkledag/link
   ; Can't use s/keys because links aren't maps
-  (s/and merkle-link?
-         #(s/valid? ::name (::name %))
-         #(s/valid? ::target (::target %))
-         #(s/valid? ::rsize (::rsize %))))</pre></td></tr><tr><td class="docs"><h2>Link Tables</h2>
+  (s/and #(instance? MerkleLink %)
+         #(s/valid? ::name (:name %))
+         #(s/valid? ::target (:target %))
+         #(s/valid? ::rsize (:rsize %))))</pre></td></tr><tr><td class="docs"><h2>Link Tables</h2>
 </td><td class="codes"></td></tr><tr><td class="docs">
 </td><td class="codes"><pre class="brush: clojure">(s/def ::table
   (s/coll-of :merkledag/link :kind vector? :min-count 1))</pre></td></tr><tr><td class="docs"><p>Validates certain invariants about link tables. Throws an exception on error,
@@ -3420,7 +3448,7 @@ of the target block itself.</li>
   (let [links (volatile! (transient #{}))]
     (walk/postwalk
       (fn link-detector [x]
-        (when (merkle-link? x)
+        (when (instance? MerkleLink x)
           (vswap! links conj! x))
         x)
       data)
@@ -3487,7 +3515,7 @@ links from the table when decoding.</p>
   [link-table data]
   (walk/postwalk
     (fn replacer [x]
-      (if (merkle-link? x)
+      (if (instance? MerkleLink x)
         (or (link-index link-table x)
             (throw (ex-info (str &quot;No link in table matching &quot; x)
                             {:link-table link-table, :link x})))
@@ -3551,14 +3579,14 @@ links from the table when decoding.</p>
   {'data/hash
    {:description &quot;Content-addressed multihash references&quot;
     :reader multihash/decode
-    :cbor/tag 68
+    :cbor/tag 422
     :cbor/writers {Multihash multihash/encode}
     :edn/writers {Multihash multihash/base58}}
    'merkledag/link
    {:description &quot;Merkle link values&quot;
     :reader link/form-&gt;link
     :writers {MerkleLink link/link-&gt;form}
-    :cbor/tag 69}
+    :cbor/tag 423}
    'merkledag.link/index
    {:description &quot;Indexes to the link table within a node&quot;
     :reader link/link-index
@@ -3610,12 +3638,12 @@ links from the table when decoding.</p>
   ([]
    (edn-node-codec nil))
   ([types]
-   (node-codec :edn (edn-codec (merge core-types types)))))</pre></td></tr><tr><td class="docs">
+   (node-codec :edn (edn-codec (merge-with merge core-types types)))))</pre></td></tr><tr><td class="docs">
 </td><td class="codes"><pre class="brush: clojure">(defn cbor-node-codec
   ([]
    (cbor-node-codec nil))
   ([types]
-   (node-codec :cbor (cbor-codec (merge core-types types)))))</pre></td></tr><tr><td class="spacer docs">&nbsp;</td><td class="codes" /></tr><tr><td class="docs"><div class="docs-header"><a class="anchor" href="#merkledag.codec.cbor" name="merkledag.codec.cbor"><h1 class="project-name">merkledag.codec.cbor</h1><a class="toc-link" href="#toc">toc</a></a></div></td><td class="codes" /></tr><tr><td class="docs"><p>Functions to handle structured data formatted as CBOR.</p>
+   (node-codec :cbor (cbor-codec (merge-with merge core-types types)))))</pre></td></tr><tr><td class="spacer docs">&nbsp;</td><td class="codes" /></tr><tr><td class="docs"><div class="docs-header"><a class="anchor" href="#merkledag.codec.cbor" name="merkledag.codec.cbor"><h1 class="project-name">merkledag.codec.cbor</h1><a class="toc-link" href="#toc">toc</a></a></div></td><td class="codes" /></tr><tr><td class="docs"><p>Functions to handle structured data formatted as CBOR.</p>
 
 <p>  Special types are handled by plugins which define three important attributes
   to support serializing a type to and from CBOR. A plugin map should contain:</p>
