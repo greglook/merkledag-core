@@ -9,12 +9,30 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 ...
 
+## [0.3.0] - 2017-08-03
+
+### Added
+- MerkleLink attributes can be accessed with either simple or namespace
+  qualified keywords, meaning both `(::link/target x)` and `(:target x)` return
+  the same value.
+- Nodes are always returned with their link table and data values decorated with
+  node-level metadata, so that `(::node/data (get-node store x))` has the same
+  result as `(get-data store x)`.
+
+### Breaking
+- CBOR tag ids for Multihash and MerkleLink values changed to 422 and 423,
+  respectively.
+- Moved merkle-link predicate from `merkledag.link/merkle-link?` to
+  `merkledag.core/link?`.
+- `get-node`, `get-links`, and `get-data` now have a consistent set of 2-4 arity
+  implementations to accept an optional `path` and `not-found` value.
+
 ## [0.2.0] - 2017-06-11
 
 This is a breaking change which moves much of the library API into a single
 `merkledag.core` namespace.
 
-### Changed
+### Breaking
 - Many functions moved to `merkledag.core` namespace.
 - Symbol tags for the `MerkleLink` and `LinkIndex` types changed to
   `merkledag/link` (from `data/link`) and `merkledag.link/index` (from
@@ -26,6 +44,7 @@ This is a breaking change which moves much of the library API into a single
 
 Initial project release.
 
-[Unreleased]: https://github.com/greglook/merkledag-core/compare/0.2.0...HEAD
+[Unreleased]: https://github.com/greglook/merkledag-core/compare/0.3.0...HEAD
+[0.3.0]: https://github.com/greglook/merkledag-core/compare/0.2.0...0.3.0
 [0.2.0]: https://github.com/greglook/merkledag-core/compare/0.1.0...0.2.0
 [0.1.0]: https://github.com/greglook/merkledag-core/tag/0.1.0
