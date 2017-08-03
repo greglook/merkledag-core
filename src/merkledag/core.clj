@@ -8,10 +8,18 @@
     [merkledag.link :as link]
     [merkledag.node :as node]
     [merkledag.node.store :as store]
-    [merkledag.node.cache :as cache]))
+    [merkledag.node.cache :as cache])
+  (:import
+    merkledag.link.MerkleLink))
 
 
 ;; ## Constructors
+
+(defn link?
+  "Predicate which returns true if the argument is a `MerkleLink` object."
+  [x]
+  (instance? MerkleLink x))
+
 
 (defn link
   "Construct a new merkle link to the given target value."
@@ -50,64 +58,93 @@
 
 (defn- resolve-path
   "Retrieve a node by recursively resolving a path through a sequence of nodes.
-  The `path` should be a slash-separated string or a vector of path segments."
-  ([store root-id path]
-   (resolve-path store root-id path nil))
-  ([store root-id path not-found]
-   (loop [node (node/-get-node store root-id)
-          path (mapcat #(str/split (str %) #"/+") (flatten path))]
-     (if node
-       (if (seq path)
-         (if-let [link (link/resolve-name (::node/links node) (first path))]
-           ; Continue resolving.
-           (recur (node/-get-node store (::link/target link)) (next path))
-           ; Link was not found in node.
-           not-found)
-         ; No more path segments, this is the target node.
-         node)
-       ; Linked node was not found in store.
-       not-found))))
+  The `path` should be a slash-separated string."
+  [store root-id path not-found]
+  (loop [node (node/-get-node store root-id)
+         path (when path (str/split (str path) #"/+"))]
+    (if node
+      (if (seq path)
+        (if-let [link (link/resolve-name (::node/links node) (first path))]
+          ; Continue resolving.
+          (recur (node/-get-node store (:target link)) (next path))
+          ; Link was not found in node.
+          not-found)
+        ; No more path segments, this is the target node.
+        node)
+      ; Linked node was not found in store.
+      not-found)))
+
+
+(defn- apply-node-metadata
+  "Enrich the link table and data in a node by attaching metadata about the
+  other node properties."
+  [node]
+  (cond-> node
+    (::node/links node)
+      (update ::node/links
+              vary-meta assoc
+              ::node/id (::node/id node)
+              ::node/size (::node/size node))
+    (::node/data node)
+      (update ::node/data
+              vary-meta assoc
+              ::node/id (::node/id node)
+              ::node/links (::node/links node)
+              ::node/size (::node/size node))))
 
 
 (defn get-node
-  "Retrieve the identified node from the store. Returns a node map.
+  "Retrieve the identified node from the store. Returns a node map, or
+  `not-found` if the node was not found.
 
-  The id may be any `link/Target` value."
-  [store id & path]
-  (when-let [id (link/identify id)]
-    (resolve-path store id path)))
+  The id may be any `link/Target` value. If a `path` is given, each slash
+  separated segment is used to recursively look up nodes in the graph by
+  walking the corresponding named links."
+  ([store id]
+   (get-node store id nil nil))
+  ([store id path]
+   (get-node store id path nil))
+  ([store id path not-found]
+   (when-let [id (link/identify id)]
+     (let [node (resolve-path store id path not-found)]
+       (if (identical? node not-found)
+         not-found
+         (apply-node-metadata node))))))
 
 
 (defn get-links
   "Retrieve the links for the identified node. Returns the node's link table as
-  a vector of `MerkleLink` values.
+  a vector of `MerkleLink` values, or `not-found`.
 
-  The id may be any `link/Target` value."
-  [store id & path]
-  (let [id (link/identify id)]
-    (when-let [node (and id (resolve-path store id path))]
-      (some->
-        (::node/links node)
-        (vary-meta
-          assoc
-          ::node/id id
-          ::node/size (::node/size node))))))
+  The id may be any `link/Target` value. If a `path` is given, each slash
+  separated segment is used to recursively look up nodes in the graph by
+  walking the corresponding named links."
+  ([store id]
+   (get-links store id nil nil))
+  ([store id path]
+   (get-links store id path nil))
+  ([store id path not-found]
+   (let [node (get-node store id path not-found)]
+     (if (identical? node not-found)
+       not-found
+       (::node/links node)))))
 
 
 (defn get-data
   "Retrieve the data for the identified node. Returns the node's data body.
 
-  The id may be any `link/Target` value."
-  [store id & path]
-  (let [id (link/identify id)]
-    (when-let [node (and id (resolve-path store id path))]
-      (some->
-        (::node/data node)
-        (vary-meta
-          assoc
-          ::node/id id
-          ::node/size (::node/size node)
-          ::node/links (::node/links node))))))
+  The id may be any `link/Target` value. If a `path` is given, each slash
+  separated segment is used to recursively look up nodes in the graph by
+  walking the corresponding named links."
+  ([store id]
+   (get-data store id nil nil))
+  ([store id path]
+   (get-data store id path nil))
+  ([store id path not-found]
+   (let [node (get-node store id path not-found)]
+     (if (identical? node not-found)
+       not-found
+       (::node/data node)))))
 
 
 (defn store-node!
@@ -155,7 +192,7 @@
        ::node/data
        (walk/postwalk
          (fn link-updater [x]
-           (if (and (link/merkle-link? x) (name-match? x))
+           (if (and (link? x) (name-match? x))
              new-link
              x))
          (::node/data node))})
