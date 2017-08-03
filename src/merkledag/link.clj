@@ -81,9 +81,9 @@
   (valAt
     [this k not-found]
     (case k
-      ::name   name
-      ::target target
-      ::rsize  rsize
+      (:name   ::name)   name
+      (:target ::target) target
+      (:rsize  ::rsize)  rsize
       not-found)))
 
 
