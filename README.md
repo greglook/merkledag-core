@@ -118,13 +118,13 @@ structures, and want to resolve paths through them:
  :merkledag.node/links
  [#merkledag/link ["link:0" #data/hash "QmVSR5TWZmKr3uXF8yBLPSE2ki25LKXkniGMNBCxCT8UUt" nil]]}
 
-; Look up data with a string path:
+; Look up data with a path:
 => (mdag/get-data graph *1 "link:0/a")
 {:abc 123}
 
-; We can also look up paths as a vector:
-=> (mdag/get-data graph *2 "link:0" "b")
-[true #{123 :x} efg]
+; We can also supply a 'not-found' value:
+=> (mdag/get-data graph *2 "a/b/c" :foo/not-found)
+:foo/not-found
 ```
 
 

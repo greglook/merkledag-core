@@ -153,17 +153,19 @@
   ([store node]
    (let [{:keys [::node/id ::node/links ::node/data]} node]
      (when (or (seq links) data)
-       (if-let [id (or id (::node/id (meta links)) (::node/id (meta data)))]
-         ; See if we can re-use an already-stored node.
-         (let [extant (node/-get-node store id)]
-           (if (and (= (seq links) (seq (::node/links extant)))
-                    (= data (::node/data extant)))
-             ; Links and data match, re-use stored node.
-             extant
-             ; Missing or some value mismatch, store a new node.
-             (node/-store-node! store node)))
-         ; No id metadata, store new node.
-         (node/-store-node! store node)))))
+       (->
+         (if-let [id (or id (::node/id (meta links)) (::node/id (meta data)))]
+           ; See if we can re-use an already-stored node.
+           (let [extant (node/-get-node store id)]
+             (if (and (= (seq links) (seq (::node/links extant)))
+                      (= data (::node/data extant)))
+               ; Links and data match, re-use stored node.
+               extant
+               ; Missing or some value mismatch, store a new node.
+               (node/-store-node! store node)))
+           ; No id metadata, store new node.
+           (node/-store-node! store node))
+         (apply-node-metadata)))))
   ([store links data]
    (store-node! store {::node/links links, ::node/data data})))
 
