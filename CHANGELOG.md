@@ -9,6 +9,13 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 ...
 
+## [0.3.1] - 2017-09-13
+
+### Added
+- The return value of `store-node!` annotates the data and links with the
+  corresponding node metadata.
+- Values are checked for node metadata when used for link targeting.
+
 ## [0.3.0] - 2017-08-03
 
 ### Added
@@ -44,7 +51,8 @@ This is a breaking change which moves much of the library API into a single
 
 Initial project release.
 
-[Unreleased]: https://github.com/greglook/merkledag-core/compare/0.3.0...HEAD
+[Unreleased]: https://github.com/greglook/merkledag-core/compare/0.3.1...HEAD
+[0.3.1]: https://github.com/greglook/merkledag-core/compare/0.3.0...0.3.1
 [0.3.0]: https://github.com/greglook/merkledag-core/compare/0.2.0...0.3.0
 [0.2.0]: https://github.com/greglook/merkledag-core/compare/0.1.0...0.2.0
 [0.1.0]: https://github.com/greglook/merkledag-core/tag/0.1.0
