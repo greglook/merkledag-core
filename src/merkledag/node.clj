@@ -2,7 +2,7 @@
   "Functions to serialize and operate on merkledag nodes."
   (:require
     [clojure.future :refer [pos-int?]]
-    [clojure.spec :as s]
+    [clojure.spec.alpha :as s]
     [merkledag.link :as link]
     [multihash.core :as multihash])
   (:import
