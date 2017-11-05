@@ -19,11 +19,11 @@
    [mvxcvi/blocks "0.9.1"]
    [mvxcvi/clj-cbor "0.4.1"]
    [mvxcvi/multicodec "0.5.1"]
-   [mvxcvi/multihash "2.0.1"]
-   [mvxcvi/puget "1.0.1"]]
+   [mvxcvi/multihash "2.0.2"]
+   [mvxcvi/puget "1.0.2"]]
 
   :test-selectors
-  {:unit (complement :integration)
+  {:default (complement :integration)
    :integration :integration}
 
   :hiera
@@ -49,19 +49,19 @@
   {:dev
    {:dependencies
     [[commons-logging "1.2"]
-     [mvxcvi/test.carly "0.3.0"]]}
+     [mvxcvi/test.carly "0.4.1"]]}
 
    :repl
    {:source-paths ["dev"]
     :dependencies
     [[org.clojure/tools.namespace "0.2.11"]
-     [rhizome "0.2.7"]]}
+     [rhizome "0.2.9"]]}
 
    :test
    {:jvm-opts ["-Dorg.apache.commons.logging.Log=org.apache.commons.logging.impl.NoOpLog"]}
 
    :coverage
-   {:plugins [[lein-cloverage "1.0.9"]]
+   {:plugins [[lein-cloverage "1.0.10"]]
     :dependencies [[riddley "0.1.14"]]
     :jvm-opts ["-Dorg.apache.commons.logging.Log=org.apache.commons.logging.impl.SimpleLog"
                "-Dorg.apache.commons.logging.simplelog.defaultlog=trace"]}})
