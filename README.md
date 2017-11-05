@@ -9,7 +9,7 @@ MerkleDAG Core
 This library implements a graph data storage layer out of linked structures of
 content-addressed nodes.
 
-Each node is a set of link and body data [flexibly encoded](https://github.com/greglook/clj-multicodec)
+Each node is a set of link and body data [flexibly encoded](https://github.com/multiformats/clj-multicodec)
 into an [immutable block of content](https://github.com/greglook/blocks).
 Each block is addressed by the hash of its content, which includes the
 serialized links. This forms into an expanded [Merkle tree](https://en.wikipedia.org/wiki/Merkle_tree),
