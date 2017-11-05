@@ -4,7 +4,7 @@
   'reference size' value."
   (:require
     [clojure.future :refer [nat-int?]]
-    [clojure.spec :as s]
+    [clojure.spec.alpha :as s]
     [clojure.string :as str]
     [clojure.walk :as walk]
     [multihash.core :as multihash])

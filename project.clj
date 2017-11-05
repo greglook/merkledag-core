@@ -14,7 +14,7 @@
   [[org.clojure/clojure "1.8.0"]
    [org.clojure/core.cache "0.6.5"]
    [org.clojure/tools.logging "0.4.0"]
-   [clojure-future-spec "1.9.0-alpha14"]
+   [clojure-future-spec "1.9.0-beta4"]
    [byte-streams "0.2.3"]
    [mvxcvi/blocks "0.9.1"]
    [mvxcvi/clj-cbor "0.4.1"]
