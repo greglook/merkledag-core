@@ -9,6 +9,11 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 ...
 
+## [0.3.2] - 2017-11-05
+
+### Changed
+- Various minor dependency upgrades.
+
 ## [0.3.1] - 2017-09-13
 
 ### Added
@@ -51,7 +56,8 @@ This is a breaking change which moves much of the library API into a single
 
 Initial project release.
 
-[Unreleased]: https://github.com/greglook/merkledag-core/compare/0.3.1...HEAD
+[Unreleased]: https://github.com/greglook/merkledag-core/compare/0.3.2...HEAD
+[0.3.2]: https://github.com/greglook/merkledag-core/compare/0.3.1...0.3.2
 [0.3.1]: https://github.com/greglook/merkledag-core/compare/0.3.0...0.3.1
 [0.3.0]: https://github.com/greglook/merkledag-core/compare/0.2.0...0.3.0
 [0.2.0]: https://github.com/greglook/merkledag-core/compare/0.1.0...0.2.0
