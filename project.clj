@@ -1,4 +1,4 @@
-(defproject mvxcvi/merkledag-core "0.3.2-SNAPSHOT"
+(defproject mvxcvi/merkledag-core "0.3.3-SNAPSHOT"
   :description "Graph datastore built on content-addressed merkle hash links"
   :url "http://github.com/greglook/merkledag-core"
   :license {:name "Public Domain"
