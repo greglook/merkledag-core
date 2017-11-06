@@ -2,7 +2,7 @@
   (:require
     [blocks.core :as block]
     [blocks.store.memory :refer [memory-block-store]]
-    [clojure.spec :as s]
+    [clojure.spec.alpha :as s]
     [clojure.string :as str]
     [clojure.test :refer :all]
     [clojure.test.check.generators :as gen]
@@ -15,26 +15,6 @@
     [merkledag.node :as node]
     [multicodec.core :as codec]
     [test.carly.core :as carly :refer [defop]]))
-
-
-; TODO: still necessary?
-(comment
-  (prefer-method clojure.pprint/simple-dispatch
-                 clojure.lang.IPersistentMap
-                 clojure.lang.IDeref)
-
-  (defmethod print-method multihash.core.Multihash
-    [v w]
-    (print-method (tagged-literal 'data/hash (multihash.core/base58 v)) w))
-
-  (defmethod print-method blocks.data.Block
-    [v w]
-    (print-method (tagged-literal 'data/block (dissoc (into {} v) :id #_:size)) w))
-
-  (defmethod print-method merkledag.link.MerkleLink
-    [v w]
-    (print-method (tagged-literal 'data/link link/link->form) w)))
-
 
 
 ;; ## Context Generation
@@ -206,33 +186,33 @@
 
 ;; ## Test Harnesses
 
-(deftest edn-block-store-test
+(deftest ^:integration edn-block-store-test
   (let [codec (cv1/edn-node-codec)]
-    (carly/check-system
-      "block-node-store linear EDN test"
+    (carly/check-system "block-node-store linear EDN test" 25
       #(mdag/init-store :codec codec)
       op-generators
-      :context (gen-context codec)
-      :iterations 15)))
+      :context-gen (gen-context codec)
+      :concurrency 1
+      :repetitions 1)))
 
 
-(deftest cbor-block-store-test
+(deftest ^:integration cbor-block-store-test
   (let [codec (cv1/cbor-node-codec)]
-    (carly/check-system
-      "block-node-store linear CBOR test"
+    (carly/check-system "block-node-store linear CBOR test" 25
       #(mdag/init-store :codec codec)
       op-generators
-      :context (gen-context codec)
-      :iterations 15)))
+      :context-gen (gen-context codec)
+      :concurrency 1
+      :repetitions 1)))
 
 
-(deftest caching-block-store-test
+(deftest ^:integration caching-block-store-test
   (let [codec (cv1/cbor-node-codec)]
-    (carly/check-system
-      "block-node-store linear CBOR test with caching"
+    (carly/check-system "block-node-store linear CBOR test with caching" 20
       #(mdag/init-store
          :codec codec
          :cache {:total-size-limit (* 32 1024)})
       op-generators
-      :context (gen-context codec)
-      :iterations 10)))
+      :context-gen (gen-context codec)
+      :concurrency 1
+      :repetitions 1)))
