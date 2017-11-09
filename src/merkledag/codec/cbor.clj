@@ -67,7 +67,7 @@
 
   (decode!
     [this input]
-    (first (cbor/decode this input))))
+    (cbor/decode this input)))
 
 
 (defn cbor-codec

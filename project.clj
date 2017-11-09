@@ -17,7 +17,7 @@
    [clojure-future-spec "1.9.0-beta4"]
    [byte-streams "0.2.3"]
    [mvxcvi/blocks "0.9.1"]
-   [mvxcvi/clj-cbor "0.4.1"]
+   [mvxcvi/clj-cbor "0.5.0"]
    [mvxcvi/multicodec "0.5.1"]
    [mvxcvi/multihash "2.0.2"]
    [mvxcvi/puget "1.0.2"]]
