@@ -14,9 +14,12 @@
   (:require
     [clj-cbor.core :as cbor]
     [clj-cbor.data.core :as data]
-    [multicodec.core :as multicodec])
+    [multicodec.core :as codec :refer [defdecoder defencoder]])
   (:import
-    clj_cbor.codec.CBORCodec))
+    clj_cbor.codec.CBORCodec
+    (java.io
+      InputStream
+      OutputStream)))
 
 
 (defn- types->write-handlers
@@ -41,33 +44,44 @@
         (vals types)))
 
 
+(defencoder CBOREncoderStream
+  [^OutputStream output
+   codec]
+
+  (write!
+    [this value]
+    (let [size (cbor/encode codec output value)]
+      (.flush output)
+      size)))
+
+
+(defdecoder EDNDecoderStream
+  [^InputStream input
+   codec]
+
+  (read!
+    [this]
+    (cbor/decode codec input)))
+
+
 (extend-type CBORCodec
 
   multicodec/Encoder
 
-  (encodable?
-    [this value]
-    ; In reality, some values will fail without proper type handlers.
-    true)
-
-
-  (encode!
-    [this output value]
-    (let [size (cbor/encode this output value)]
-      (.flush ^java.io.OutputStream output)
-      size))
-
-
-  multicodec/Decoder
-
-  (decodable?
+  (processable?
     [this header]
-    (= (:header this) header))
+    (= header (:header this)))
 
 
-  (decode!
-    [this input]
-    (cbor/decode this input)))
+  (encode-stream
+    [this selector stream]
+    (codec/write-header! stream (:header this))
+    (->EDNEncoderStream stream this))
+
+
+  (decode-stream
+    [this selector stream]
+    (->EDNDecoderStream stream this)))
 
 
 (defn cbor-codec

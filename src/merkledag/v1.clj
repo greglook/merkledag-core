@@ -1,18 +1,22 @@
-(ns merkledag.codec.node-v1
+(ns merkledag.v1
   "Initial version of the composite node codec."
   (:require
     [merkledag.codec.cbor :refer [cbor-codec]]
     [merkledag.codec.edn :refer [edn-codec]]
     [merkledag.link :as link]
     [merkledag.node :as node]
+    [multicodec.codec.compress :refer [gzip-codec]]
+    [multicodec.codec.label :refer [filter-codec]]
     [multicodec.core :as codec]
-    [multicodec.header :as header]
-    [multicodec.codecs.mux :refer [mux-codec]]
+    ;[multicodec.header :as header]
     [multihash.core :as multihash])
   (:import
     merkledag.link.LinkIndex
     merkledag.link.MerkleLink
     multihash.core.Multihash))
+
+
+; TODO: move this out of codec subns
 
 
 (def ^:const codec-header
@@ -45,6 +49,7 @@
 
 ;; ## Node Codec
 
+#_
 (defrecord NodeCodec
   [header mux]
 
@@ -86,29 +91,12 @@
 
 
 (defn node-codec
-  "Construct a new node codec. The codec will serialize values using the given
-  map of types, merged into `core-types`."
-  [& codec-kvs]
-  (->NodeCodec
-    codec-header
-    (apply mux-codec codec-kvs)
-    #_ ; TODO: support compression wrappers
-    (mux-codec
-      :snappy (snappy-codec data-mux)
-      :gzip (gzip-codec data-mux)
-      :cbor cbor
-      :edn edn)))
-
-
-(defn edn-node-codec
   ([]
-   (edn-node-codec nil))
+   (node-codec nil))
   ([types]
-   (node-codec :edn (edn-codec (merge-with merge core-types types)))))
-
-
-(defn cbor-node-codec
-  ([]
-   (cbor-node-codec nil))
-  ([types]
-   (node-codec :cbor (cbor-codec (merge-with merge core-types types)))))
+   (let [types* (merge-with merge core-types types)]
+     (codec/mux
+       :mdag (label-codec codec-header)
+       :gzip (gzip-codec)
+       :cbor (cbor-codec types*)
+       :edn (edn-codec types*)))))

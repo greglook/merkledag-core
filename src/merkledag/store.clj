@@ -1,4 +1,4 @@
-(ns merkledag.node.store
+(ns merkledag.store
   "Node store backed by content-addressable blocks, serialized with a codec."
   (:require
     [blocks.core :as block]

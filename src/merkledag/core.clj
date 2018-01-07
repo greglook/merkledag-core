@@ -4,11 +4,11 @@
     [blocks.store.memory :refer [memory-block-store]]
     [clojure.string :as str]
     [clojure.walk :as walk]
-    [merkledag.codec.node-v1 :as cv1]
+    [merkledag.cache :as cache]
+    [merkledag.v1 :as v1]
     [merkledag.link :as link]
     [merkledag.node :as node]
-    [merkledag.node.store :as store]
-    [merkledag.node.cache :as cache])
+    [merkledag.store :as store])
   (:import
     merkledag.link.MerkleLink))
 
@@ -51,7 +51,7 @@
   [& {:as opts}]
   (store/block-node-store
     :store (or (:store opts) (memory-block-store))
-    :codec (or (:codec opts) (cv1/edn-node-codec (:types opts)))
+    :codec (or (:codec opts) (v1/node-codec (:types opts)))
     :cache (when (:cache opts)
              (atom (apply cache/node-cache {} (apply concat (:cache opts)))))))
 
