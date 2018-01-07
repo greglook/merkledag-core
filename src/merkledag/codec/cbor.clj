@@ -55,7 +55,7 @@
       size)))
 
 
-(defdecoder EDNDecoderStream
+(defdecoder CBORDecoderStream
   [^InputStream input
    codec]
 
@@ -66,7 +66,7 @@
 
 (extend-type CBORCodec
 
-  multicodec/Encoder
+  codec/Codec
 
   (processable?
     [this header]
@@ -76,18 +76,18 @@
   (encode-stream
     [this selector stream]
     (codec/write-header! stream (:header this))
-    (->EDNEncoderStream stream this))
+    (->CBOREncoderStream stream this))
 
 
   (decode-stream
     [this selector stream]
-    (->EDNDecoderStream stream this)))
+    (->CBORDecoderStream stream this)))
 
 
 (defn cbor-codec
   "Constructs a new CBOR codec."
   [types & {:as opts}]
   (cbor/cbor-codec
-    :header (:cbor multicodec/headers)
+    :header (:cbor codec/headers)
     :write-handlers (types->write-handlers types)
     :read-handlers (types->read-handlers types)))

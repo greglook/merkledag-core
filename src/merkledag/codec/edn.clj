@@ -106,7 +106,7 @@
 
   (decode-stream
     [this header stream]
-    (-> ^InputStream input
+    (-> ^InputStream stream
         (InputStreamReader. data-charset)
         (PushbackReader.)
         (->EDNDecoderStream data-readers eof))))
