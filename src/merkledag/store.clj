@@ -94,7 +94,7 @@
     (let [data (::node/data value)
           links (link/collect-table (::node/links value) data)
           data* (link/replace-links links data)
-          selectors (:encoding store [:mdag :edn])
+          selectors (or (:encoding store) [:mdag :edn])
           baos (ByteArrayOutputStream.)]
       (binding [header/*headers* []]
         (with-open [stream (codec/encoder-stream (:codecs store) baos selectors)]

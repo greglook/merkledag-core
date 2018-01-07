@@ -18,11 +18,11 @@
 (deftest edn-codec
   (let [codec (edn/edn-codec test-types)
         test-encode #(let [baos (ByteArrayOutputStream.)]
-                       (with-open [stream (codec/encode-stream codec :edn baos)]
+                       (with-open [stream (codec/encode-byte-stream codec :edn baos)]
                          (codec/write! stream %))
                        (String. (.toByteArray baos)))
         test-decode #(let [bais (ByteArrayInputStream. (.getBytes %))]
-                       (with-open [stream (codec/decode-stream codec (:header codec) bais)]
+                       (with-open [stream (codec/decode-byte-stream codec (:header codec) bais)]
                          (codec/read! stream)))]
     (testing "predicates"
       (is (false? (codec/processable? codec "/bin/")))

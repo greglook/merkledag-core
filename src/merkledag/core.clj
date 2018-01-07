@@ -40,16 +40,19 @@
 
   Options may include:
 
-  - `:store`
-    Block store to persist nodes to. Defaults to an in-memory store.
   - `:codecs`
     Codec to serialize nodes with. Defaults to an EDN codec with basic types.
+  - `:encoding`
+    Choice of codecs to use to encode new nodes into blocks.
+  - `:store`
+    Block store to persist nodes to. Defaults to an in-memory store.
   - `:cache`
     Map of options to supply to construct a node cache. See
     `merkledag.node.cache/node-cache` for options."
   [& {:as opts}]
   (store/block-node-store
     :codecs (or (:codecs opts) (store/node-codecs (:types opts)))
+    :encoding (:encoding opts [:mdag :edn])
     :store (or (:store opts) (memory-block-store))
     :cache (when (:cache opts)
              (atom (apply cache/node-cache {} (apply concat (:cache opts)))))))

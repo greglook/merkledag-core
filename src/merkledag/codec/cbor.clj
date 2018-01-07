@@ -18,6 +18,7 @@
   (:import
     clj_cbor.codec.CBORCodec
     (java.io
+      DataOutputStream
       InputStream
       OutputStream)))
 
@@ -45,7 +46,7 @@
 
 
 (defencoder CBOREncoderStream
-  [^OutputStream output
+  [^DataOutputStream output
    codec]
 
   (write!
@@ -73,15 +74,27 @@
     (= header (:header this)))
 
 
-  (encode-stream
-    [this selector stream]
-    (codec/write-header! stream (:header this))
-    (->CBOREncoderStream stream this))
+  (encode-byte-stream
+    [this selector output-stream]
+    (codec/write-header! output-stream (:header this))
+    (->CBOREncoderStream
+      (DataOutputStream. ^OutputStream output-stream)
+      this))
 
 
-  (decode-stream
-    [this selector stream]
-    (->CBORDecoderStream stream this)))
+  (encode-value-stream
+    [this selector encoder-stream]
+    encoder-stream)
+
+
+  (decode-byte-stream
+    [this selector input-stream]
+    (->CBORDecoderStream input-stream this))
+
+
+  (decode-value-stream
+    [this selector decoder-stream]
+    decoder-stream))
 
 
 (defn cbor-codec

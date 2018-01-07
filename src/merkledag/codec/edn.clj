@@ -91,25 +91,20 @@
 (defcodec EDNCodec
   [header printer data-readers eof]
 
-  (processable?
-    [this hdr]
-    (= header hdr))
-
-
-  (encode-stream
-    [this selector stream]
-    (codec/write-header! stream header)
+  (encode-byte-stream
+    [this selector output-stream]
+    (codec/write-header! output-stream header)
     (->EDNEncoderStream
-      (OutputStreamWriter. ^OutputStream stream data-charset)
+      (OutputStreamWriter. ^OutputStream output-stream data-charset)
       printer))
 
 
-  (decode-stream
-    [this header stream]
-    (-> ^InputStream stream
-        (InputStreamReader. data-charset)
-        (PushbackReader.)
-        (->EDNDecoderStream data-readers eof))))
+  (decode-byte-stream
+    [this header input-stream]
+    (->EDNDecoderStream
+     (PushbackReader.
+       (InputStreamReader. ^InputStream input-stream data-charset))
+      data-readers eof)))
 
 
 (defn edn-codec
