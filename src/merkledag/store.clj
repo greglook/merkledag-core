@@ -94,7 +94,7 @@
     (let [data (::node/data value)
           links (link/collect-table (::node/links value) data)
           data* (link/replace-links links data)
-          selectors (:selectors store [:mdag :edn])
+          selectors (:encoding store [:mdag :edn])
           baos (ByteArrayOutputStream.)]
       (binding [header/*headers* []]
         (with-open [stream (codec/encoder-stream (:codecs store) baos selectors)]
@@ -143,7 +143,7 @@
 ;; ## Node Store
 
 (defrecord BlockNodeStore
-  [codecs store cache]
+  [codecs encoding store cache]
 
   node/NodeStore
 
@@ -191,5 +191,10 @@
 
 
 (defn block-node-store
+  "Construct a new block node store."
   [& {:as opts}]
-  (map->BlockNodeStore opts))
+  (map->BlockNodeStore
+    (merge {:encoding [:mdag :edn]}
+           opts
+           {:codecs (or (:codecs opts)
+                        (node-codecs (:types opts)))})))
