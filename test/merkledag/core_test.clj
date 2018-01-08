@@ -185,7 +185,7 @@
 
 ;; ## Test Harnesses
 
-(deftest ^:integration edn-block-store-test
+(deftest ^:integration edn-node-store
   (let [encoding [:mdag :edn]
         node-format {:encoding encoding
                      :codecs (store/node-codecs nil)}]
@@ -197,7 +197,7 @@
       :repetitions 1)))
 
 
-(deftest ^:integration cbor-block-store-test
+(deftest ^:integration cbor-node-store
   (let [encoding [:mdag :cbor]
         node-format {:encoding encoding
                      :codecs (store/node-codecs nil)}]
@@ -209,8 +209,8 @@
       :repetitions 1)))
 
 
-(deftest ^:integration caching-block-store-test
-  (let [encoding [:mdag :gzip :cbor]
+(deftest ^:integration caching-compressed-node-store
+  (let [encoding [:mdag :gzip :edn]
         node-format {:encoding encoding
                      :codecs (store/node-codecs nil)}]
     (carly/check-system "block-node-store linear CBOR test with caching" 20
