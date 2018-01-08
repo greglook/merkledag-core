@@ -18,6 +18,7 @@
   (:import
     clj_cbor.codec.CBORCodec
     (java.io
+      DataInputStream
       DataOutputStream
       InputStream
       OutputStream)))
@@ -51,13 +52,11 @@
 
   (write!
     [this value]
-    (let [size (cbor/encode codec output value)]
-      (.flush output)
-      size)))
+    (cbor/encode codec output value)))
 
 
 (defdecoder CBORDecoderStream
-  [^InputStream input
+  [^DataInputStream input
    codec]
 
   (read!
@@ -89,7 +88,9 @@
 
   (decode-byte-stream
     [this selector input-stream]
-    (->CBORDecoderStream input-stream this))
+    (->CBORDecoderStream
+      (DataInputStream. ^InputStream input-stream)
+      this))
 
 
   (decode-value-stream
