@@ -7,13 +7,12 @@
     [clojure.test :refer :all]
     [clojure.test.check.generators :as gen]
     [clojure.walk :as walk]
-    [merkledag.codec.node-v1 :as cv1]
+    [merkledag.cache :as cache]
     [merkledag.core :as mdag]
-    [merkledag.node.store :as store]
-    [merkledag.node.cache :as cache]
     [merkledag.link :as link]
     [merkledag.node :as node]
-    [multicodec.core :as codec]
+    [merkledag.store :as store]
+    [multistream.codec :as codec]
     [test.carly.core :as carly :refer [defop]]))
 
 
@@ -44,19 +43,19 @@
 
 
 (defn- build-node-context
-  [codec input]
+  [store input]
   (->>
     input
     (reduce
       (fn [nodes [backlinks data]]
         (if (empty? nodes)
-          (conj nodes (store/format-block codec {::node/data data}))
+          (conj nodes (store/format-block store {::node/data data}))
           (let [links (mapv (fn idx->link
                               [[n i]]
                               (let [node (nth nodes (mod i (count nodes)))]
                                 (link/create n (::node/id node) (node/reachable-size node))))
                             backlinks)]
-            (conj nodes (store/format-block codec {::node/links links, ::node/data data})))))
+            (conj nodes (store/format-block store {::node/links links, ::node/data data})))))
       [])
     (map (juxt ::node/id identity))
     (into {})))
@@ -65,12 +64,12 @@
 (defn gen-context
   "Generate a context map of precreated nodes by serializing generated data
   with the given codec."
-  [codec]
+  [store]
   (let [gen-link-name (gen/such-that #(not (str/index-of % "/")) gen/string)
         gen-backlinks (gen/vector (gen/tuple gen-link-name gen/nat))
         gen-node-input (gen/tuple gen-backlinks gen-node-data)]
     (gen/fmap
-      (partial build-node-context codec)
+      (partial build-node-context store)
       (gen/not-empty (gen/vector gen-node-input)))))
 
 
@@ -186,33 +185,39 @@
 
 ;; ## Test Harnesses
 
-(deftest ^:integration edn-block-store-test
-  (let [codec (cv1/edn-node-codec)]
+(deftest ^:integration edn-node-store
+  (let [encoding [:mdag :edn]
+        node-format {:encoding encoding
+                     :codecs (store/node-codecs nil)}]
     (carly/check-system "block-node-store linear EDN test" 25
-      #(mdag/init-store :codec codec)
+      #(mdag/init-store :encoding encoding)
       op-generators
-      :context-gen (gen-context codec)
+      :context-gen (gen-context node-format)
       :concurrency 1
       :repetitions 1)))
 
 
-(deftest ^:integration cbor-block-store-test
-  (let [codec (cv1/cbor-node-codec)]
+(deftest ^:integration cbor-node-store
+  (let [encoding [:mdag :cbor]
+        node-format {:encoding encoding
+                     :codecs (store/node-codecs nil)}]
     (carly/check-system "block-node-store linear CBOR test" 25
-      #(mdag/init-store :codec codec)
+      #(mdag/init-store :encoding encoding)
       op-generators
-      :context-gen (gen-context codec)
+      :context-gen (gen-context node-format)
       :concurrency 1
       :repetitions 1)))
 
 
-(deftest ^:integration caching-block-store-test
-  (let [codec (cv1/cbor-node-codec)]
+(deftest ^:integration caching-compressed-node-store
+  (let [encoding [:mdag :gzip :edn]
+        node-format {:encoding encoding
+                     :codecs (store/node-codecs nil)}]
     (carly/check-system "block-node-store linear CBOR test with caching" 20
       #(mdag/init-store
-         :codec codec
+         :encoding encoding
          :cache {:total-size-limit (* 32 1024)})
       op-generators
-      :context-gen (gen-context codec)
+      :context-gen (gen-context node-format)
       :concurrency 1
       :repetitions 1)))

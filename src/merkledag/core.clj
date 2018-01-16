@@ -4,11 +4,10 @@
     [blocks.store.memory :refer [memory-block-store]]
     [clojure.string :as str]
     [clojure.walk :as walk]
-    [merkledag.codec.node-v1 :as cv1]
+    [merkledag.cache :as cache]
     [merkledag.link :as link]
     [merkledag.node :as node]
-    [merkledag.node.store :as store]
-    [merkledag.node.cache :as cache])
+    [merkledag.store :as store])
   (:import
     merkledag.link.MerkleLink))
 
@@ -41,17 +40,20 @@
 
   Options may include:
 
+  - `:codecs`
+    Codec to serialize nodes with. Defaults to an EDN codec with basic types.
+  - `:encoding`
+    Choice of codecs to use to encode new nodes into blocks.
   - `:store`
     Block store to persist nodes to. Defaults to an in-memory store.
-  - `:codec`
-    Codec to serialize nodes with. Defaults to an EDN codec with basic types.
   - `:cache`
     Map of options to supply to construct a node cache. See
     `merkledag.node.cache/node-cache` for options."
   [& {:as opts}]
   (store/block-node-store
+    :codecs (or (:codecs opts) (store/node-codecs (:types opts)))
+    :encoding (:encoding opts [:mdag :edn])
     :store (or (:store opts) (memory-block-store))
-    :codec (or (:codec opts) (cv1/edn-node-codec (:types opts)))
     :cache (when (:cache opts)
              (atom (apply cache/node-cache {} (apply concat (:cache opts)))))))
 

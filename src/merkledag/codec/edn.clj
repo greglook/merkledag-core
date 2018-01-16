@@ -13,7 +13,7 @@
   the plugin for that type."
   (:require
     [clojure.edn :as edn]
-    [multicodec.core :as multicodec]
+    [multistream.codec :as codec :refer [defcodec defdecoder defencoder]]
     [puget.printer :as puget])
   (:import
     (java.io
@@ -62,57 +62,54 @@
         types))
 
 
-(defrecord EDNCodec
-  [header printer data-readers eof]
+(defencoder EDNEncoderStream
+  [^OutputStreamWriter writer
+   printer]
 
-  multicodec/Encoder
-
-  (encodable?
+  (write!
     [this value]
-    ; In reality, some values will fail without proper type handlers.
-    true)
+    (let [encoded (puget/render-str printer value)]
+      (.write writer encoded)
+      (.write writer "\n")
+      (.flush writer)
+      (inc (count (.getBytes encoded data-charset))))))
 
 
-  (encode!
-    [this output value]
-    (let [data (OutputStreamWriter. ^OutputStream output data-charset)
-          encoded (puget/render-str printer value)]
-      (.write data encoded)
-      (.write data "\n")
-      (.flush data)
-      (inc (count (.getBytes encoded data-charset)))))
+(defdecoder EDNDecoderStream
+  [^PushbackReader reader
+   data-readers]
 
-
-  multicodec/Decoder
-
-  (decodable?
-    [this header']
-    (= header header'))
-
-
-  (decode!
-    [this input]
+  (read!
+    [this]
     (edn/read
-      {:readers data-readers
-       :eof eof}
-      (-> ^InputStream input
-          (InputStreamReader. data-charset)
-          (PushbackReader.)))))
+      (cond-> {:readers data-readers}
+        (thread-bound? #'codec/*eof-guard*)
+          (assoc :eof codec/*eof-guard*))
+      reader)))
 
 
-(alter-meta! #'->EDNCodec assoc :private true)
-(alter-meta! #'map->EDNCodec assoc :private true)
+(defcodec EDNCodec
+  [header data-types]
+
+  (encode-byte-stream
+    [this selector output-stream]
+    (->EDNEncoderStream
+      (OutputStreamWriter. ^OutputStream output-stream data-charset)
+      (puget/canonical-printer (types->print-handlers data-types))))
+
+
+  (decode-byte-stream
+    [this header input-stream]
+    (->EDNDecoderStream
+      (PushbackReader.
+        (InputStreamReader. ^InputStream input-stream data-charset))
+      (types->data-readers data-types))))
 
 
 (defn edn-codec
-  "Constructs a new EDN codec. Opts may include:
-
-  - `:eof` a value to be returned from the codec when the end of the stream is
-    reached instead of throwing an exception. "
-  [types & {:as opts}]
-  (let [types* (merge core-types types)]
-    (map->EDNCodec
-      (assoc opts
-             :header (:edn multicodec/headers)
-             :printer (puget/canonical-printer (types->print-handlers types*))
-             :data-readers (types->data-readers types*)))))
+  "Constructs a new EDN codec using the given map of type handlers."
+  [data-types & {:as opts}]
+  (map->EDNCodec
+    (assoc opts
+           :header (:edn codec/headers)
+           :data-types (merge core-types data-types))))
