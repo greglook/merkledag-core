@@ -7,11 +7,10 @@
     [merkledag.codec.edn :refer [edn-codec]]
     [merkledag.link :as link]
     [merkledag.node :as node]
-    [multicodec.codec.compress :refer [gzip-codec]]
-    [multicodec.codec.label :refer [label-codec]]
-    [multicodec.core :as codec]
-    [multicodec.header :as header]
-    [multihash.core :as multihash])
+    [multihash.core :as multihash]
+    [multistream.codec :as codec]
+    [multistream.codec.compress :refer [gzip-codec]]
+    [multistream.codec.transform :refer [transform-codec]])
   (:import
     blocks.data.Block
     (java.io
@@ -71,8 +70,9 @@
   "Construct a new set of standard node codecs."
   [types]
   (let [types* (merge-with merge core-types types)]
-    (codec/mux
-      :mdag (label-codec node-header)
+    (codec/multi
+      ; TODO: encode/decode fn?
+      :mdag (transform-codec node-header)
       :gzip (gzip-codec)
       :cbor (cbor-codec types*)
       :edn (edn-codec types*))))
@@ -95,19 +95,19 @@
           links (link/collect-table (::node/links value) data)
           data* (link/replace-links links data)
           selectors (or (:encoding store) [:mdag :edn])
-          baos (ByteArrayOutputStream.)]
-      (binding [header/*headers* []]
-        (with-open [stream (codec/encoder-stream (:codecs store) baos selectors)]
-          (codec/write! stream links)
-          (codec/write! stream data*))
-        (let [block (block/read! (.toByteArray baos))]
-          (-> {::node/id (:id block)
-               ::node/size (:size block)
-               ::node/encoding header/*headers*}
-              (cond->
-                (seq links)  (assoc ::node/links links)
-                (some? data) (assoc ::node/data data))
-              (->> (into block))))))))
+          baos (ByteArrayOutputStream.)
+          headers (with-open [stream (codec/encoder-stream (:codecs store) selectors baos)]
+                    (codec/write! stream links)
+                    (codec/write! stream data*)
+                    (::codec/headers stream))
+          block (block/read! (.toByteArray baos))]
+      (-> {::node/id (:id block)
+           ::node/size (:size block)
+           ::node/encoding (vec headers)}
+          (cond->
+            (seq links)  (assoc ::node/links links)
+            (some? data) (assoc ::node/data data))
+          (->> (into block))))))
 
 
 (defn parse-block
@@ -120,23 +120,22 @@
   is nil."
   [store block]
   (when block
-    (binding [header/*headers* []]
-      (with-open [content (block/open block)
-                  stream (codec/decoder-stream (:codecs store) content)]
-        (let [links (codec/read! stream)
-              data* (codec/read! stream)]
-          (when-not (or (seq links) data*)
-            (throw (ex-info "Decoded bad node value without links or data"
-                            {:links links, :data data*})))
-          (-> {::node/id (:id block)
-               ::node/size (:size block)
-               ::node/encoding header/*headers*}
-              (cond->
-                (seq links)
-                  (assoc ::node/links (vec links))
-                data*
-                  (assoc ::node/data (link/resolve-indexes links data*)))
-              (->> (into block))))))))
+    (with-open [content (block/open block)
+                stream (codec/decoder-stream (:codecs store) content)]
+      (let [links (codec/read! stream)
+            data* (codec/read! stream)]
+        (when-not (or (seq links) data*)
+          (throw (ex-info "Decoded bad node value without links or data"
+                          {:links links, :data data*})))
+        (-> {::node/id (:id block)
+             ::node/size (:size block)
+             ::node/encoding (vec (::codec/headers stream))}
+            (cond->
+              (seq links)
+                (assoc ::node/links (vec links))
+              data*
+                (assoc ::node/data (link/resolve-indexes links data*)))
+            (->> (into block)))))))
 
 
 

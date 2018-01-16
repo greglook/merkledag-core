@@ -13,7 +13,7 @@
   the plugin for that type."
   (:require
     [clojure.edn :as edn]
-    [multicodec.core :as codec :refer [defcodec defdecoder defencoder]]
+    [multistream.codec :as codec :refer [defcodec defdecoder defencoder]]
     [puget.printer :as puget])
   (:import
     (java.io
@@ -77,46 +77,39 @@
 
 (defdecoder EDNDecoderStream
   [^PushbackReader reader
-   data-readers
-   eof]
+   data-readers]
 
   (read!
     [this]
     (edn/read
-      {:readers data-readers
-       :eof eof}
+      (cond-> {:readers data-readers}
+        (thread-bound? #'codec/*eof-guard*)
+          (assoc :eof codec/*eof-guard*))
       reader)))
 
 
 (defcodec EDNCodec
-  [header printer data-readers eof]
+  [header data-types]
 
   (encode-byte-stream
     [this selector output-stream]
-    (codec/write-header! output-stream header)
     (->EDNEncoderStream
       (OutputStreamWriter. ^OutputStream output-stream data-charset)
-      printer))
+      (puget/canonical-printer (types->print-handlers data-types))))
 
 
   (decode-byte-stream
     [this header input-stream]
     (->EDNDecoderStream
-     (PushbackReader.
-       (InputStreamReader. ^InputStream input-stream data-charset))
-      data-readers eof)))
+      (PushbackReader.
+        (InputStreamReader. ^InputStream input-stream data-charset))
+      (types->data-readers data-types))))
 
 
 (defn edn-codec
-  "Constructs a new EDN codec. Opts may include:
-
-  - `:eof`
-    A value to be returned from the codec when the end of the stream is reached
-    instead of throwing an exception. "
-  [types & {:as opts}]
-  (let [types* (merge core-types types)]
-    (map->EDNCodec
-      (assoc opts
-             :header (:edn codec/headers)
-             :printer (puget/canonical-printer (types->print-handlers types*))
-             :data-readers (types->data-readers types*)))))
+  "Constructs a new EDN codec using the given map of type handlers."
+  [data-types & {:as opts}]
+  (map->EDNCodec
+    (assoc opts
+           :header (:edn codec/headers)
+           :data-types (merge core-types data-types))))

@@ -14,7 +14,7 @@
   (:require
     [clj-cbor.core :as cbor]
     [clj-cbor.data.core :as data]
-    [multicodec.core :as codec :refer [defdecoder defencoder]])
+    [multistream.codec :as codec :refer [defdecoder defencoder]])
   (:import
     clj_cbor.codec.CBORCodec
     (java.io
@@ -61,7 +61,13 @@
 
   (read!
     [this]
-    (cbor/decode codec input)))
+    (try
+      (cbor/decode codec input)
+      (catch Exception ex
+        (if (and (thread-bound? #'codec/*eof-guard*)
+                 (= (:cbor/error (ex-data ex)) :clj-cbor.codec/end-of-input))
+          codec/*eof-guard*
+          (throw ex))))))
 
 
 (extend-type CBORCodec
@@ -73,9 +79,13 @@
     (= header (:header this)))
 
 
+  (select-header
+    [this selector]
+    (:header this))
+
+
   (encode-byte-stream
     [this selector output-stream]
-    (codec/write-header! output-stream (:header this))
     (->CBOREncoderStream
       (DataOutputStream. ^OutputStream output-stream)
       this))

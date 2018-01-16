@@ -12,7 +12,7 @@
     [merkledag.link :as link]
     [merkledag.node :as node]
     [merkledag.store :as store]
-    [multicodec.core :as codec]
+    [multistream.codec :as codec]
     [test.carly.core :as carly :refer [defop]]))
 
 

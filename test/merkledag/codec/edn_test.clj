@@ -2,7 +2,7 @@
   (:require
     [clojure.test :refer :all]
     [merkledag.codec.edn :as edn]
-    [multicodec.core :as codec])
+    [multistream.codec :as codec])
   (:import
     (java.io
       ByteArrayInputStream
@@ -16,24 +16,17 @@
 
 
 (deftest edn-codec
-  (let [codec (edn/edn-codec test-types)
-        test-encode #(let [baos (ByteArrayOutputStream.)]
-                       (with-open [stream (codec/encode-byte-stream codec :edn baos)]
-                         (codec/write! stream %))
-                       (String. (.toByteArray baos)))
-        test-decode #(let [bais (ByteArrayInputStream. (.getBytes %))]
-                       (with-open [stream (codec/decode-byte-stream codec (:header codec) bais)]
-                         (codec/read! stream)))]
+  (let [codec (edn/edn-codec test-types)]
     (testing "predicates"
       (is (false? (codec/processable? codec "/bin/")))
       (is (true? (codec/processable? codec "/edn"))))
     (testing "encoding"
-      (is (= "\u0005/edn\nnil\n" (test-encode nil))
+      (is (= "\u0005/edn\nnil\n" (String. (codec/encode codec nil)))
           "nil value should encode to nil string")
-      (is (= "\u0005/edn\nfalse\n" (test-encode false)))
-      (is (= "\u0005/edn\n(123 foo :bar)\n" (test-encode '(123 foo :bar)))))
+      (is (= "\u0005/edn\nfalse\n" (String. (codec/encode codec false))))
+      (is (= "\u0005/edn\n(123 foo :bar)\n" (String. (codec/encode codec '(123 foo :bar))))))
     (testing "decoding"
       (is (= {:alpha true, :beta 'bar, "foo" 123}
-             (test-decode "{:alpha true :beta bar \"foo\" 123}")))
-      (is (= :foo (test-decode ":foo\nbar\n456\n"))
+             (codec/decode codec (.getBytes "\u0005/edn\n{:alpha true :beta bar \"foo\" 123}\n"))))
+      (is (= :foo (codec/decode codec (.getBytes "\u0005/edn\n:foo\nbar\n456\n")))
           "should only decode first value"))))

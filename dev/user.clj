@@ -12,8 +12,8 @@
     [merkledag.core :as mdag]
     [merkledag.link :as link]
     [merkledag.node :as node]
-    [multicodec.core :as codec]
     [multihash.core :as multihash]
+    [multistream.codec :as codec]
     [puget.printer :as puget]))
 
 
