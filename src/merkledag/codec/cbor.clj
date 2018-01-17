@@ -64,17 +64,11 @@
     (try
       (let [value (cbor/decode codec input this)]
         (if (identical? value this)
-          (if (thread-bound? #'codec/*eof-guard*)
-            codec/*eof-guard*
-            (throw (ex-info "End of input stream reached"
-                            {:type ::codec/eof})))
+          (codec/eof-error!)
           value))
       (catch Exception ex
         (if (= (:cbor/error (ex-data ex)) :clj-cbor.codec/end-of-input)
-          (if (thread-bound? #'codec/*eof-guard*)
-            codec/*eof-guard*
-            (throw (ex-info "End of input stream reached"
-                            {:type ::codec/eof})))
+          (codec/eof-error!)
           (throw ex))))))
 
 

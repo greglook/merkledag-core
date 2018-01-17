@@ -83,10 +83,7 @@
     [this]
     (let [value (edn/read {:readers data-readers, :eof this} reader)]
       (if (identical? value this)
-        (if (thread-bound? #'codec/*eof-guard*)
-          codec/*eof-guard*
-          (throw (ex-info "End of input stream reached"
-                          {:type ::codec/eof})))
+        (codec/eof-error!)
         value))))
 
 
