@@ -29,4 +29,19 @@
       (is (= {:alpha true, :beta 'bar, "foo" 123}
              (codec/decode codec (.getBytes "\u0005/edn\n{:alpha true :beta bar \"foo\" 123}\n"))))
       (is (= :foo (codec/decode codec (.getBytes "\u0005/edn\n:foo\nbar\n456\n")))
-          "should only decode first value"))))
+          "should only decode first value"))
+    (testing "eof behavior"
+      (let [bais (ByteArrayInputStream. (byte-array 0))]
+        (with-open [decoder (codec/decode-byte-stream codec nil bais)]
+          (let [err-type (try
+                           (codec/read! decoder)
+                           nil
+                           (catch Exception ex
+                             (:type (ex-data ex))))]
+            (do-report
+              {:type (if (= err-type ::codec/eof) :pass :fail)
+               :message "EOF read should throw correct ex-info type"
+               :expected ::codec/eof
+               :actual err-type}))
+          (binding [codec/*eof-guard* (Object.)]
+            (is (identical? codec/*eof-guard* (codec/read! decoder)))))))))

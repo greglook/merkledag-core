@@ -18,7 +18,7 @@
    [mvxcvi/blocks "1.1.0"]
    [mvxcvi/clj-cbor "0.6.0"]
    [mvxcvi/multihash "2.0.2"]
-   [mvxcvi/multistream "0.7.0-SNAPSHOT"]
+   [mvxcvi/multistream "0.7.0"]
    [mvxcvi/puget "1.0.2"]]
 
   :test-selectors

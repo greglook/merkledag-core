@@ -25,4 +25,19 @@
     (testing "decoding"
       (is (= {} (codec/decode codec (hex/decode "072f63626f722f0aa0"))))
       (is (= '(123 foo :bar)
-             (codec/decode codec (hex/decode "072f63626f722f0a83187bd82763666f6fd827643a626172")))))))
+             (codec/decode codec (hex/decode "072f63626f722f0a83187bd82763666f6fd827643a626172")))))
+    (testing "eof behavior"
+      (let [bais (ByteArrayInputStream. (byte-array 0))]
+        (with-open [decoder (codec/decode-byte-stream codec nil bais)]
+          (let [err-type (try
+                           (codec/read! decoder)
+                           nil
+                           (catch Exception ex
+                             (:type (ex-data ex))))]
+            (do-report
+              {:type (if (= err-type ::codec/eof) :pass :fail)
+               :message "EOF read should throw correct ex-info type"
+               :expected ::codec/eof
+               :actual err-type}))
+          (binding [codec/*eof-guard* (Object.)]
+            (is (identical? codec/*eof-guard* (codec/read! decoder)))))))))
