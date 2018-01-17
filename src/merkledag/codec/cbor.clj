@@ -14,9 +14,14 @@
   (:require
     [clj-cbor.core :as cbor]
     [clj-cbor.data.core :as data]
-    [multicodec.core :as multicodec])
+    [multistream.codec :as codec :refer [defdecoder defencoder]])
   (:import
-    clj_cbor.codec.CBORCodec))
+    clj_cbor.codec.CBORCodec
+    (java.io
+      DataInputStream
+      DataOutputStream
+      InputStream
+      OutputStream)))
 
 
 (defn- types->write-handlers
@@ -41,39 +46,74 @@
         (vals types)))
 
 
+(defencoder CBOREncoderStream
+  [^DataOutputStream output
+   codec]
+
+  (write!
+    [this value]
+    (cbor/encode codec output value)))
+
+
+(defdecoder CBORDecoderStream
+  [^DataInputStream input
+   codec]
+
+  (read!
+    [this]
+    (try
+      (let [value (cbor/decode codec input this)]
+        (if (identical? value this)
+          (codec/eof-error!)
+          value))
+      (catch Exception ex
+        (if (= (:cbor/error (ex-data ex)) :clj-cbor.codec/end-of-input)
+          (codec/eof-error!)
+          (throw ex))))))
+
+
 (extend-type CBORCodec
 
-  multicodec/Encoder
+  codec/Codec
 
-  (encodable?
-    [this value]
-    ; In reality, some values will fail without proper type handlers.
-    true)
-
-
-  (encode!
-    [this output value]
-    (let [size (cbor/encode this output value)]
-      (.flush ^java.io.OutputStream output)
-      size))
-
-
-  multicodec/Decoder
-
-  (decodable?
+  (processable?
     [this header]
-    (= (:header this) header))
+    (= header (:header this)))
 
 
-  (decode!
-    [this input]
-    (first (cbor/decode this input))))
+  (select-header
+    [this selector]
+    (:header this))
+
+
+  (encode-byte-stream
+    [this selector output-stream]
+    (->CBOREncoderStream
+      (DataOutputStream. ^OutputStream output-stream)
+      this))
+
+
+  (encode-value-stream
+    [this selector encoder-stream]
+    encoder-stream)
+
+
+  (decode-byte-stream
+    [this selector input-stream]
+    (->CBORDecoderStream
+      (DataInputStream. ^InputStream input-stream)
+      this))
+
+
+  (decode-value-stream
+    [this selector decoder-stream]
+    decoder-stream))
 
 
 (defn cbor-codec
   "Constructs a new CBOR codec."
   [types & {:as opts}]
   (cbor/cbor-codec
-    :header (:cbor multicodec/headers)
+    :header (:cbor codec/headers)
     :write-handlers (types->write-handlers types)
     :read-handlers (types->read-handlers types)))

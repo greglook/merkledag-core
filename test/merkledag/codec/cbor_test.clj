@@ -1,35 +1,31 @@
-(ns merkledag.codec.edn-test
+(ns merkledag.codec.cbor-test
   (:require
+    [alphabase.hex :as hex]
     [clojure.test :refer :all]
-    [merkledag.codec.edn :as edn]
-    [multistream.codec :as codec])
+    [merkledag.codec.cbor :as cbor]
+    [multistream.codec :as codec]
+    [multistream.header :as header])
   (:import
     (java.io
       ByteArrayInputStream
       ByteArrayOutputStream)))
 
 
-(def test-types
-  {'test/foo {:description "Test type"
-              :reader #(vector :test/foo %)
-              :writers {clojure.lang.Ratio str}}})
-
-
-(deftest edn-codec
-  (let [codec (edn/edn-codec test-types)]
+(deftest cbor-codec
+  (let [codec (cbor/cbor-codec {})]
     (testing "predicates"
       (is (false? (codec/processable? codec "/bin/")))
-      (is (true? (codec/processable? codec "/edn"))))
+      (is (true? (codec/processable? codec "/cbor/"))))
     (testing "encoding"
-      (is (= "\u0005/edn\nnil\n" (String. (codec/encode codec nil)))
-          "nil value should encode to nil string")
-      (is (= "\u0005/edn\nfalse\n" (String. (codec/encode codec false))))
-      (is (= "\u0005/edn\n(123 foo :bar)\n" (String. (codec/encode codec '(123 foo :bar))))))
+      (is (= "072f63626f722f0af6" (hex/encode (codec/encode codec nil))))
+      (is (= "072f63626f722f0af4" (hex/encode (codec/encode codec false))))
+      (is (= "072f63626f722f0aa0" (hex/encode (codec/encode codec {}))))
+      (is (= "072f63626f722f0a83187bd82763666f6fd827643a626172"
+             (hex/encode (codec/encode codec '(123 foo :bar))))))
     (testing "decoding"
-      (is (= {:alpha true, :beta 'bar, "foo" 123}
-             (codec/decode codec (.getBytes "\u0005/edn\n{:alpha true :beta bar \"foo\" 123}\n"))))
-      (is (= :foo (codec/decode codec (.getBytes "\u0005/edn\n:foo\nbar\n456\n")))
-          "should only decode first value"))
+      (is (= {} (codec/decode codec (hex/decode "072f63626f722f0aa0"))))
+      (is (= '(123 foo :bar)
+             (codec/decode codec (hex/decode "072f63626f722f0a83187bd82763666f6fd827643a626172")))))
     (testing "eof behavior"
       (let [bais (ByteArrayInputStream. (byte-array 0))]
         (with-open [decoder (codec/decode-byte-stream codec nil bais)]

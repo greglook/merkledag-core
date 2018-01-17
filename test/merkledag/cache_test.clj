@@ -1,9 +1,9 @@
-(ns merkledag.node.cache-test
+(ns merkledag.cache-test
   (:require
     [clojure.core.cache :as cache]
     [clojure.test :refer :all]
+    [merkledag.cache :as msc]
     [merkledag.node :as node]
-    [merkledag.node.cache :as msc]
     [multihash.digest :as digest]))
 
 

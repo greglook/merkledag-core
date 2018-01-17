@@ -3,7 +3,6 @@
   A merkle-link has a multihash target, an optional name string, and a recursive
   'reference size' value."
   (:require
-    [clojure.future :refer [nat-int?]]
     [clojure.spec.alpha :as s]
     [clojure.string :as str]
     [clojure.walk :as walk]
