@@ -7,7 +7,9 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
-...
+### Added
+- MerkleLink objects implement the Java `Serializable` interface so they work
+  better with Apache Spark.
 
 ## [0.4.0] - 2018-01-17
 
