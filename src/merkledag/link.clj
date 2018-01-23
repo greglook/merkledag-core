@@ -62,6 +62,9 @@
                [(.name ^MerkleLink that) (.target ^MerkleLink that)])))
 
 
+  java.io.Serializable
+
+
   clojure.lang.IObj
 
   (meta [_] _meta)

@@ -9,6 +9,12 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 ...
 
+## [0.4.1] - 2018-01-22
+
+### Added
+- MerkleLink objects implement the Java `Serializable` interface so they work
+  better with Apache Spark.
+
 ## [0.4.0] - 2018-01-17
 
 ### Changed
@@ -64,7 +70,8 @@ This is a breaking change which moves much of the library API into a single
 
 Initial project release.
 
-[Unreleased]: https://github.com/greglook/merkledag-core/compare/0.4.0...HEAD
+[Unreleased]: https://github.com/greglook/merkledag-core/compare/0.4.1...HEAD
+[0.4.1]: https://github.com/greglook/merkledag-core/compare/0.4.0...0.4.1
 [0.4.0]: https://github.com/greglook/merkledag-core/compare/0.3.2...0.4.0
 [0.3.2]: https://github.com/greglook/merkledag-core/compare/0.3.1...0.3.2
 [0.3.1]: https://github.com/greglook/merkledag-core/compare/0.3.0...0.3.1

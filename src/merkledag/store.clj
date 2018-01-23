@@ -32,9 +32,9 @@
   {'data/hash
    {:description "Content-addressed multihash references"
     :reader multihash/decode
+    :writers {Multihash multihash/base58}
     :cbor/tag 422
-    :cbor/writers {Multihash multihash/encode}
-    :edn/writers {Multihash multihash/base58}}
+    :cbor/writers {Multihash multihash/encode}}
 
    'merkledag/link
    {:description "Merkle link values"
