@@ -3,8 +3,7 @@ MerkleDAG Core
 
 [![CircleCI](https://circleci.com/gh/greglook/merkledag-core.svg?style=shield&circle-token=27a8c9928a26b924edf4cd3247f0adf0364be4cc)](https://circleci.com/gh/greglook/merkledag-core)
 [![codecov](https://codecov.io/gh/greglook/merkledag-core/branch/develop/graph/badge.svg)](https://codecov.io/gh/greglook/merkledag-core)
-[![API documentation](https://img.shields.io/badge/doc-API-blue.svg)](https://greglook.github.io/merkledag-core/api/)
-[![Literate documentation](https://img.shields.io/badge/doc-marginalia-blue.svg)](https://greglook.github.io/merkledag-core/marginalia/uberdoc.html)
+[![cljdoc lib](https://img.shields.io/badge/cljdoc-lib-blue.svg)](https://cljdoc.org/d/mvxcvi/merkledag-core)
 
 This library implements a graph data storage layer out of linked structures of
 content-addressed nodes.
