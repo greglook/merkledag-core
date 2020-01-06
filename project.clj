@@ -1,25 +1,23 @@
-(defproject mvxcvi/merkledag-core "0.4.2-SNAPSHOT"
+(defproject mvxcvi/merkledag-core "0.5.0-SNAPSHOT"
   :description "Graph datastore built on content-addressed merkle hash links"
   :url "http://github.com/greglook/merkledag-core"
   :license {:name "Public Domain"
             :url "http://unlicense.org/"}
 
   :aliases
-  {"coverage" ["with-profile" "+test,+coverage" "cloverage"]}
+  {"coverage" ["with-profile" "+coverage" "cloverage"]}
 
   :deploy-branches ["master"]
   :pedantic? :abort
 
   :dependencies
-  [[org.clojure/clojure "1.9.0"]
-   [org.clojure/core.cache "0.6.5"]
-   [org.clojure/tools.logging "0.4.0"]
-   [byte-streams "0.2.3"]
-   [mvxcvi/blocks "1.1.0"]
-   [mvxcvi/clj-cbor "0.6.0"]
-   [mvxcvi/multihash "2.0.2"]
-   [mvxcvi/multistream "0.7.1"]
-   [mvxcvi/puget "1.0.2"]]
+  [[org.clojure/clojure "1.10.1"]
+   [org.clojure/core.cache "0.8.2"]
+   [org.clojure/tools.logging "0.5.0"]
+   [byte-streams "0.2.4"]
+   [mvxcvi/blocks "2.0.3"]
+   [mvxcvi/clj-cbor "0.7.2"]
+   [mvxcvi/multiformats "2.0.2"]]
 
   :test-selectors
   {:default (complement :integration)
@@ -48,14 +46,13 @@
    :repl
    {:source-paths ["dev"]
     :dependencies
-    [[org.clojure/tools.namespace "0.2.11"]
+    [[org.clojure/tools.namespace "0.3.1"]
      [rhizome "0.2.9"]]}
 
    :test
    {:jvm-opts ["-Dorg.apache.commons.logging.Log=org.apache.commons.logging.impl.NoOpLog"]}
 
    :coverage
-   {:plugins [[lein-cloverage "1.0.10"]]
-    :dependencies [[riddley "0.1.14"]]
+   {:plugins [[lein-cloverage "1.1.2"]]
     :jvm-opts ["-Dorg.apache.commons.logging.Log=org.apache.commons.logging.impl.SimpleLog"
                "-Dorg.apache.commons.logging.simplelog.defaultlog=trace"]}})
