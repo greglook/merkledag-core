@@ -29,6 +29,7 @@
   [types]
   (into cbor/default-write-handlers
         (comp
+          (filter :cbor/tag)
           (map (juxt :cbor/tag (some-fn :cbor/writers :writers)))
           (map (fn [[tag writers]]
                  (map (fn [[cls former]]
